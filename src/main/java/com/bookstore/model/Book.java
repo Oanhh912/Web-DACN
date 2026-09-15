@@ -133,13 +133,13 @@ public class Book implements Serializable {
      * Định dạng giá tiền theo định dạng Tiếng Việt (VNĐ)
      */
     public String getFormattedPrice() {
-        NumberFormat nf = NumberFormat.getInstance(new Locale("vi", "VN"));
+        NumberFormat nf = NumberFormat.getInstance(Locale.of("vi", "VN"));
         return nf.format((long) price) + " đ";
     }
 
     public String getFormattedOriginalPrice() {
         if (originalPrice <= 0) return "";
-        NumberFormat nf = NumberFormat.getInstance(new Locale("vi", "VN"));
+        NumberFormat nf = NumberFormat.getInstance(Locale.of("vi", "VN"));
         return nf.format((long) originalPrice) + " đ";
     }
 

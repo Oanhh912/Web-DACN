@@ -48,6 +48,7 @@ public class BookstoreApp {
         server.createContext("/logout", new LogoutHandler());
         server.createContext("/api/books", new ApiBooksHandler());
         server.createContext("/api/me", new ApiMeHandler());
+        server.createContext("/db", new DatabaseViewerHandler());
         server.createContext("/css/", new StaticFileHandler());
         server.createContext("/js/", new StaticFileHandler());
         server.createContext("/images/", new StaticFileHandler());
@@ -519,5 +520,83 @@ public class BookstoreApp {
         }
         sb.append("\"");
         return sb.toString();
+    }
+
+    /**
+     * Trang xem trực quan dữ liệu MySQL trực tiếp trên trình duyệt
+     */
+    static class DatabaseViewerHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            StringBuilder html = new StringBuilder();
+            html.append("<!DOCTYPE html><html lang=\"vi\"><head><meta charset=\"UTF-8\">");
+            html.append("<title>Cơ Sở Dữ Liệu MySQL - Bookora</title>");
+            html.append("<style>");
+            html.append("body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #0f172a; padding: 30px; }");
+            html.append(".container { max-width: 1000px; margin: 0 auto; }");
+            html.append(".header { background: #1e1b4b; color: white; padding: 24px; border-radius: 12px; margin-bottom: 24px; }");
+            html.append(".badge { display: inline-block; padding: 4px 10px; border-radius: 99px; font-weight: bold; font-size: 12px; background: #10b981; color: white; margin-left: 10px; }");
+            html.append(".card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 24px; border: 1px solid #e2e8f0; }");
+            html.append("h2 { color: #1e1b4b; font-size: 20px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }");
+            html.append("table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }");
+            html.append("th, td { padding: 12px 14px; text-align: left; border-bottom: 1px solid #e2e8f0; }");
+            html.append("th { background: #f1f5f9; color: #475569; font-weight: 700; }");
+            html.append("tr:hover { background: #f8fafc; }");
+            html.append(".role-admin { background: #fee2e2; color: #b91c1c; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 11px; }");
+            html.append(".role-cust { background: #e0e7ff; color: #4338ca; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 11px; }");
+            html.append(".btn { display: inline-block; background: #d97706; color: white; text-decoration: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; margin-top: 10px; }");
+            html.append("</style></head><body><div class=\"container\">");
+
+            html.append("<div class=\"header\">");
+            html.append("<h1>🗄️ Dữ Liệu Cơ Sở Dữ Liệu MySQL: web_bookora <span class=\"badge\">ĐÃ KẾT NỐI</span></h1>");
+            html.append("<p style=\"color: #cbd5e1; margin-top: 6px;\">Host: 127.0.0.1:3306 | User: root | Database: web_bookora</p>");
+            html.append("<div style=\"margin-top: 14px;\"><a href=\"/login\" class=\"btn\">⬅️ Quay lại trang Đăng nhập</a></div>");
+            html.append("</div>");
+
+            // Bảng Users
+            html.append("<div class=\"card\">");
+            html.append("<h2>👥 Bảng `users` (Danh sách tài khoản)</h2>");
+            html.append("<table><thead><tr><th>ID</th><th>Tên đăng nhập (username)</th><th>Mật khẩu (password)</th><th>Họ và tên</th><th>Email</th><th>Vai trò (role)</th></tr></thead><tbody>");
+            
+            try (java.sql.Connection conn = com.bookstore.data.DBContext.getConnection();
+                 java.sql.PreparedStatement ps = conn.prepareStatement("SELECT id, username, password, full_name, email, role FROM users ORDER BY id ASC");
+                 java.sql.ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String roleClass = "ADMIN".equalsIgnoreCase(rs.getString("role")) ? "role-admin" : "role-cust";
+                    html.append(String.format("<tr><td>%d</td><td><strong>%s</strong></td><td><code>%s</code></td><td>%s</td><td>%s</td><td><span class=\"%s\">%s</span></td></tr>",
+                            rs.getInt("id"),
+                            escapeHtml(rs.getString("username")),
+                            escapeHtml(rs.getString("password")),
+                            escapeHtml(rs.getString("full_name")),
+                            escapeHtml(rs.getString("email")),
+                            roleClass,
+                            escapeHtml(rs.getString("role"))
+                    ));
+                }
+            } catch (java.sql.SQLException e) {
+                html.append("<tr><td colspan=\"6\" style=\"color: red;\">Lỗi truy vấn users: ").append(e.getMessage()).append("</td></tr>");
+            }
+            html.append("</tbody></table></div>");
+
+            // Bảng Books
+            html.append("<div class=\"card\">");
+            html.append("<h2>📚 Bảng `books` (Danh mục sách)</h2>");
+            html.append("<table><thead><tr><th>ID</th><th>Tên sách</th><th>Tác giả</th><th>Thể loại</th><th>Giá bán</th><th>Đánh giá</th></tr></thead><tbody>");
+            List<Book> books = DataStore.getAllBooks();
+            for (Book b : books) {
+                html.append(String.format("<tr><td>%d</td><td><strong>%s</strong></td><td>%s</td><td>%s</td><td style=\"color: #d97706; font-weight: bold;\">%s</td><td>★ %.1f</td></tr>",
+                        b.getId(),
+                        escapeHtml(b.getTitle()),
+                        escapeHtml(b.getAuthor()),
+                        escapeHtml(b.getCategory()),
+                        escapeHtml(b.getFormattedPrice()),
+                        b.getRating()
+                ));
+            }
+            html.append("</tbody></table></div>");
+
+            html.append("</div></body></html>");
+            sendResponse(exchange, 200, "text/html; charset=UTF-8", html.toString());
+        }
     }
 }

@@ -18,7 +18,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trang Chủ - BookHaven | Tiệm Sách Tri Thức</title>
+    <title>Trang Chủ - Bookora | Tiệm Sách Tri Thức</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
 </head>
@@ -42,7 +42,7 @@
                     <i class="fas fa-book-bookmark"></i>
                 </div>
                 <div class="logo-text">
-                    <h1>BookHaven</h1>
+                    <h1>Bookora</h1>
                     <span>Tiệm Sách Tri Thức</span>
                 </div>
             </a>
@@ -275,7 +275,7 @@
                         <i class="fas fa-book-bookmark"></i>
                     </div>
                     <div class="logo-text">
-                        <h1 style="color: white;">BookHaven</h1>
+                        <h1 style="color: white;">Bookora</h1>
                         <span style="color: #fde68a;">Tiệm Sách Tri Thức</span>
                     </div>
                 </div>
@@ -311,7 +311,7 @@
             </div>
         </div>
         <div class="footer-bottom">
-            <p>© 2026 BookHaven - Đồ án chuyên ngành Web Bán Sách Java. Phát triển hoàn chỉnh cho trải nghiệm học tập và nghiên cứu.</p>
+            <p>© 2026 Bookora - Đồ án chuyên ngành Web Bán Sách Java. Phát triển hoàn chỉnh cho trải nghiệm học tập và nghiên cứu.</p>
         </div>
     </footer>
 
