@@ -11,6 +11,8 @@
         alertHtml = "<div class=\"alert alert-danger\"><i class=\"fas fa-exclamation-circle\"></i> " + errorMessage + "</div>";
     } else if ("logged_out".equals(urlMsg)) {
         alertHtml = "<div class=\"alert alert-success\"><i class=\"fas fa-check-circle\"></i> Bạn đã đăng xuất an toàn khỏi hệ thống!</div>";
+    } else if ("register_success".equals(urlMsg)) {
+        alertHtml = "<div class=\"alert alert-success\"><i class=\"fas fa-check-circle\"></i> Đăng ký tài khoản thành công! Vui lòng đăng nhập để bắt đầu trải nghiệm.</div>";
     } else if ("require_login".equals(urlErr)) {
         alertHtml = "<div class=\"alert alert-danger\"><i class=\"fas fa-shield-alt\"></i> Vui lòng đăng nhập để truy cập trang chủ!</div>";
     }
@@ -116,7 +118,7 @@
 
             <p style="text-align: center; margin-top: 28px; font-size: 13px; color: var(--text-secondary);">
                 Chưa có tài khoản? 
-                <a href="javascript:void(0)" onclick="alert('Tính năng đăng ký tài khoản thành viên mới đang được cập nhật!')" style="color: var(--primary-light); font-weight: 700;">Đăng ký thành viên mới</a>
+                <a href="${pageContext.request.contextPath}/register" style="color: var(--primary-light); font-weight: 700;">Đăng ký thành viên mới</a>
             </p>
         </section>
     </main>

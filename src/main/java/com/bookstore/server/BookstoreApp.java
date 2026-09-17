@@ -44,6 +44,7 @@ public class BookstoreApp {
         // Định tuyến các đường dẫn
         server.createContext("/", new RootHandler());
         server.createContext("/login", new LoginHandler());
+        server.createContext("/register", new RegisterHandler());
         server.createContext("/home", new HomeHandler());
         server.createContext("/logout", new LogoutHandler());
         server.createContext("/api/books", new ApiBooksHandler());
@@ -107,6 +108,8 @@ public class BookstoreApp {
                     message = "Bạn đã đăng xuất an toàn khỏi hệ thống!";
                 } else if (query != null && query.contains("require_login")) {
                     message = "Vui lòng đăng nhập để tiếp tục truy cập trang chủ!";
+                } else if (query != null && query.contains("register_success")) {
+                    message = "Đăng ký tài khoản thành công! Vui lòng đăng nhập để tiếp tục.";
                 }
 
                 String html = renderLoginPage("", message, "");
@@ -137,6 +140,80 @@ public class BookstoreApp {
                     redirect(exchange, "/home");
                 } else {
                     String html = renderLoginPage("Tên đăng nhập hoặc mật khẩu không chính xác!", "", username);
+                    sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
+                }
+            } else {
+                sendResponse(exchange, 405, "text/plain", "Method Not Allowed");
+            }
+        }
+    }
+
+    /**
+     * Xử lý GET/POST cho trang Đăng ký (/register)
+     */
+    static class RegisterHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            String method = exchange.getRequestMethod();
+
+            if ("GET".equalsIgnoreCase(method)) {
+                User user = getAuthenticatedUser(exchange);
+                if (user != null) {
+                    redirect(exchange, "/home");
+                    return;
+                }
+
+                String html = renderRegisterPage("", "", "", "", "");
+                sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
+
+            } else if ("POST".equalsIgnoreCase(method)) {
+                Map<String, String> params = parseFormData(exchange);
+                String fullName = params.getOrDefault("fullName", "").trim();
+                String username = params.getOrDefault("username", "").trim();
+                String email = params.getOrDefault("email", "").trim();
+                String phone = params.getOrDefault("phone", "").trim();
+                String password = params.getOrDefault("password", "").trim();
+                String confirmPassword = params.getOrDefault("confirmPassword", "").trim();
+
+                if (fullName.isEmpty() || username.isEmpty() || email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
+                    String html = renderRegisterPage("Vui lòng nhập đầy đủ các trường thông tin bắt buộc!", fullName, username, email, phone);
+                    sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
+                    return;
+                }
+
+                if (password.length() < 6) {
+                    String html = renderRegisterPage("Mật khẩu phải có độ dài từ 6 ký tự trở lên!", fullName, username, email, phone);
+                    sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
+                    return;
+                }
+
+                if (!password.equals(confirmPassword)) {
+                    String html = renderRegisterPage("Mật khẩu xác nhận không khớp! Vui lòng thử lại.", fullName, username, email, phone);
+                    sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
+                    return;
+                }
+
+                if (DataStore.findUser(username) != null) {
+                    String html = renderRegisterPage("Tên đăng nhập '" + username + "' đã được sử dụng! Vui lòng chọn tên khác.", fullName, "", email, phone);
+                    sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
+                    return;
+                }
+
+                User newUser = new User(
+                        username,
+                        password,
+                        fullName,
+                        email,
+                        phone,
+                        "CUSTOMER",
+                        "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150"
+                );
+
+                boolean success = DataStore.registerUser(newUser);
+                if (success) {
+                    redirect(exchange, "/login?message=register_success");
+                } else {
+                    String html = renderRegisterPage("Có lỗi khi tạo tài khoản trong cơ sở dữ liệu. Vui lòng thử lại!", fullName, username, email, phone);
                     sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
                 }
             } else {
@@ -302,6 +379,27 @@ public class BookstoreApp {
 
         content = content.replace("<!-- ${ALERT_MESSAGE} -->", errorHtml + infoHtml);
         content = content.replace("${username}", (username != null) ? username : "");
+        return content;
+    }
+
+    private static String renderRegisterPage(String error, String fullName, String username, String email, String phone) {
+        Path templatePath = WEBAPP_DIR.resolve("register.html");
+        String content = "";
+        try {
+            content = Files.readString(templatePath, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            content = "<h1>Register Template Missing</h1>";
+        }
+
+        String errorHtml = (error != null && !error.isEmpty()) 
+                ? "<div class=\"alert alert-danger\"><i class=\"fas fa-exclamation-circle\"></i> " + error + "</div>" 
+                : "";
+
+        content = content.replace("<!-- ${ALERT_MESSAGE} -->", errorHtml);
+        content = content.replace("${fullName}", (fullName != null) ? escapeAttr(fullName) : "");
+        content = content.replace("${username}", (username != null) ? escapeAttr(username) : "");
+        content = content.replace("${email}", (email != null) ? escapeAttr(email) : "");
+        content = content.replace("${phone}", (phone != null) ? escapeAttr(phone) : "");
         return content;
     }
 

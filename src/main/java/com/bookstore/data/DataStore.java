@@ -89,23 +89,32 @@ public class DataStore {
      * Đăng ký người dùng mới vào MySQL
      */
     public static boolean registerUser(User newUser) {
-        if (newUser == null || newUser.getUsername() == null) return false;
+        if (newUser == null || newUser.getUsername() == null || newUser.getUsername().trim().isEmpty()) {
+            return false;
+        }
+        String cleanUsername = newUser.getUsername().trim();
+
+        // Kiểm tra xem username đã tồn tại chưa
+        if (findUser(cleanUsername) != null) {
+            return false; // Tên đăng nhập đã tồn tại
+        }
+
         String sql = "INSERT INTO users (username, password, full_name, email, phone, role, avatar) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, newUser.getUsername().trim());
+            ps.setString(1, cleanUsername);
             ps.setString(2, newUser.getPassword());
             ps.setString(3, newUser.getFullName());
             ps.setString(4, newUser.getEmail());
             ps.setString(5, newUser.getPhone());
             ps.setString(6, newUser.getRole() != null ? newUser.getRole() : "CUSTOMER");
-            ps.setString(7, newUser.getAvatar());
-            ps.executeUpdate();
-            return true;
+            ps.setString(7, newUser.getAvatar() != null ? newUser.getAvatar() : "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150");
+            int rows = ps.executeUpdate();
+            return rows > 0;
         } catch (SQLException e) {
             System.err.println("⚠️ MySQL registerUser lỗi: " + e.getMessage());
-            memoryUsers.put(newUser.getUsername().toLowerCase(), newUser);
+            memoryUsers.put(cleanUsername.toLowerCase(), newUser);
             return true;
         }
     }

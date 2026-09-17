@@ -1,0 +1,26 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Chạy Server Bookstore (run.bat)",
+            "type": "shell",
+            "command": ".\\run.bat",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Biên dịch Java (compile.bat)",
+            "type": "shell",
+            "command": ".\\compile.bat",
+            "group": "build",
+            "problemMatcher": []
+        }
+    ]
+}

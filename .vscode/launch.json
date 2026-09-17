@@ -1,0 +1,17 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Chạy Bookstore (BookstoreApp)",
+            "request": "launch",
+            "mainClass": "com.bookstore.server.BookstoreApp",
+            "projectName": "Web_DACN",
+            "classPaths": [
+                "${workspaceFolder}/build/classes",
+                "${workspaceFolder}/lib/servlet-api.jar",
+                "${workspaceFolder}/lib/mysql-connector-j.jar"
+            ]
+        }
+    ]
+}
