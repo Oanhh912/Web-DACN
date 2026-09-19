@@ -36,7 +36,7 @@
             <form action="home" method="GET" class="search-form" id="searchForm" onsubmit="return false;">
                 <div class="search-input-wrap">
                     <input type="text" id="searchInput" name="q" class="search-input" 
-                           placeholder="Tìm kiếm theo tựa sách, tác giả hoặc thể loại..." 
+                           placeholder="Tìm kiếm theo tựa sách, tác giả, mã sách (MS001)..." 
                            value="${searchKeyword}" autocomplete="off">
                     <button type="button" class="btn-search" title="Tìm kiếm">
                         <i class="fas fa-search"></i>
@@ -119,7 +119,10 @@
                     <img src="" alt="Bìa sách" id="modalCover">
                 </div>
                 <div class="modal-details">
-                    <span class="modal-category" id="modalCategory">Thể loại</span>
+                    <div class="modal-meta-top">
+                        <span class="modal-category" id="modalCategory">Thể loại</span>
+                        <span class="modal-code" id="modalCode"><i class="fas fa-barcode"></i> Mã: MS001</span>
+                    </div>
                     <h2 class="modal-title" id="modalTitle">Tựa Sách</h2>
                     <p class="modal-author"><i class="fas fa-feather-alt"></i> <span id="modalAuthor">Tác giả</span></p>
                     <div class="book-rating" style="margin-bottom: 12px;">

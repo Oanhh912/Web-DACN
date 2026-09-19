@@ -56,7 +56,7 @@
             <form action="${pageContext.request.contextPath}/home" method="GET" class="search-form" id="searchForm">
                 <div class="search-input-wrap">
                     <input type="text" id="searchInput" name="q" class="search-input" 
-                           placeholder="Tìm kiếm theo tựa sách, tác giả hoặc thể loại..." 
+                           placeholder="Tìm kiếm theo tựa sách, tác giả, mã sách (MS001)..." 
                            value="<%= searchKeyword %>" autocomplete="off">
                     <button type="submit" class="btn-search" title="Tìm kiếm">
                         <i class="fas fa-search"></i>
@@ -185,6 +185,7 @@
                 for (Book b : books) {
             %>
                 <div class="book-card" data-id="<%= b.getId() %>" 
+                     data-code="<%= b.getCode() %>" 
                      data-title="<%= b.getTitle().replace("\"", "&quot;") %>" 
                      data-author="<%= b.getAuthor().replace("\"", "&quot;") %>" 
                      data-price="<%= b.getPrice() %>" 
@@ -209,7 +210,10 @@
                             </div>
                         </div>
                         <div class="book-info">
-                            <span class="book-category"><%= b.getCategory() %></span>
+                            <div class="book-meta-top">
+                                <span class="book-category"><%= b.getCategory() %></span>
+                                <span class="book-code" title="Mã sách: <%= b.getCode() %>"><i class="fas fa-barcode"></i> <%= b.getCode() %></span>
+                            </div>
                             <h3 class="book-title" title="<%= b.getTitle() %>"><%= b.getTitle() %></h3>
                             <p class="book-author"><i class="fas fa-feather-alt"></i> <%= b.getAuthor() %></p>
                             <div class="book-rating">
@@ -246,7 +250,10 @@
                     <img src="" alt="Bìa sách" id="modalCover">
                 </div>
                 <div class="modal-details">
-                    <span class="modal-category" id="modalCategory">Thể loại</span>
+                    <div class="modal-meta-top">
+                        <span class="modal-category" id="modalCategory">Thể loại</span>
+                        <span class="modal-code" id="modalCode"><i class="fas fa-barcode"></i> Mã: MS001</span>
+                    </div>
                     <h2 class="modal-title" id="modalTitle">Tựa Sách</h2>
                     <p class="modal-author"><i class="fas fa-feather-alt"></i> <span id="modalAuthor">Tác giả</span></p>
                     <div class="book-rating" style="margin-bottom: 12px;">

@@ -11,6 +11,7 @@ public class Book implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private int id;
+    private String code;
     private String title;
     private String author;
     private double price;
@@ -28,7 +29,14 @@ public class Book implements Serializable {
     public Book(int id, String title, String author, double price, double originalPrice, 
                 String category, double rating, int reviewCount, String image, 
                 String description, boolean isBestSeller) {
+        this(id, String.format("MS%03d", id), title, author, price, originalPrice, category, rating, reviewCount, image, description, isBestSeller);
+    }
+
+    public Book(int id, String code, String title, String author, double price, double originalPrice, 
+                String category, double rating, int reviewCount, String image, 
+                String description, boolean isBestSeller) {
         this.id = id;
+        this.code = (code != null && !code.trim().isEmpty()) ? code.trim() : String.format("MS%03d", id);
         this.title = title;
         this.author = author;
         this.price = price;
@@ -47,6 +55,14 @@ public class Book implements Serializable {
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
     }
 
     public String getTitle() {

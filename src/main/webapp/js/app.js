@@ -115,10 +115,11 @@ function filterBooksClientSide(category, keyword = '') {
     cards.forEach(card => {
         const title = (card.getAttribute('data-title') || '').toLowerCase();
         const author = (card.getAttribute('data-author') || '').toLowerCase();
+        const code = (card.getAttribute('data-code') || '').toLowerCase();
         const cardCat = card.getAttribute('data-category') || '';
 
         const matchCat = (category === 'Tất cả' || cardCat === category);
-        const matchKw = (!keyword || title.includes(keyword) || author.includes(keyword));
+        const matchKw = (!keyword || title.includes(keyword) || author.includes(keyword) || code.includes(keyword));
 
         if (matchCat && matchKw) {
             card.style.display = 'flex';
@@ -145,6 +146,7 @@ function openQuickView(bookId) {
 
     currentModalBook = {
         id: bookId,
+        code: card.getAttribute('data-code') || '',
         title: card.getAttribute('data-title'),
         author: card.getAttribute('data-author'),
         price: parseFloat(card.getAttribute('data-price')),
@@ -159,6 +161,10 @@ function openQuickView(bookId) {
     document.getElementById('modalTitle').textContent = currentModalBook.title;
     document.getElementById('modalAuthor').textContent = currentModalBook.author;
     document.getElementById('modalCategory').textContent = currentModalBook.category;
+    const modalCodeEl = document.getElementById('modalCode');
+    if (modalCodeEl) {
+        modalCodeEl.innerHTML = `<i class="fas fa-barcode"></i> Mã: ${currentModalBook.code}`;
+    }
     document.getElementById('modalPrice').textContent = currentModalBook.formattedPrice;
     document.getElementById('modalDesc').textContent = currentModalBook.desc;
     document.getElementById('modalRating').textContent = currentModalBook.rating;
@@ -194,6 +200,7 @@ function addToCart(bookId, quantity = 1) {
     const card = document.querySelector(`.book-card[data-id="${bookId}"]`);
     if (!card) return;
 
+    const code = card.getAttribute('data-code') || '';
     const title = card.getAttribute('data-title');
     const author = card.getAttribute('data-author');
     const price = parseFloat(card.getAttribute('data-price'));
@@ -203,9 +210,13 @@ function addToCart(bookId, quantity = 1) {
     const existingIndex = cart.findIndex(item => item.id === bookId);
     if (existingIndex > -1) {
         cart[existingIndex].quantity += quantity;
+        if (!cart[existingIndex].code && code) {
+            cart[existingIndex].code = code;
+        }
     } else {
         cart.push({
             id: bookId,
+            code: code,
             title: title,
             author: author,
             price: price,
@@ -278,11 +289,13 @@ function renderCartDrawerItems() {
     container.innerHTML = cart.map(item => {
         const itemTotal = item.price * item.quantity;
         total += itemTotal;
+        const codeHtml = item.code ? `<span class="cart-item-code"><i class="fas fa-barcode"></i> Mã: ${item.code}</span>` : '';
         return `
             <div class="cart-item">
                 <img src="${item.image}" alt="${item.title}" class="cart-item-img" onerror="this.src='https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=100';">
                 <div class="cart-item-details">
                     <h4 class="cart-item-title">${item.title}</h4>
+                    ${codeHtml}
                     <span class="cart-item-price">${formatMoney(item.price)}</span>
                     <div class="cart-item-footer">
                         <div class="cart-item-qty">

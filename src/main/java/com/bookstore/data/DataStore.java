@@ -28,6 +28,32 @@ public class DataStore {
         memoryUsers.put("admin", new User("admin", "123456", "Quản Trị Viên - Hoàng Oanh", "admin@bookora.vn", "0988123456", "ADMIN", "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150"));
         memoryUsers.put("oanh", new User("oanh", "123456", "Hoàng Oanh", "oanh.nguyen@gmail.com", "0912345678", "CUSTOMER", "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150"));
         memoryUsers.put("khachhang", new User("khachhang", "123456", "Khách Hàng Thân Thiết", "khachhang@gmail.com", "0909888999", "CUSTOMER", "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150"));
+
+        // Danh sách 24 cuốn sách dự phòng trong bộ nhớ (dùng khi máy chưa cài đặt hoặc chưa khởi động MySQL)
+        memoryBooks.add(new Book(1, "MS001", "Nhà Giả Kim (The Alchemist)", "Paulo Coelho", 79000, 99000, "Văn học", 4.9, 1420, "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500", "Cuốn sách kinh điển kể về hành trình theo đuổi ước mơ và lắng nghe tiếng gọi của trái tim của chàng chăn cừu Santiago.", true));
+        memoryBooks.add(new Book(2, "MS002", "Đắc Nhân Tâm (How to Win Friends)", "Dale Carnegie", 88000, 110000, "Kỹ năng sống", 4.8, 2350, "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=500", "Nghệ thuật thu phục lòng người đỉnh cao, cuốn sách gối đầu giường của hàng triệu độc giả trên toàn thế giới.", true));
+        memoryBooks.add(new Book(3, "MS003", "Clean Code: A Handbook of Agile Software Craftsmanship", "Robert C. Martin (Uncle Bob)", 285000, 350000, "Công nghệ", 4.9, 890, "https://images.unsplash.com/photo-1532012164546-f432f2e3777a?w=500", "Cẩm nang kinh điển của mọi lập trình viên phần mềm để viết mã nguồn sạch sẽ, dễ bảo trì và mở rộng.", true));
+        memoryBooks.add(new Book(4, "MS004", "Tư Duy Nhanh Và Chậm (Thinking, Fast and Slow)", "Daniel Kahneman", 145000, 185000, "Tâm lý học", 4.7, 640, "https://images.unsplash.com/photo-1541963463532-d68292c34b19?w=500", "Giải thích hai hệ thống thúc đẩy cách chúng ta tư duy và đưa ra các quyết định trong cuộc sống.", false));
+        memoryBooks.add(new Book(5, "MS005", "Cha Giàu Cha Nghèo (Rich Dad Poor Dad)", "Robert T. Kiyosaki", 95000, 125000, "Kinh tế", 4.8, 1890, "https://images.unsplash.com/photo-1553729459-efe14ef6055d?w=500", "Bài học về tư duy tài chính độc lập và cách để đồng tiền làm việc cho chính bạn thay vì làm việc vì tiền.", true));
+        memoryBooks.add(new Book(6, "MS006", "Muôn Kiếp Nhân Sinh (Phần 1 & 2)", "Nguyên Phong", 168000, 210000, "Tâm linh & Đời sống", 4.9, 1560, "https://images.unsplash.com/photo-1516979187457-637abb4f9353?w=500", "Tác phẩm ghi lại những trải nghiệm tiền kiếp kỳ lạ và thông điệp sâu sắc về quy luật nhân quả của vũ trụ.", true));
+        memoryBooks.add(new Book(7, "MS007", "Cây Cam Ngọt Của Tôi", "José Mauro de Vasconcelos", 82000, 108000, "Văn học", 4.9, 3200, "https://images.unsplash.com/photo-1495640388908-05fa85288e61?w=500", "Câu chuyện cảm động rơi nước mắt về tuổi thơ hồn nhiên nhưng đầy vết thương của cậu bé Zezé.", true));
+        memoryBooks.add(new Book(8, "MS008", "Thiết Kế Giải Thuật & Cấu Trúc Dữ Liệu", "Thomas H. Cormen", 320000, 390000, "Công nghệ", 4.8, 410, "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=500", "Giáo trình toàn diện về giải thuật cơ bản và nâng cao dành cho sinh viên và kỹ sư công nghệ thông tin.", false));
+        memoryBooks.add(new Book(9, "MS009", "Thói Quen Nguyên Tử (Atomic Habits)", "James Clear", 129000, 169000, "Kỹ năng sống", 4.9, 2900, "https://images.unsplash.com/photo-1476275466078-4007374efbbe?w=500", "Cách mạng hóa cuộc sống của bạn từ những thay đổi cực kỳ nhỏ bé nhưng mang lại hiệu quả phi thường mỗi ngày.", true));
+        memoryBooks.add(new Book(10, "MS010", "Hoàng Tử Bé (The Little Prince)", "Antoine de Saint-Exupéry", 65000, 85000, "Văn học", 4.9, 1820, "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500", "Kiệt tác văn học Pháp mang thông điệp triết lý sâu sắc về tình bạn, tình yêu và cái nhìn trong trẻo của trẻ thơ.", true));
+        memoryBooks.add(new Book(11, "MS011", "Tâm Lý Học Về Tiền (The Psychology of Money)", "Morgan Housel", 136000, 170000, "Kinh tế", 4.9, 2150, "https://images.unsplash.com/photo-1592496431122-2349e0fbc666?w=500", "19 câu chuyện ngắn khám phá những cách kỳ lạ mà mọi người nghĩ về tiền bạc và cách quản lý tài chính thông minh.", true));
+        memoryBooks.add(new Book(12, "MS012", "Sapiens: Lược Sử Loài Người", "Yuval Noah Harari", 195000, 250000, "Khoa học", 4.9, 3400, "https://images.unsplash.com/photo-1447069387593-a5de0862481e?w=500", "Hành trình kỳ vĩ kể về lịch sử tiến hóa của loài người từ thời kỳ đồ đá cho đến kỷ nguyên hiện đại.", true));
+        memoryBooks.add(new Book(13, "MS013", "Khởi Nghiệp Tinh Gọn (The Lean Startup)", "Eric Ries", 125000, 160000, "Kinh tế", 4.8, 980, "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=500", "Phương pháp xây dựng doanh nghiệp đổi mới sáng tạo thành công vượt bậc trong thời đại biến động.", false));
+        memoryBooks.add(new Book(14, "MS014", "The Pragmatic Programmer: 20th Anniversary Edition", "David Thomas, Andrew Hunt", 310000, 380000, "Công nghệ", 4.9, 760, "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=500", "Cẩm nang từ các bậc thầy lập trình giúp bạn nâng tầm kỹ năng từ một thợ code thành kỹ sư phần mềm thực thụ.", true));
+        memoryBooks.add(new Book(15, "MS015", "Dám Bị Ghét", "Kishimi Ichiro, Koga Fumitake", 98000, 125000, "Tâm lý học", 4.7, 1950, "https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=500", "Đối thoại triết học dựa trên tâm lý học Alfred Adler giúp bạn tìm thấy tự do và dũng khí sống thật với chính mình.", true));
+        memoryBooks.add(new Book(16, "MS016", "Bố Già (The Godfather)", "Mario Puzo", 118000, 150000, "Văn học", 4.9, 4100, "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=500", "Tiểu thuyết kinh điển về thế giới mafia Ý-Mỹ, đỉnh cao của nghệ thuật xây dựng nhân vật và quyền lực.", true));
+        memoryBooks.add(new Book(17, "MS017", "Mắt Biếc", "Nguyễn Nhật Ánh", 72000, 90000, "Văn học", 4.8, 5200, "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500", "Mối tình si ngốc nghếch, trong sáng nhưng da diết của Ngạn dành cho cô bạn thời thơ ấu có đôi mắt biếc.", true));
+        memoryBooks.add(new Book(18, "MS018", "Từ Tốt Đến Vĩ Đại (Good to Great)", "Jim Collins", 149000, 195000, "Kinh tế", 4.8, 1200, "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=500", "Nghiên cứu công phu về lý do tại sao một số công ty có thể tạo ra bước nhảy vọt phi thường còn số khác thì không.", false));
+        memoryBooks.add(new Book(19, "MS019", "Clean Architecture: A Craftsman's Guide", "Robert C. Martin (Uncle Bob)", 295000, 360000, "Công nghệ", 4.9, 680, "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=500", "Quy tắc vàng về kiến trúc phần mềm giúp hệ thống bền vững, độc lập framework và dễ dàng kiểm thử.", true));
+        memoryBooks.add(new Book(20, "MS020", "Sức Mạnh Của Hiện Tại (The Power of Now)", "Eckhart Tolle", 105000, 135000, "Tâm linh & Đời sống", 4.8, 1430, "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=500", "Hướng dẫn thức tỉnh tâm thức, giải phóng bản thân khỏi nỗi đau quá khứ và sự lo lắng về tương lai.", false));
+        memoryBooks.add(new Book(21, "MS021", "7 Thói Quen Của Bạn Trẻ Thành Đạt", "Sean Covey", 95000, 120000, "Kỹ năng sống", 4.8, 2670, "https://images.unsplash.com/photo-1507842229450-760773d528b8?w=500", "Chiếc la bàn chỉ đường giúp thanh thiếu niên rèn luyện nhân cách, xác định mục tiêu và gặt hái thành công.", true));
+        memoryBooks.add(new Book(22, "MS022", "Đọc Vị Bất Kỳ Ai (You Can Read Anyone)", "David J. Lieberman", 78000, 99000, "Tâm lý học", 4.7, 1880, "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=500", "Nắm bắt tâm lý, giải mã ngôn ngữ cơ thể và suy nghĩ của đối phương chỉ trong vài phút giao tiếp.", false));
+        memoryBooks.add(new Book(23, "MS023", "Vũ Trụ Trong Vỏ Hạt Dẻ (The Universe in a Nutshell)", "Stephen Hawking", 155000, 195000, "Khoa học", 4.8, 1120, "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=500", "Khám phá những biên giới kỳ diệu của vật lý lý thuyết: thuyết tương đối, lỗ đen và lý thuyết siêu dây.", false));
+        memoryBooks.add(new Book(24, "MS024", "Rừng Na Uy (Norwegian Wood)", "Haruki Murakami", 110000, 140000, "Văn học", 4.8, 3800, "https://images.unsplash.com/photo-1518770660439-4636190af475?w=500", "Tác phẩm lừng danh Nhật Bản khắc họa nỗi cô đơn và sự chới với của tuổi trẻ giữa mất mát và trưởng thành.", true));
     }
 
     /**
@@ -78,15 +104,14 @@ public class DataStore {
             }
         } catch (SQLException e) {
             System.err.println("⚠️ MySQL validateUser: Không thể truy vấn database (" + e.getMessage() + "). Dùng bộ nhớ tạm.");
-            User u = memoryUsers.get(username.trim().toLowerCase());
-            return u != null && u.getPassword().equals(password);
         }
 
-        return false;
+        User u = memoryUsers.get(username.trim().toLowerCase());
+        return u != null && u.getPassword().equals(password);
     }
 
     /**
-     * Đăng ký người dùng mới vào MySQL
+     * Đăng ký người dùng mới vào MySQL (kèm đồng bộ bộ nhớ dự phòng)
      */
     public static boolean registerUser(User newUser) {
         if (newUser == null || newUser.getUsername() == null || newUser.getUsername().trim().isEmpty()) {
@@ -111,12 +136,17 @@ public class DataStore {
             ps.setString(6, newUser.getRole() != null ? newUser.getRole() : "CUSTOMER");
             ps.setString(7, newUser.getAvatar() != null ? newUser.getAvatar() : "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150");
             int rows = ps.executeUpdate();
-            return rows > 0;
+            if (rows > 0) {
+                memoryUsers.put(cleanUsername.toLowerCase(), newUser);
+                return true;
+            }
         } catch (SQLException e) {
-            System.err.println("⚠️ MySQL registerUser lỗi: " + e.getMessage());
+            System.err.println("⚠️ MySQL registerUser lỗi (" + e.getMessage() + "). Lưu vào bộ nhớ tạm.");
             memoryUsers.put(cleanUsername.toLowerCase(), newUser);
             return true;
         }
+
+        return false;
     }
 
     // ====================== QUẢN LÝ MÃ XÁC THỰC OTP ======================
@@ -224,7 +254,7 @@ public class DataStore {
      */
     public static List<Book> getAllBooks() {
         List<Book> list = new ArrayList<>();
-        String sql = "SELECT id, title, author, price, original_price, category, rating, review_count, image, description, is_bestseller FROM books ORDER BY id ASC";
+        String sql = "SELECT id, code, title, author, price, original_price, category, rating, review_count, image, description, is_bestseller FROM books ORDER BY id ASC";
 
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
@@ -246,7 +276,7 @@ public class DataStore {
      * Tìm sách theo ID từ MySQL
      */
     public static Book getBookById(int id) {
-        String sql = "SELECT id, title, author, price, original_price, category, rating, review_count, image, description, is_bestseller FROM books WHERE id = ?";
+        String sql = "SELECT id, code, title, author, price, original_price, category, rating, review_count, image, description, is_bestseller FROM books WHERE id = ?";
 
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -267,18 +297,19 @@ public class DataStore {
     }
 
     /**
-     * Tìm kiếm và lọc sách từ MySQL
+     * Tìm kiếm và lọc sách từ MySQL (theo tiêu đề, tác giả hoặc mã sách)
      */
     public static List<Book> searchBooks(String keyword, String category) {
         List<Book> list = new ArrayList<>();
         String kw = keyword == null ? "" : keyword.trim();
         String cat = category == null ? "" : category.trim();
 
-        StringBuilder sql = new StringBuilder("SELECT id, title, author, price, original_price, category, rating, review_count, image, description, is_bestseller FROM books WHERE 1=1 ");
+        StringBuilder sql = new StringBuilder("SELECT id, code, title, author, price, original_price, category, rating, review_count, image, description, is_bestseller FROM books WHERE 1=1 ");
         List<Object> params = new ArrayList<>();
 
         if (!kw.isEmpty()) {
-            sql.append("AND (LOWER(title) LIKE ? OR LOWER(author) LIKE ?) ");
+            sql.append("AND (LOWER(title) LIKE ? OR LOWER(author) LIKE ? OR LOWER(code) LIKE ?) ");
+            params.add("%" + kw.toLowerCase() + "%");
             params.add("%" + kw.toLowerCase() + "%");
             params.add("%" + kw.toLowerCase() + "%");
         }
@@ -302,14 +333,24 @@ public class DataStore {
             }
             return list;
         } catch (SQLException e) {
-            System.err.println("⚠️ MySQL searchBooks lỗi: " + e.getMessage());
+            System.err.println("⚠️ MySQL searchBooks lỗi (" + e.getMessage() + "). Dùng bộ nhớ tạm.");
+            List<Book> fallback = new ArrayList<>();
+            for (Book b : memoryBooks) {
+                boolean matchCat = cat.isEmpty() || "Tất cả".equalsIgnoreCase(cat) || b.getCategory().equalsIgnoreCase(cat);
+                boolean matchKw = kw.isEmpty() 
+                        || b.getTitle().toLowerCase().contains(kw.toLowerCase()) 
+                        || b.getAuthor().toLowerCase().contains(kw.toLowerCase())
+                        || b.getCode().toLowerCase().contains(kw.toLowerCase());
+                if (matchCat && matchKw) {
+                    fallback.add(b);
+                }
+            }
+            return fallback;
         }
-
-        return getAllBooks();
     }
 
     /**
-     * Lấy danh sách các thể loại sách từ MySQL
+     * Lấy danh sách các thể loại sách từ MySQL (kèm dự phòng bộ nhớ)
      */
     public static List<String> getCategories() {
         List<String> categories = new ArrayList<>();
@@ -329,15 +370,30 @@ public class DataStore {
                 return categories;
             }
         } catch (SQLException e) {
-            System.err.println("⚠️ MySQL getCategories lỗi: " + e.getMessage());
+            System.err.println("⚠️ MySQL getCategories lỗi (" + e.getMessage() + "). Dùng bộ nhớ tạm.");
+            for (Book b : memoryBooks) {
+                if (!categories.contains(b.getCategory())) {
+                    categories.add(b.getCategory());
+                }
+            }
+            return categories;
         }
 
         return categories;
     }
 
     private static Book extractBookFromResultSet(ResultSet rs) throws SQLException {
+        String code = "";
+        try {
+            code = rs.getString("code");
+        } catch (SQLException ignored) {}
+        if (code == null || code.trim().isEmpty()) {
+            code = String.format("MS%03d", rs.getInt("id"));
+        }
+
         return new Book(
                 rs.getInt("id"),
+                code,
                 rs.getString("title"),
                 rs.getString("author"),
                 rs.getDouble("price"),

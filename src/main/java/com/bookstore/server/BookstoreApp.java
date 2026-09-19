@@ -398,8 +398,9 @@ public class BookstoreApp {
                 Book b = books.get(i);
                 if (i > 0) sb.append(",");
                 sb.append(String.format(
-                        "{\"id\":%d,\"title\":%s,\"author\":%s,\"price\":%.0f,\"originalPrice\":%.0f,\"formattedPrice\":%s,\"category\":%s,\"rating\":%.1f,\"reviewCount\":%d,\"image\":%s,\"description\":%s,\"isBestSeller\":%b}",
+                        "{\"id\":%d,\"code\":%s,\"title\":%s,\"author\":%s,\"price\":%.0f,\"originalPrice\":%.0f,\"formattedPrice\":%s,\"category\":%s,\"rating\":%.1f,\"reviewCount\":%d,\"image\":%s,\"description\":%s,\"isBestSeller\":%b}",
                         b.getId(),
+                        escapeJson(b.getCode()),
                         escapeJson(b.getTitle()),
                         escapeJson(b.getAuthor()),
                         b.getPrice(),
@@ -660,7 +661,7 @@ public class BookstoreApp {
                         : "";
 
                 booksHtml.append(String.format(
-                        "<div class=\"book-card\" data-id=\"%d\" data-title=\"%s\" data-author=\"%s\" data-price=\"%.0f\" data-formatted-price=\"%s\" data-category=\"%s\" data-image=\"%s\" data-desc=\"%s\" data-rating=\"%.1f\">\n" +
+                        "<div class=\"book-card\" data-id=\"%d\" data-code=\"%s\" data-title=\"%s\" data-author=\"%s\" data-price=\"%.0f\" data-formatted-price=\"%s\" data-category=\"%s\" data-image=\"%s\" data-desc=\"%s\" data-rating=\"%.1f\">\n" +
                         "    <div class=\"book-card-inner\">\n" +
                         "        <div class=\"book-cover-wrap\">\n" +
                         "            <img src=\"%s\" alt=\"%s\" class=\"book-cover\" loading=\"lazy\" onerror=\"this.src='https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500';\">\n" +
@@ -670,7 +671,10 @@ public class BookstoreApp {
                         "            </div>\n" +
                         "        </div>\n" +
                         "        <div class=\"book-info\">\n" +
-                        "            <span class=\"book-category\">%s</span>\n" +
+                        "            <div class=\"book-meta-top\">\n" +
+                        "                <span class=\"book-category\">%s</span>\n" +
+                        "                <span class=\"book-code\" title=\"Mã sách: %s\"><i class=\"fas fa-barcode\"></i> %s</span>\n" +
+                        "            </div>\n" +
                         "            <h3 class=\"book-title\" title=\"%s\">%s</h3>\n" +
                         "            <p class=\"book-author\"><i class=\"fas fa-feather-alt\"></i> %s</p>\n" +
                         "            <div class=\"book-rating\">\n" +
@@ -690,6 +694,7 @@ public class BookstoreApp {
                         "    </div>\n" +
                         "</div>\n",
                         b.getId(),
+                        escapeAttr(b.getCode()),
                         escapeAttr(b.getTitle()),
                         escapeAttr(b.getAuthor()),
                         b.getPrice(),
@@ -703,7 +708,9 @@ public class BookstoreApp {
                         badge,
                         discountBadge,
                         b.getId(),
-                        b.getCategory(),
+                        escapeHtml(b.getCategory()),
+                        escapeAttr(b.getCode()),
+                        escapeHtml(b.getCode()),
                         escapeAttr(b.getTitle()),
                         escapeHtml(b.getTitle()),
                         escapeHtml(b.getAuthor()),
