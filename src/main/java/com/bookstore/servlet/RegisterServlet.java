@@ -51,12 +51,14 @@ public class RegisterServlet extends HttpServlet {
         request.setAttribute("phone", phone);
 
         // 1. Kiểm tra các trường bắt buộc
+        boolean hasEmail = email != null && !email.trim().isEmpty();
+
         if (fullName == null || fullName.trim().isEmpty() ||
             username == null || username.trim().isEmpty() ||
-            email == null || email.trim().isEmpty() ||
+            !hasEmail ||
             password == null || password.trim().isEmpty() ||
             confirmPassword == null || confirmPassword.trim().isEmpty()) {
-            request.setAttribute("errorMessage", "Vui lòng nhập đầy đủ các trường thông tin bắt buộc!");
+            request.setAttribute("errorMessage", "Vui lòng nhập đầy đủ họ tên, tên đăng nhập, địa chỉ email và mật khẩu!");
             request.getRequestDispatcher("/register.jsp").forward(request, response);
             return;
         }
@@ -65,9 +67,9 @@ public class RegisterServlet extends HttpServlet {
         fullName = fullName.trim();
         email = email.trim();
 
-        // 2. Kiểm tra độ dài mật khẩu
-        if (password.length() < 6) {
-            request.setAttribute("errorMessage", "Mật khẩu phải chứa ít nhất 6 ký tự!");
+        // 2. Kiểm tra mật khẩu an toàn
+        if (!isStrongPassword(password)) {
+            request.setAttribute("errorMessage", "Mật khẩu phải có ít nhất 8 ký tự, bao gồm ít nhất 1 chữ hoa, 1 chữ thường, 1 chữ số và 1 ký tự đặc biệt!");
             request.getRequestDispatcher("/register.jsp").forward(request, response);
             return;
         }
@@ -98,5 +100,28 @@ public class RegisterServlet extends HttpServlet {
             request.setAttribute("errorMessage", "Không thể hoàn tất đăng ký do lỗi cơ sở dữ liệu. Vui lòng thử lại sau!");
             request.getRequestDispatcher("/register.jsp").forward(request, response);
         }
+    }
+
+    public static boolean isStrongPassword(String password) {
+        if (password == null || password.length() < 8) {
+            return false;
+        }
+        boolean hasUpper = false;
+        boolean hasLower = false;
+        boolean hasDigit = false;
+        boolean hasSpecial = false;
+
+        for (char c : password.toCharArray()) {
+            if (Character.isUpperCase(c)) {
+                hasUpper = true;
+            } else if (Character.isLowerCase(c)) {
+                hasLower = true;
+            } else if (Character.isDigit(c)) {
+                hasDigit = true;
+            } else {
+                hasSpecial = true;
+            }
+        }
+        return hasUpper && hasLower && hasDigit && hasSpecial;
     }
 }

@@ -11,7 +11,7 @@ import java.io.IOException;
 /**
  * Filter bảo vệ các đường dẫn yêu cầu đăng nhập.
  */
-@WebFilter(urlPatterns = {"/home", "/home.jsp", "/checkout", "/profile"})
+@WebFilter(urlPatterns = {"/checkout", "/profile"})
 public class AuthFilter implements Filter {
 
     @Override

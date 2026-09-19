@@ -12,12 +12,12 @@
     <!-- 1. HEADER & NAVIGATION -->
     <header class="main-header">
         <div class="top-bar">
-            <div><i class="fas fa-truck-fast"></i> Miễn phí vận chuyển toàn quốc cho đơn hàng từ 250.000 đ</div>
-            <div>
-                <span>Hotline: 1900 6868</span>
-                <span style="margin: 0 8px;">|</span>
-                <a href="#catalog"><i class="fas fa-tags"></i> Khuyến Mãi Hôm Nay</a>
+            <div class="topbar-contact-info">
+                <span><i class="fas fa-phone"></i> 028.73008182</span>
+                <span><i class="fas fa-envelope"></i> hotro@bookora.com</span>
+                <span><i class="fas fa-location-dot"></i> Số 25, ngõ 68 phố Cầu Giấy, phường Quan Hoa, quận Cầu Giấy, TP. Hà Nội</span>
             </div>
+            <!-- ${TOPBAR_AUTH} -->
         </div>
 
         <div class="navbar-container">
@@ -44,7 +44,18 @@
                 </div>
             </form>
 
-            <!-- Khối hành động: Giỏ hàng & User Profile -->
+            <!-- Hotline tư vấn phong cách Vinabook -->
+            <div class="header-hotline">
+                <div class="hotline-icon">
+                    <i class="fas fa-phone-volume"></i>
+                </div>
+                <div class="hotline-text">
+                    <small>Tư vấn bán hàng</small>
+                    <strong>028.73008182</strong>
+                </div>
+            </div>
+
+            <!-- Khối hành động: Giỏ hàng & User Profile / Đăng nhập Đăng ký -->
             <div class="header-actions">
                 <!-- Nút mở giỏ hàng -->
                 <button type="button" class="btn-cart-toggle" onclick="toggleCartDrawer()" title="Xem giỏ hàng">
@@ -52,38 +63,7 @@
                     <span class="cart-badge" id="cartBadge" style="display: none;">0</span>
                 </button>
 
-                <!-- Menu người dùng đã đăng nhập -->
-                <div class="user-dropdown">
-                    <button type="button" class="user-profile-trigger" id="userMenuTrigger">
-                        <img src="${user.avatar}" alt="Avatar" class="user-avatar-img" onerror="this.src='https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150';">
-                        <div class="user-meta">
-                            <div class="user-greeting">Xin chào,</div>
-                            <div class="user-fullname">${user.fullName}</div>
-                        </div>
-                        <span class="user-role-tag">${user.role}</span>
-                        <i class="fas fa-chevron-down" style="font-size: 11px; color: var(--text-muted); margin-left: 4px;"></i>
-                    </button>
-
-                    <!-- Dropdown danh mục cá nhân -->
-                    <div class="user-menu-dropdown" id="userMenuDropdown">
-                        <div class="dropdown-header-info">
-                            <div style="font-weight: 700; font-size: 13px; color: var(--primary);">${user.fullName}</div>
-                            <div class="dropdown-email">${user.email}</div>
-                        </div>
-                        <a href="javascript:void(0)" class="dropdown-item" onclick="alert('Trang hồ sơ cá nhân của ${user.fullName}')">
-                            <i class="fas fa-user-circle"></i> Hồ sơ tài khoản
-                        </a>
-                        <a href="javascript:void(0)" class="dropdown-item" onclick="toggleCartDrawer()">
-                            <i class="fas fa-box-archive"></i> Đơn hàng của tôi
-                        </a>
-                        <a href="javascript:void(0)" class="dropdown-item" onclick="alert('Danh sách yêu thích đang được đồng bộ!')">
-                            <i class="fas fa-heart"></i> Sách yêu thích
-                        </a>
-                        <a href="logout" class="dropdown-item logout">
-                            <i class="fas fa-arrow-right-from-bracket"></i> Đăng xuất
-                        </a>
-                    </div>
-                </div>
+                <!-- ${HEADER_AUTH} -->
             </div>
         </div>
     </header>
@@ -95,7 +75,7 @@
                 <span class="hero-tag"><i class="fas fa-sparkles"></i> Sự Kiện Văn Hóa Đọc 2026</span>
                 <h2 class="hero-title">Khám Phá Tri Thức,<br><span>Nâng Tầm Tương Lai</span></h2>
                 <p class="hero-desc">
-                    Tuyển tập hơn 100 tác phẩm kinh điển và hiện đại được độc giả yêu thích nhất. Ưu đãi đến 30% cùng quà tặng sổ tay độc quyền cho thành viên <strong>${user.fullName}</strong>.
+                    Tuyển tập hơn 100 tác phẩm kinh điển và hiện đại được độc giả yêu thích nhất. Ưu đãi đến 30% cùng quà tặng sổ tay độc quyền dành cho <!-- ${HERO_GREETING} -->.
                 </p>
                 <a href="#catalog" class="hero-cta">
                     <span>Xem Ngay Bộ Sưu Tập</span>
@@ -204,6 +184,9 @@
                 <p class="footer-desc">
                     Nơi lan tỏa tình yêu sách và nâng tầm tri thức Việt. Cam kết 100% sách có bản quyền từ các nhà xuất bản uy tín hàng đầu.
                 </p>
+                <div style="font-size: 13px; color: #94a3b8; margin-top: 10px; line-height: 1.6;">
+                    <p style="margin: 4px 0;"><i class="fas fa-location-dot" style="color: var(--accent); margin-right: 6px;"></i> Số 25, ngõ 68 phố Cầu Giấy, phường Quan Hoa, quận Cầu Giấy, TP. Hà Nội</p>
+                </div>
             </div>
             <div class="footer-col">
                 <h4>Về Chúng Tôi</h4>

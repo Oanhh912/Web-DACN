@@ -49,6 +49,8 @@ public class BookstoreApp {
         server.createContext("/logout", new LogoutHandler());
         server.createContext("/api/books", new ApiBooksHandler());
         server.createContext("/api/me", new ApiMeHandler());
+        server.createContext("/api/send-otp", new SendOtpHandler());
+        server.createContext("/api/verify-otp", new VerifyOtpHandler());
         server.createContext("/db", new DatabaseViewerHandler());
         server.createContext("/css/", new StaticFileHandler());
         server.createContext("/js/", new StaticFileHandler());
@@ -75,12 +77,7 @@ public class BookstoreApp {
         public void handle(HttpExchange exchange) throws IOException {
             String path = exchange.getRequestURI().getPath();
             if (path.equals("/")) {
-                User user = getAuthenticatedUser(exchange);
-                if (user != null) {
-                    redirect(exchange, "/home");
-                } else {
-                    redirect(exchange, "/login");
-                }
+                redirect(exchange, "/home");
             } else {
                 new StaticFileHandler().handle(exchange);
             }
@@ -181,8 +178,8 @@ public class BookstoreApp {
                     return;
                 }
 
-                if (password.length() < 6) {
-                    String html = renderRegisterPage("Mật khẩu phải có độ dài từ 6 ký tự trở lên!", fullName, username, email, phone);
+                if (!isStrongPassword(password)) {
+                    String html = renderRegisterPage("Mật khẩu phải có ít nhất 8 ký tự, bao gồm ít nhất 1 chữ hoa, 1 chữ thường, 1 chữ số và 1 ký tự đặc biệt!", fullName, username, email, phone);
                     sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
                     return;
                 }
@@ -223,16 +220,129 @@ public class BookstoreApp {
     }
 
     /**
+     * API gửi mã xác thực OTP đăng ký (/api/send-otp)
+     */
+    static class SendOtpHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendResponse(exchange, 405, "application/json", "{\"success\":false,\"message\":\"Method Not Allowed\"}");
+                return;
+            }
+
+            Map<String, String> params = parseFormData(exchange);
+            String fullName = params.getOrDefault("fullName", "").trim();
+            String username = params.getOrDefault("username", "").trim();
+            String email = params.getOrDefault("email", "").trim();
+            String phone = params.getOrDefault("phone", "").trim();
+            String password = params.getOrDefault("password", "").trim();
+            String confirmPassword = params.getOrDefault("confirmPassword", "").trim();
+            String channel = params.getOrDefault("otpChannel", "").trim();
+
+            if (fullName.isEmpty() || username.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Vui lòng điền đầy đủ các thông tin bắt buộc!\"}");
+                return;
+            }
+
+            if (email.isEmpty()) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Vui lòng nhập địa chỉ Email để nhận mã xác thực OTP!\"}");
+                return;
+            }
+
+            if (!isStrongPassword(password)) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Mật khẩu phải có ít nhất 8 ký tự, bao gồm ít nhất 1 chữ hoa, 1 chữ thường, 1 chữ số và 1 ký tự đặc biệt!\"}");
+                return;
+            }
+
+            if (!password.equals(confirmPassword)) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Mật khẩu xác nhận không trùng khớp!\"}");
+                return;
+            }
+
+            channel = "email";
+
+            if (DataStore.findUser(username) != null) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Tên đăng nhập '" + escapeJson(username).replace("\"", "") + "' đã được sử dụng! Vui lòng chọn tên khác.\"}");
+                return;
+            }
+
+            User pendingUser = new User(
+                    username,
+                    password,
+                    fullName,
+                    email,
+                    phone,
+                    "CUSTOMER",
+                    "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150"
+            );
+
+            DataStore.OtpSession session = DataStore.createOtpSession(pendingUser, channel);
+            boolean realSmsConfigured = com.bookstore.service.OtpSenderService.isConfigured();
+            boolean realEmailConfigured = com.bookstore.service.EmailService.isConfigured();
+
+            String jsonResponse = String.format(
+                    "{\"success\":true,\"message\":\"Mã xác thực OTP đã được gửi thành công!\",\"channel\":%s,\"target\":%s,\"isRealSms\":%b,\"isRealEmail\":%b}",
+                    escapeJson(session.getChannel()),
+                    escapeJson(session.getTarget()),
+                    realSmsConfigured,
+                    realEmailConfigured
+            );
+            sendResponse(exchange, 200, "application/json; charset=UTF-8", jsonResponse);
+        }
+    }
+
+    /**
+     * API xác thực mã OTP và hoàn tất đăng ký (/api/verify-otp)
+     */
+    static class VerifyOtpHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendResponse(exchange, 405, "application/json", "{\"success\":false,\"message\":\"Method Not Allowed\"}");
+                return;
+            }
+
+            Map<String, String> params = parseFormData(exchange);
+            String username = params.getOrDefault("username", "").trim();
+            String otp = params.getOrDefault("otp", "").trim();
+
+            if (username.isEmpty() || otp.isEmpty()) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Vui lòng nhập mã xác thực OTP 6 số!\"}");
+                return;
+            }
+
+            DataStore.OtpSession session = DataStore.getOtpSession(username);
+            if (session == null) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Phiên xác thực không tồn tại hoặc đã hết hạn. Vui lòng thử lại!\"}");
+                return;
+            }
+
+            if (session.isExpired()) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Mã OTP đã hết hạn (sau 2 phút). Vui lòng bấm gửi lại mã mới!\"}");
+                return;
+            }
+
+            if (!session.getCode().equals(otp)) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Mã OTP không chính xác! Vui lòng kiểm tra lại.\"}");
+                return;
+            }
+
+            boolean registered = DataStore.verifyAndRegister(username, otp);
+            if (registered) {
+                sendResponse(exchange, 200, "application/json; charset=UTF-8", "{\"success\":true,\"message\":\"Đăng ký tài khoản thành công!\",\"redirect\":\"login?message=register_success\"}");
+            } else {
+                sendResponse(exchange, 500, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Có lỗi khi lưu vào cơ sở dữ liệu MySQL. Vui lòng thử lại!\"}");
+            }
+        }
+    }
+
+    /**
      * Xử lý GET cho trang Chủ (/home)
      */
     static class HomeHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             User user = getAuthenticatedUser(exchange);
-            if (user == null) {
-                redirect(exchange, "/login?error=require_login");
-                return;
-            }
 
             // Đọc query parameters nếu có
             String query = exchange.getRequestURI().getQuery();
@@ -382,6 +492,29 @@ public class BookstoreApp {
         return content;
     }
 
+    public static boolean isStrongPassword(String password) {
+        if (password == null || password.length() < 8) {
+            return false;
+        }
+        boolean hasUpper = false;
+        boolean hasLower = false;
+        boolean hasDigit = false;
+        boolean hasSpecial = false;
+
+        for (char c : password.toCharArray()) {
+            if (Character.isUpperCase(c)) {
+                hasUpper = true;
+            } else if (Character.isLowerCase(c)) {
+                hasLower = true;
+            } else if (Character.isDigit(c)) {
+                hasDigit = true;
+            } else {
+                hasSpecial = true;
+            }
+        }
+        return hasUpper && hasLower && hasDigit && hasSpecial;
+    }
+
     private static String renderRegisterPage(String error, String fullName, String username, String email, String phone) {
         Path templatePath = WEBAPP_DIR.resolve("register.html");
         String content = "";
@@ -412,11 +545,91 @@ public class BookstoreApp {
             content = "<h1>Home Template Missing</h1>";
         }
 
-        content = content.replace("${user.fullName}", user.getFullName());
-        content = content.replace("${user.username}", user.getUsername());
-        content = content.replace("${user.role}", user.getRole());
-        content = content.replace("${user.avatar}", user.getAvatar());
-        content = content.replace("${user.email}", user.getEmail());
+        // Top-bar Auth & Main Header Auth (Khách vãng lai vs Đã đăng nhập)
+        if (user != null) {
+            String topbarAuth = String.format(
+                    "<div class=\"topbar-auth-links\">" +
+                    "    <span class=\"topbar-welcome\"><i class=\"fas fa-circle-user\"></i> Xin chào, <strong>%s</strong></span>" +
+                    "    <span class=\"topbar-divider\">|</span>" +
+                    "    <a href=\"logout\" class=\"topbar-auth-btn\"><i class=\"fas fa-arrow-right-from-bracket\"></i> ĐĂNG XUẤT</a>" +
+                    "</div>",
+                    escapeAttr(user.getFullName())
+            );
+
+            String headerAuth = String.format(
+                    "<div class=\"user-dropdown\">\n" +
+                    "    <button type=\"button\" class=\"user-profile-trigger\" id=\"userMenuTrigger\">\n" +
+                    "        <img src=\"%s\" alt=\"Avatar\" class=\"user-avatar-img\" onerror=\"this.src='https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150';\">\n" +
+                    "        <div class=\"user-meta\">\n" +
+                    "            <div class=\"user-greeting\">Xin chào,</div>\n" +
+                    "            <div class=\"user-fullname\">%s</div>\n" +
+                    "        </div>\n" +
+                    "        <span class=\"user-role-tag\">%s</span>\n" +
+                    "        <i class=\"fas fa-chevron-down\" style=\"font-size: 11px; color: var(--text-muted); margin-left: 4px;\"></i>\n" +
+                    "    </button>\n" +
+                    "    <div class=\"user-menu-dropdown\" id=\"userMenuDropdown\">\n" +
+                    "        <div class=\"dropdown-header-info\">\n" +
+                    "            <div style=\"font-weight: 700; font-size: 13px; color: var(--primary);\">%s</div>\n" +
+                    "            <div class=\"dropdown-email\">%s</div>\n" +
+                    "        </div>\n" +
+                    "        <a href=\"javascript:void(0)\" class=\"dropdown-item\" onclick=\"alert('Trang hồ sơ cá nhân của %s')\">\n" +
+                    "            <i class=\"fas fa-user-circle\"></i> Hồ sơ tài khoản\n" +
+                    "        </a>\n" +
+                    "        <a href=\"javascript:void(0)\" class=\"dropdown-item\" onclick=\"toggleCartDrawer()\">\n" +
+                    "            <i class=\"fas fa-box-archive\"></i> Đơn hàng của tôi\n" +
+                    "        </a>\n" +
+                    "        <a href=\"javascript:void(0)\" class=\"dropdown-item\" onclick=\"alert('Danh sách yêu thích đang được đồng bộ!')\">\n" +
+                    "            <i class=\"fas fa-heart\"></i> Sách yêu thích\n" +
+                    "        </a>\n" +
+                    "        <a href=\"logout\" class=\"dropdown-item logout\">\n" +
+                    "            <i class=\"fas fa-arrow-right-from-bracket\"></i> Đăng xuất\n" +
+                    "        </a>\n" +
+                    "    </div>\n" +
+                    "</div>",
+                    escapeAttr(user.getAvatar() != null ? user.getAvatar() : ""),
+                    escapeAttr(user.getFullName()),
+                    escapeAttr(user.getRole()),
+                    escapeAttr(user.getFullName()),
+                    escapeAttr(user.getEmail() != null ? user.getEmail() : ""),
+                    escapeAttr(user.getFullName())
+            );
+
+            content = content.replace("<!-- ${TOPBAR_AUTH} -->", topbarAuth);
+            content = content.replace("<!-- ${HEADER_AUTH} -->", headerAuth);
+            content = content.replace("<!-- ${HERO_GREETING} -->", "thành viên <strong>" + escapeAttr(user.getFullName()) + "</strong>");
+            content = content.replace("${user.fullName}", escapeAttr(user.getFullName()));
+            content = content.replace("${user.username}", escapeAttr(user.getUsername()));
+            content = content.replace("${user.role}", escapeAttr(user.getRole()));
+            content = content.replace("${user.avatar}", escapeAttr(user.getAvatar() != null ? user.getAvatar() : ""));
+            content = content.replace("${user.email}", escapeAttr(user.getEmail() != null ? user.getEmail() : ""));
+        } else {
+            String topbarAuth =
+                    "<div class=\"topbar-auth-links\">" +
+                    "    <span style=\"color: #cbd5e1;\"><i class=\"fas fa-truck-fast\"></i> Miễn phí vận chuyển từ 250.000 đ</span>" +
+                    "</div>";
+
+            String headerAuth =
+                    "<div class=\"guest-auth-buttons\">\n" +
+                    "    <a href=\"login\" class=\"btn-guest btn-guest-login\">\n" +
+                    "        <i class=\"fas fa-arrow-right-to-bracket\"></i>\n" +
+                    "        <span>Đăng Nhập</span>\n" +
+                    "    </a>\n" +
+                    "    <a href=\"register\" class=\"btn-guest btn-guest-register\">\n" +
+                    "        <i class=\"fas fa-user-plus\"></i>\n" +
+                    "        <span>Đăng Ký</span>\n" +
+                    "    </a>\n" +
+                    "</div>";
+
+            content = content.replace("<!-- ${TOPBAR_AUTH} -->", topbarAuth);
+            content = content.replace("<!-- ${HEADER_AUTH} -->", headerAuth);
+            content = content.replace("<!-- ${HERO_GREETING} -->", "quý độc giả và thành viên mới");
+            content = content.replace("${user.fullName}", "Khách");
+            content = content.replace("${user.username}", "guest");
+            content = content.replace("${user.role}", "GUEST");
+            content = content.replace("${user.avatar}", "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150");
+            content = content.replace("${user.email}", "");
+        }
+
         content = content.replace("${searchKeyword}", (keyword != null) ? keyword : "");
 
         // Render Categories

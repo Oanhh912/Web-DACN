@@ -106,8 +106,8 @@ public class DataStore {
             ps.setString(1, cleanUsername);
             ps.setString(2, newUser.getPassword());
             ps.setString(3, newUser.getFullName());
-            ps.setString(4, newUser.getEmail());
-            ps.setString(5, newUser.getPhone());
+            ps.setString(4, (newUser.getEmail() != null && !newUser.getEmail().trim().isEmpty()) ? newUser.getEmail().trim() : null);
+            ps.setString(5, (newUser.getPhone() != null && !newUser.getPhone().trim().isEmpty()) ? newUser.getPhone().trim() : null);
             ps.setString(6, newUser.getRole() != null ? newUser.getRole() : "CUSTOMER");
             ps.setString(7, newUser.getAvatar() != null ? newUser.getAvatar() : "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150");
             int rows = ps.executeUpdate();
@@ -117,6 +117,106 @@ public class DataStore {
             memoryUsers.put(cleanUsername.toLowerCase(), newUser);
             return true;
         }
+    }
+
+    // ====================== QUẢN LÝ MÃ XÁC THỰC OTP ======================
+
+    public static class OtpSession {
+        private final String code;
+        private final User user;
+        private final long expiryTime;
+        private final String channel;
+        private final String target;
+
+        public OtpSession(String code, User user, long expiryTime, String channel, String target) {
+            this.code = code;
+            this.user = user;
+            this.expiryTime = expiryTime;
+            this.channel = channel;
+            this.target = target;
+        }
+
+        public String getCode() { return code; }
+        public User getUser() { return user; }
+        public long getExpiryTime() { return expiryTime; }
+        public String getChannel() { return channel; }
+        public String getTarget() { return target; }
+        public boolean isExpired() { return System.currentTimeMillis() > expiryTime; }
+    }
+
+    private static final ConcurrentHashMap<String, OtpSession> otpSessions = new ConcurrentHashMap<>();
+
+    /**
+     * Khởi tạo mã OTP ngẫu nhiên 6 chữ số với thời hạn 2 phút
+     */
+    public static OtpSession createOtpSession(User user, String channel) {
+        String code = String.format("%06d", new java.util.Random().nextInt(900000) + 100000);
+        long expiry = System.currentTimeMillis() + (2 * 60 * 1000); // 2 phút hiệu lực
+
+        String finalChannel = channel != null ? channel.toLowerCase().trim() : "email";
+        String target = "phone".equalsIgnoreCase(finalChannel) ? user.getPhone() : user.getEmail();
+
+        // Tự động chuyển đổi nếu kênh yêu cầu không có dữ liệu nhưng kênh còn lại có dữ liệu
+        if (target == null || target.trim().isEmpty()) {
+            if ("phone".equalsIgnoreCase(finalChannel) && user.getEmail() != null && !user.getEmail().trim().isEmpty()) {
+                finalChannel = "email";
+                target = user.getEmail().trim();
+            } else if ("email".equalsIgnoreCase(finalChannel) && user.getPhone() != null && !user.getPhone().trim().isEmpty()) {
+                finalChannel = "phone";
+                target = user.getPhone().trim();
+            }
+        }
+
+        OtpSession session = new OtpSession(code, user, expiry, finalChannel, target != null ? target : "");
+        otpSessions.put(user.getUsername().toLowerCase(), session);
+        System.out.println("===============================================================");
+        System.out.println("🔔 [BOOKORA OTP] Mã xác thực đăng ký cho " + user.getUsername() + ":");
+        System.out.println("   - Kênh nhận: " + ("phone".equalsIgnoreCase(finalChannel) ? "Số điện thoại (" + target + ")" : "Email (" + target + ")"));
+        System.out.println("   - MÃ OTP:    >>> " + code + " <<< (Có hiệu lực trong 2 phút)");
+        System.out.println("===============================================================");
+
+        // Nếu kênh là phone -> tiến hành gửi SMS thực tế qua SMS Gateway đến SIM khách hàng
+        if ("phone".equalsIgnoreCase(finalChannel) && target != null && !target.trim().isEmpty()) {
+            boolean realSent = com.bookstore.service.OtpSenderService.sendRealSms(target, code);
+            if (realSent) {
+                System.out.println("🚀 [SMS THỰC TẾ] Đã phát sóng SMS thành công đến số điện thoại: " + target);
+            }
+        }
+
+        // Nếu kênh là email -> tiến hành gửi Email thực tế qua Gmail SMTP đến hòm thư khách hàng
+        if ("email".equalsIgnoreCase(finalChannel) && target != null && !target.trim().isEmpty()) {
+            boolean emailSent = com.bookstore.service.EmailService.sendOtpEmail(target, code, user.getFullName());
+            if (emailSent) {
+                System.out.println("🚀 [EMAIL THỰC TẾ] Đã gửi thư thành công đến địa chỉ hòm thư: " + target);
+            }
+        }
+
+        return session;
+    }
+
+    public static OtpSession getOtpSession(String username) {
+        if (username == null) return null;
+        return otpSessions.get(username.trim().toLowerCase());
+    }
+
+    /**
+     * Xác thực mã OTP và lưu người dùng vào MySQL nếu chính xác
+     */
+    public static boolean verifyAndRegister(String username, String code) {
+        if (username == null || code == null) return false;
+        OtpSession session = otpSessions.get(username.trim().toLowerCase());
+        if (session == null || session.isExpired()) {
+            if (session != null) otpSessions.remove(username.trim().toLowerCase());
+            return false;
+        }
+        if (session.getCode().equals(code.trim())) {
+            boolean registered = registerUser(session.getUser());
+            if (registered) {
+                otpSessions.remove(username.trim().toLowerCase());
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

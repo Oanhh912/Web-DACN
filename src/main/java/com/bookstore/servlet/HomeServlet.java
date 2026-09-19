@@ -29,11 +29,7 @@ public class HomeServlet extends HttpServlet {
         HttpSession session = request.getSession(false);
         User currentUser = (session != null) ? (User) session.getAttribute("currentUser") : null;
 
-        // Nếu chưa đăng nhập thì chuyển hướng về trang đăng nhập
-        if (currentUser == null) {
-            response.sendRedirect(request.getContextPath() + "/login?error=unauthorized");
-            return;
-        }
+        // Cho phép khách vãng lai (currentUser == null) xem trang chủ và danh mục sách
 
         // Lấy từ khóa tìm kiếm & danh mục (nếu có)
         String keyword = request.getParameter("q");

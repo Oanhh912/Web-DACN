@@ -10,7 +10,7 @@ echo [1/3] Đang kiểm tra và biên dịch mã nguồn Java...
 
 if not exist "build\classes" mkdir "build\classes"
 
-javac -encoding UTF-8 -cp "lib\servlet-api.jar;lib\mysql-connector-j.jar;src\main\java" -d "build\classes" src\main\java\com\bookstore\model\*.java src\main\java\com\bookstore\data\*.java src\main\java\com\bookstore\servlet\*.java src\main\java\com\bookstore\server\*.java
+javac -encoding UTF-8 -cp "lib\servlet-api.jar;lib\mysql-connector-j.jar;src\main\java" -d "build\classes" src\main\java\com\bookstore\model\*.java src\main\java\com\bookstore\service\*.java src\main\java\com\bookstore\data\*.java src\main\java\com\bookstore\servlet\*.java src\main\java\com\bookstore\server\*.java
 
 if %ERRORLEVEL% NEQ 0 (
     echo [LỖI] Không thể biên dịch mã Java. Vui lòng kiểm tra lại JDK trên máy.

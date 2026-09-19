@@ -2,10 +2,7 @@
 <%@ page import="com.bookstore.model.User, com.bookstore.model.Book, java.util.List" %>
 <%
     User currentUser = (User) request.getAttribute("currentUser");
-    if (currentUser == null) {
-        response.sendRedirect(request.getContextPath() + "/login?error=require_login");
-        return;
-    }
+    boolean isLoggedIn = (currentUser != null);
     List<Book> books = (List<Book>) request.getAttribute("books");
     List<String> categories = (List<String>) request.getAttribute("categories");
     String currentCategory = (String) request.getAttribute("currentCategory");
@@ -27,11 +24,19 @@
     <!-- 1. HEADER & NAVIGATION -->
     <header class="main-header">
         <div class="top-bar">
-            <div><i class="fas fa-truck-fast"></i> Miễn phí vận chuyển toàn quốc cho đơn hàng từ 250.000 đ</div>
-            <div>
-                <span>Hotline: 1900 6868</span>
-                <span style="margin: 0 8px;">|</span>
-                <a href="#catalog"><i class="fas fa-tags"></i> Khuyến Mãi Hôm Nay</a>
+            <div class="topbar-contact-info">
+                <span><i class="fas fa-phone"></i> 028.73008182</span>
+                <span><i class="fas fa-envelope"></i> hotro@bookora.com</span>
+                <span><i class="fas fa-location-dot"></i> Số 25, ngõ 68 phố Cầu Giấy, phường Quan Hoa, quận Cầu Giấy, TP. Hà Nội</span>
+            </div>
+            <div class="topbar-auth-links">
+            <% if (isLoggedIn) { %>
+                <span class="topbar-welcome"><i class="fas fa-circle-user"></i> Xin chào, <strong><%= currentUser.getFullName() %></strong></span>
+                <span class="topbar-divider">|</span>
+                <a href="${pageContext.request.contextPath}/logout" class="topbar-auth-btn"><i class="fas fa-arrow-right-from-bracket"></i> ĐĂNG XUẤT</a>
+            <% } else { %>
+                <span style="color: #cbd5e1;"><i class="fas fa-truck-fast"></i> Miễn phí vận chuyển từ 250.000 đ</span>
+            <% } %>
             </div>
         </div>
 
@@ -59,7 +64,18 @@
                 </div>
             </form>
 
-            <!-- Khối hành động: Giỏ hàng & User Profile -->
+            <!-- Hotline tư vấn phong cách Vinabook -->
+            <div class="header-hotline">
+                <div class="hotline-icon">
+                    <i class="fas fa-phone-volume"></i>
+                </div>
+                <div class="hotline-text">
+                    <small>Tư vấn bán hàng</small>
+                    <strong>028.73008182</strong>
+                </div>
+            </div>
+
+            <!-- Khối hành động: Giỏ hàng & User Profile / Đăng nhập Đăng ký -->
             <div class="header-actions">
                 <!-- Nút mở giỏ hàng -->
                 <button type="button" class="btn-cart-toggle" onclick="toggleCartDrawer()" title="Xem giỏ hàng">
@@ -67,6 +83,7 @@
                     <span class="cart-badge" id="cartBadge" style="display: none;">0</span>
                 </button>
 
+                <% if (isLoggedIn) { %>
                 <!-- Menu người dùng đã đăng nhập -->
                 <div class="user-dropdown">
                     <button type="button" class="user-profile-trigger" id="userMenuTrigger">
@@ -83,7 +100,7 @@
                     <div class="user-menu-dropdown" id="userMenuDropdown">
                         <div class="dropdown-header-info">
                             <div style="font-weight: 700; font-size: 13px; color: var(--primary);"><%= currentUser.getFullName() %></div>
-                            <div class="dropdown-email"><%= currentUser.getEmail() %></div>
+                            <div class="dropdown-email"><%= currentUser.getEmail() != null ? currentUser.getEmail() : "" %></div>
                         </div>
                         <a href="javascript:void(0)" class="dropdown-item" onclick="alert('Trang hồ sơ của <%= currentUser.getFullName() %>')">
                             <i class="fas fa-user-circle"></i> Hồ sơ tài khoản
@@ -99,6 +116,18 @@
                         </a>
                     </div>
                 </div>
+                <% } else { %>
+                <div class="guest-auth-buttons">
+                    <a href="${pageContext.request.contextPath}/login" class="btn-guest btn-guest-login">
+                        <i class="fas fa-arrow-right-to-bracket"></i>
+                        <span>Đăng Nhập</span>
+                    </a>
+                    <a href="${pageContext.request.contextPath}/register" class="btn-guest btn-guest-register">
+                        <i class="fas fa-user-plus"></i>
+                        <span>Đăng Ký</span>
+                    </a>
+                </div>
+                <% } %>
             </div>
         </div>
     </header>
@@ -110,7 +139,7 @@
                 <span class="hero-tag"><i class="fas fa-sparkles"></i> Sự Kiện Văn Hóa Đọc 2026</span>
                 <h2 class="hero-title">Khám Phá Tri Thức,<br><span>Nâng Tầm Tương Lai</span></h2>
                 <p class="hero-desc">
-                    Tuyển tập hơn 100 tác phẩm kinh điển và hiện đại được độc giả yêu thích nhất. Ưu đãi đến 30% cùng quà tặng sổ tay độc quyền cho thành viên <strong><%= currentUser.getFullName() %></strong>.
+                    Tuyển tập hơn 100 tác phẩm kinh điển và hiện đại được độc giả yêu thích nhất. Ưu đãi đến 30% cùng quà tặng sổ tay độc quyền dành cho <%= isLoggedIn ? "thành viên <strong>" + currentUser.getFullName() + "</strong>" : "quý độc giả và thành viên mới" %>.
                 </p>
                 <a href="#catalog" class="hero-cta">
                     <span>Xem Ngay Bộ Sưu Tập</span>
@@ -282,6 +311,9 @@
                 <p class="footer-desc">
                     Nơi lan tỏa tình yêu sách và nâng tầm tri thức Việt. Cam kết 100% sách có bản quyền từ các nhà xuất bản uy tín hàng đầu.
                 </p>
+                <div style="font-size: 13px; color: #94a3b8; margin-top: 10px; line-height: 1.6;">
+                    <p style="margin: 4px 0;"><i class="fas fa-location-dot" style="color: var(--accent); margin-right: 6px;"></i> Số 25, ngõ 68 phố Cầu Giấy, phường Quan Hoa, quận Cầu Giấy, TP. Hà Nội</p>
+                </div>
             </div>
             <div class="footer-col">
                 <h4>Về Chúng Tôi</h4>
