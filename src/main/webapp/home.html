@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trang Chủ - Bookora | Tiệm Sách Tri Thức</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="/css/style.css?v=20260924_02">
 </head>
 <body>
 
@@ -32,15 +32,19 @@
                 </div>
             </a>
 
-            <!-- Thanh tìm kiếm sách -->
+            <!-- Thanh tìm kiếm sách kèm gợi ý trực tiếp (Live Search Suggestions) -->
             <form action="home" method="GET" class="search-form" id="searchForm" onsubmit="return false;">
                 <div class="search-input-wrap">
                     <input type="text" id="searchInput" name="q" class="search-input" 
-                           placeholder="Tìm kiếm theo tựa sách, tác giả, mã sách (MS001)..." 
+                           placeholder="Tìm kiếm theo tựa sách, tác giả, NXB, mã sách (MS001)..." 
                            value="${searchKeyword}" autocomplete="off">
-                    <button type="button" class="btn-search" title="Tìm kiếm">
+                    <button type="button" class="btn-search" id="btnSearchSubmit" title="Tìm kiếm">
                         <i class="fas fa-search"></i>
                     </button>
+                </div>
+                <!-- Dropdown Gợi ý tìm kiếm tức thì theo Use Case Luồng cơ bản (1) -->
+                <div class="search-suggestions-dropdown" id="searchSuggestionsDropdown">
+                    <!-- Được hiển thị tự động bằng JS khi nhập từ khóa -->
                 </div>
             </form>
 
@@ -88,6 +92,9 @@
         </div>
     </section>
 
+    <!-- Thanh Thông Tin Khuyến Mãi (Tích hợp từ KHUYEN_MAI) -->
+    <!-- ${PROMOTIONS_BANNER} -->
+
     <!-- 3. BOOK CATALOG & CATEGORIES -->
     <main class="catalog-section" id="catalog">
         <div class="section-header">
@@ -97,9 +104,56 @@
             </div>
         </div>
 
-        <!-- Bộ lọc phân loại danh mục -->
+        <!-- Bộ lọc phân loại danh mục (Pills) -->
         <div class="category-filter-bar" id="categoryFilterBar">
             <!-- ${CATEGORY_PILLS} -->
+        </div>
+
+        <!-- Thanh công cụ Bộ lọc nâng cao đa tiêu chí theo Use Case Luồng rẽ nhánh (3a) -->
+        <div class="multi-filter-toolbar">
+            <div class="filter-toolbar-top">
+                <div class="filter-heading">
+                    <i class="fas fa-filter"></i>
+                    <span>Bộ Lọc Nâng Cao (Danh mục, Tác giả, NXB, Khoảng giá, Tồn kho)</span>
+                </div>
+                <button type="button" class="btn-reset-filters" onclick="resetAllFilters()" title="Đặt lại về mặc định">
+                    <i class="fas fa-rotate-left"></i> Đặt lại bộ lọc
+                </button>
+            </div>
+            <div class="filter-grid">
+                <div class="filter-field">
+                    <label class="filter-label"><i class="fas fa-feather-alt"></i> Tác giả (TAC_GIA)</label>
+                    <select id="filterAuthor" class="filter-select" onchange="onFilterChange()">
+                        <option value="Tất cả">Tất cả tác giả</option>
+                        <!-- ${AUTHOR_OPTIONS} -->
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label class="filter-label"><i class="fas fa-building-columns"></i> Nhà xuất bản (NHA_XUAT_BAN)</label>
+                    <select id="filterPublisher" class="filter-select" onchange="onFilterChange()">
+                        <option value="Tất cả">Tất cả nhà xuất bản</option>
+                        <!-- ${PUBLISHER_OPTIONS} -->
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label class="filter-label"><i class="fas fa-money-bill-wave"></i> Khoảng giá bán</label>
+                    <select id="filterPrice" class="filter-select" onchange="onFilterChange()">
+                        <option value="all">Tất cả mức giá</option>
+                        <option value="0-100000">Dưới 100.000 đ</option>
+                        <option value="100000-200000">100.000 đ - 200.000 đ</option>
+                        <option value="200000-300000">200.000 đ - 300.000 đ</option>
+                        <option value="300000-9999999">Trên 300.000 đ</option>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label class="filter-label"><i class="fas fa-boxes-stacked"></i> Tồn kho (Bảng KHO)</label>
+                    <select id="filterStock" class="filter-select" onchange="onFilterChange()">
+                        <option value="all">Tất cả trạng thái kho</option>
+                        <option value="in_stock">Còn hàng trong kho (Stock > 0)</option>
+                        <option value="out_of_stock">Hết hàng (Stock = 0)</option>
+                    </select>
+                </div>
+            </div>
         </div>
 
         <!-- Danh sách hiển thị các thẻ sách -->
@@ -108,39 +162,87 @@
         </div>
     </main>
 
-    <!-- 4. MODAL QUICK VIEW (XEM NHANH SÁCH) -->
+    <!-- 4. MODAL CHI TIẾT SÁCH (QUICK VIEW ĐẦY ĐỦ 9 THÔNG TIN THEO BA) -->
     <div class="modal-overlay" id="quickViewModal">
         <div class="modal-dialog">
             <button type="button" class="modal-close" onclick="closeQuickView()" title="Đóng">
                 <i class="fas fa-times"></i>
             </button>
             <div class="modal-content-grid">
+                <!-- 1. Ảnh bìa sách -->
                 <div class="modal-book-cover">
                     <img src="" alt="Bìa sách" id="modalCover">
                 </div>
+                <!-- Chi tiết sách -->
                 <div class="modal-details">
                     <div class="modal-meta-top">
+                        <!-- 6. Danh mục -->
                         <span class="modal-category" id="modalCategory">Thể loại</span>
                         <span class="modal-code" id="modalCode"><i class="fas fa-barcode"></i> Mã: MS001</span>
                     </div>
+
+                    <!-- 2. Tên sách -->
                     <h2 class="modal-title" id="modalTitle">Tựa Sách</h2>
-                    <p class="modal-author"><i class="fas fa-feather-alt"></i> <span id="modalAuthor">Tác giả</span></p>
-                    <div class="book-rating" style="margin-bottom: 12px;">
-                        <div class="stars"><i class="fas fa-star"></i> <span id="modalRating">5.0</span></div>
-                        <span class="review-count">Đánh giá cao bởi cộng đồng</span>
-                    </div>
+
+                    <!-- 3. Giá bán & Giá gốc -->
                     <div class="modal-price-row">
                         <span class="modal-price" id="modalPrice">0 đ</span>
+                        <span class="modal-price-orig" id="modalOriginalPrice" style="text-decoration: line-through; color: #94a3b8; font-size: 14px; margin-left: 10px;"></span>
+                        <span class="modal-discount-tag" id="modalDiscountTag" style="display:none; margin-left: 8px; font-size: 11px; background: #f59e0b; color: white; padding: 2px 6px; border-radius: 4px; font-weight: 700;"></span>
                     </div>
+
+                    <!-- Thông tin Tác giả, Nhà xuất bản, Đánh giá (Grid) -->
+                    <div class="modal-meta-grid">
+                        <!-- 4. Tác giả -->
+                        <div class="modal-meta-item">
+                            <i class="fas fa-feather-alt"></i>
+                            <span>Tác giả: <strong id="modalAuthor">Tác giả</strong></span>
+                        </div>
+                        <!-- 5. Nhà xuất bản -->
+                        <div class="modal-meta-item">
+                            <i class="fas fa-building-columns"></i>
+                            <span>NXB: <strong id="modalPublisher">NXB Trẻ</strong></span>
+                        </div>
+                        <!-- 8. Đánh giá -->
+                        <div class="modal-meta-item">
+                            <i class="fas fa-star" style="color: #f59e0b;"></i>
+                            <span>Đánh giá: <strong id="modalRating">5.0</strong> <span id="modalReviewCount" style="color: #64748b; font-size: 12px;">(120 đánh giá)</span></span>
+                        </div>
+                        <!-- 9. Tồn kho -->
+                        <div class="modal-meta-item">
+                            <i class="fas fa-boxes-stacked"></i>
+                            <span>Tồn kho: <strong id="modalStockText">Còn hàng</strong></span>
+                        </div>
+                    </div>
+
+                    <!-- Trạng thái kho & Khuyến mãi -->
+                    <div class="modal-stock-badge-wrap">
+                        <span class="modal-stock-badge in-stock" id="modalStockBadge">
+                            <i class="fas fa-check-circle"></i> Còn hàng trong kho
+                        </span>
+                    </div>
+
+                    <!-- Khuyến mãi đi kèm -->
+                    <div class="modal-promo-box" id="modalPromoBox">
+                        <i class="fas fa-gift"></i>
+                        <span id="modalPromotion">Ưu đãi: Tặng kèm Bookmark độc quyền Bookora</span>
+                    </div>
+
+                    <!-- 7. Mô tả -->
                     <p class="modal-desc" id="modalDesc">Mô tả tóm tắt nội dung cuốn sách...</p>
-                    <div class="modal-actions">
-                        <div class="qty-control">
+
+                    <!-- Khối hành động Mua hàng -->
+                    <div class="modal-actions" id="modalActionsWrap">
+                        <div class="qty-control" id="modalQtyControl">
                             <button type="button" class="btn-qty" onclick="changeModalQty(-1)">-</button>
                             <input type="text" id="modalQty" class="qty-input" value="1" readonly>
                             <button type="button" class="btn-qty" onclick="changeModalQty(1)">+</button>
                         </div>
-                        <button type="button" class="btn-modal-cart" onclick="addModalBookToCart()">
+                        <button type="button" class="btn-modal-cart" id="btnModalAddToCart" onclick="addModalBookToCart()">
                             <i class="fas fa-cart-plus"></i> Thêm Vào Giỏ Hàng
+                        </button>
+                        <button type="button" class="btn-modal-cart" id="btnModalNotify" style="display:none; background: #dc2626;" onclick="notifyOutOfStockFromModal()">
+                            <i class="fas fa-bell"></i> Báo Khi Có Hàng Lại
                         </button>
                     </div>
                 </div>
@@ -171,7 +273,52 @@
         </div>
     </div>
 
-    <!-- 6. FOOTER -->
+    <!-- 6. CHATBOT AI WIDGET (BOOKORA AI ASSISTANT - Luồng 2a.2) -->
+    <!-- Nút Floating Action Button mở Chatbot AI -->
+    <button type="button" class="chatbot-fab" id="chatbotFab" onclick="toggleChatbot()" title="Trò chuyện với Trợ lý AI Bookora">
+        <i class="fas fa-robot"></i>
+        <span class="chatbot-fab-badge">AI</span>
+    </button>
+
+    <!-- Cửa sổ Chatbot AI -->
+    <div class="chatbot-window" id="chatbotWindow">
+        <div class="chatbot-header">
+            <div class="chatbot-header-info">
+                <div class="chatbot-avatar">
+                    <i class="fas fa-brain"></i>
+                </div>
+                <div class="chatbot-title">
+                    <h4>Bookora AI Assistant</h4>
+                    <span>Trợ lý tư vấn sách 24/7</span>
+                </div>
+            </div>
+            <button type="button" class="chatbot-close-btn" onclick="closeChatbot()" title="Đóng">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="chatbot-messages" id="chatbotMessages">
+            <div class="chat-bubble chat-bubble-ai">
+                Xin chào quý độc giả! 👋 Tôi là <strong>Bookora AI Assistant</strong>. Tôi có thể giúp bạn tìm kiếm sách theo thể loại, gợi ý sách theo tác giả, kiểm tra tình trạng tồn kho hoặc tư vấn khuyến mãi hot. Bạn đang tìm cuốn sách nào?
+            </div>
+        </div>
+        <!-- Gợi ý câu hỏi nhanh -->
+        <div class="chatbot-prompts-bar">
+            <span class="chat-prompt-chip" onclick="sendChatbotPrompt('Gợi ý sách văn học kinh điển')">📚 Sách Văn học</span>
+            <span class="chat-prompt-chip" onclick="sendChatbotPrompt('Tìm sách lập trình công nghệ')">💻 Sách Công nghệ</span>
+            <span class="chat-prompt-chip" onclick="sendChatbotPrompt('Sách tư duy tài chính kinh tế')">📈 Sách Kinh tế</span>
+            <span class="chat-prompt-chip" onclick="sendChatbotPrompt('Các chương trình khuyến mãi hiện có')">🎁 Khuyến mãi</span>
+            <span class="chat-prompt-chip" onclick="sendChatbotPrompt('Kiểm tra sách nào đang hết hàng?')">📦 Tồn kho</span>
+        </div>
+        <!-- Khung nhập tin nhắn -->
+        <div class="chatbot-input-wrap">
+            <input type="text" id="chatbotInput" class="chatbot-input" placeholder="Hỏi AI về sách, tác giả, giá tiền..." onkeydown="if(event.key==='Enter') sendChatbotMessage()">
+            <button type="button" class="btn-chatbot-send" onclick="sendChatbotMessage()" title="Gửi tin nhắn">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- 7. FOOTER -->
     <footer class="site-footer">
         <div class="footer-container">
             <div class="footer-col">
@@ -223,6 +370,6 @@
         </div>
     </footer>
 
-    <script src="js/app.js"></script>
+    <script src="/js/app.js?v=20260924_02"></script>
 </body>
 </html>

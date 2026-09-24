@@ -46,8 +46,11 @@ public class BookstoreApp {
         server.createContext("/login", new LoginHandler());
         server.createContext("/register", new RegisterHandler());
         server.createContext("/home", new HomeHandler());
+        server.createContext("/profile", new ProfileHandler());
         server.createContext("/logout", new LogoutHandler());
         server.createContext("/api/books", new ApiBooksHandler());
+        server.createContext("/api/suggestions", new ApiSuggestionsHandler());
+        server.createContext("/api/chatbot", new ApiChatbotHandler());
         server.createContext("/api/me", new ApiMeHandler());
         server.createContext("/api/send-otp", new SendOtpHandler());
         server.createContext("/api/verify-otp", new VerifyOtpHandler());
@@ -342,22 +345,47 @@ public class BookstoreApp {
     static class HomeHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
+            String path = exchange.getRequestURI().getPath();
+            if (path.startsWith("/home/css/") || path.startsWith("/home/js/") || path.startsWith("/home/images/")) {
+                new StaticFileHandler().handle(exchange);
+                return;
+            }
+
             User user = getAuthenticatedUser(exchange);
 
-            // Đọc query parameters nếu có
+            // Đọc các tham số tìm kiếm & lọc đa tiêu chí
             String query = exchange.getRequestURI().getQuery();
             String keyword = "";
             String category = "Tất cả";
+            String author = "Tất cả";
+            String publisher = "Tất cả";
+            String stockStatus = "all";
+            Double minPrice = null;
+            Double maxPrice = null;
+
             if (query != null) {
                 Map<String, String> qp = parseQueryString(query);
                 if (qp.containsKey("q")) keyword = qp.get("q");
                 if (qp.containsKey("category")) category = qp.get("category");
+                if (qp.containsKey("author")) author = qp.get("author");
+                if (qp.containsKey("publisher")) publisher = qp.get("publisher");
+                if (qp.containsKey("stockStatus")) stockStatus = qp.get("stockStatus");
+                if (qp.containsKey("minPrice")) {
+                    try { minPrice = Double.parseDouble(qp.get("minPrice")); } catch (NumberFormatException ignored) {}
+                }
+                if (qp.containsKey("maxPrice")) {
+                    try { maxPrice = Double.parseDouble(qp.get("maxPrice")); } catch (NumberFormatException ignored) {}
+                }
             }
 
-            List<Book> books = DataStore.searchBooks(keyword, category);
+            List<Book> books = DataStore.searchBooks(keyword, category, author, publisher, minPrice, maxPrice, stockStatus);
             List<String> categories = DataStore.getCategories();
+            List<String> authors = DataStore.getAuthors();
+            List<String> publishers = DataStore.getPublishers();
+            List<DataStore.PromotionItem> promotions = DataStore.getPromotions();
 
-            String html = renderHomePage(user, books, categories, category, keyword);
+            String html = renderHomePage(user, books, categories, authors, publishers, promotions,
+                                         category, author, publisher, minPrice, maxPrice, stockStatus, keyword);
             sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
         }
     }
@@ -378,7 +406,102 @@ public class BookstoreApp {
     }
 
     /**
-     * API trả về danh sách sách dưới dạng JSON
+     * Xử lý GET/POST cho trang Hồ sơ tài khoản (/profile)
+     */
+    static class ProfileHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            User user = getAuthenticatedUser(exchange);
+            if (user == null) {
+                redirect(exchange, "/login?require_login=true");
+                return;
+            }
+
+            User freshUser = DataStore.findUser(user.getUsername());
+            if (freshUser != null) {
+                user = freshUser;
+            }
+
+            String method = exchange.getRequestMethod();
+            if ("GET".equalsIgnoreCase(method)) {
+                String html = renderProfilePage(user, "profile", "", "");
+                sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
+            } else if ("POST".equalsIgnoreCase(method)) {
+                Map<String, String> params = parseFormData(exchange);
+                String action = params.getOrDefault("action", "").trim();
+                String activeTab = "profile";
+                String successMsg = "";
+                String errorMsg = "";
+
+                if ("updateProfile".equalsIgnoreCase(action)) {
+                    String fullName = params.getOrDefault("fullName", "").trim();
+                    String email = params.getOrDefault("email", "").trim();
+                    String phone = params.getOrDefault("phone", "").trim();
+                    String avatar = params.getOrDefault("avatar", "").trim();
+
+                    if (fullName.isEmpty()) {
+                        errorMsg = "Họ và tên không được để trống!";
+                    } else {
+                        boolean ok = DataStore.updateUserProfile(user.getUsername(), fullName, email, phone, avatar);
+                        if (ok) {
+                            successMsg = "Cập nhật hồ sơ tài khoản thành công!";
+                            User updated = DataStore.findUser(user.getUsername());
+                            if (updated != null) user = updated;
+                        } else {
+                            errorMsg = "Có lỗi xảy ra khi lưu thông tin vào cơ sở dữ liệu!";
+                        }
+                    }
+                    activeTab = "profile";
+
+                } else if ("changePassword".equalsIgnoreCase(action)) {
+                    activeTab = "password";
+                    String oldPassword = params.getOrDefault("oldPassword", "").trim();
+                    String newPassword = params.getOrDefault("newPassword", "").trim();
+                    String confirmPassword = params.getOrDefault("confirmPassword", "").trim();
+
+                    if (oldPassword.isEmpty()) {
+                        errorMsg = "Vui lòng nhập mật khẩu hiện tại!";
+                    } else if (newPassword.isEmpty()) {
+                        errorMsg = "Vui lòng nhập mật khẩu mới!";
+                    } else if (newPassword.length() < 8) {
+                        errorMsg = "Mật khẩu mới phải có tối thiểu 8 ký tự!";
+                    } else if (!isStrongPassword(newPassword)) {
+                        errorMsg = "Mật khẩu mới phải gồm chữ hoa, chữ thường, số và ký tự đặc biệt!";
+                    } else if (!newPassword.equals(confirmPassword)) {
+                        errorMsg = "Mật khẩu xác nhận không trùng khớp!";
+                    } else {
+                        String result = DataStore.changePassword(user.getUsername(), oldPassword, newPassword);
+                        if (result == null) {
+                            successMsg = "Đổi mật khẩu thành công! Hãy ghi nhớ mật khẩu mới của bạn.";
+                        } else {
+                            errorMsg = result;
+                        }
+                    }
+                }
+
+                // Hỗ trợ phản hồi AJAX JSON nếu gọi qua fetch/XMLHttpRequest
+                String accept = exchange.getRequestHeaders().getFirst("Accept");
+                String requestedWith = exchange.getRequestHeaders().getFirst("X-Requested-With");
+                if ((accept != null && accept.contains("application/json")) || "XMLHttpRequest".equalsIgnoreCase(requestedWith)) {
+                    boolean isSuccess = errorMsg.isEmpty();
+                    String json = String.format("{\"success\":%b,\"message\":%s,\"activeTab\":%s}",
+                            isSuccess,
+                            escapeJson(isSuccess ? successMsg : errorMsg),
+                            escapeJson(activeTab));
+                    sendResponse(exchange, isSuccess ? 200 : 400, "application/json; charset=UTF-8", json);
+                    return;
+                }
+
+                String html = renderProfilePage(user, activeTab, successMsg, errorMsg);
+                sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
+            } else {
+                sendResponse(exchange, 405, "text/plain", "Method Not Allowed");
+            }
+        }
+    }
+
+    /**
+     * API trả về danh sách sách dưới dạng JSON (hỗ trợ tìm kiếm & bộ lọc đa tiêu chí)
      */
     static class ApiBooksHandler implements HttpHandler {
         @Override
@@ -386,35 +509,261 @@ public class BookstoreApp {
             String query = exchange.getRequestURI().getQuery();
             String keyword = "";
             String category = "Tất cả";
+            String author = "Tất cả";
+            String publisher = "Tất cả";
+            String stockStatus = "all";
+            Double minPrice = null;
+            Double maxPrice = null;
+
             if (query != null) {
                 Map<String, String> qp = parseQueryString(query);
                 if (qp.containsKey("q")) keyword = qp.get("q");
                 if (qp.containsKey("category")) category = qp.get("category");
+                if (qp.containsKey("author")) author = qp.get("author");
+                if (qp.containsKey("publisher")) publisher = qp.get("publisher");
+                if (qp.containsKey("stockStatus")) stockStatus = qp.get("stockStatus");
+                if (qp.containsKey("minPrice")) {
+                    try { minPrice = Double.parseDouble(qp.get("minPrice")); } catch (NumberFormatException ignored) {}
+                }
+                if (qp.containsKey("maxPrice")) {
+                    try { maxPrice = Double.parseDouble(qp.get("maxPrice")); } catch (NumberFormatException ignored) {}
+                }
             }
 
-            List<Book> books = DataStore.searchBooks(keyword, category);
+            List<Book> books = DataStore.searchBooks(keyword, category, author, publisher, minPrice, maxPrice, stockStatus);
             StringBuilder sb = new StringBuilder("[");
             for (int i = 0; i < books.size(); i++) {
                 Book b = books.get(i);
                 if (i > 0) sb.append(",");
                 sb.append(String.format(
-                        "{\"id\":%d,\"code\":%s,\"title\":%s,\"author\":%s,\"price\":%.0f,\"originalPrice\":%.0f,\"formattedPrice\":%s,\"category\":%s,\"rating\":%.1f,\"reviewCount\":%d,\"image\":%s,\"description\":%s,\"isBestSeller\":%b}",
+                        "{\"id\":%d,\"code\":%s,\"title\":%s,\"author\":%s,\"publisher\":%s,\"price\":%.0f,\"originalPrice\":%.0f,\"formattedPrice\":%s,\"formattedOriginalPrice\":%s,\"discountPercent\":%d,\"category\":%s,\"stock\":%d,\"stockStatus\":%s,\"isOutOfStock\":%b,\"rating\":%.1f,\"reviewCount\":%d,\"image\":%s,\"description\":%s,\"promotion\":%s,\"isBestSeller\":%b}",
                         b.getId(),
                         escapeJson(b.getCode()),
                         escapeJson(b.getTitle()),
                         escapeJson(b.getAuthor()),
+                        escapeJson(b.getPublisher()),
                         b.getPrice(),
                         b.getOriginalPrice(),
                         escapeJson(b.getFormattedPrice()),
+                        escapeJson(b.getFormattedOriginalPrice()),
+                        b.getDiscountPercent(),
                         escapeJson(b.getCategory()),
+                        b.getStock(),
+                        escapeJson(b.getStockStatusText()),
+                        b.isOutOfStock(),
                         b.getRating(),
                         b.getReviewCount(),
                         escapeJson(b.getImage()),
                         escapeJson(b.getDescription()),
+                        escapeJson(b.getPromotion()),
                         b.isBestSeller()
                 ));
             }
             sb.append("]");
+            sendResponse(exchange, 200, "application/json; charset=UTF-8", sb.toString());
+        }
+    }
+
+    /**
+     * API gợi ý tìm kiếm tức thì theo Use Case Luồng cơ bản (1):
+     * Gợi ý từ SACH, DANH_MUC, TAC_GIA và thông tin khuyến mãi KHUYEN_MAI
+     */
+    static class ApiSuggestionsHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            String query = exchange.getRequestURI().getQuery();
+            String keyword = "";
+            if (query != null) {
+                Map<String, String> qp = parseQueryString(query);
+                if (qp.containsKey("q")) keyword = qp.get("q");
+            }
+
+            DataStore.SearchSuggestionResult res = DataStore.getSearchSuggestions(keyword);
+
+            StringBuilder sb = new StringBuilder("{");
+            // 1. Books
+            sb.append("\"books\":[");
+            for (int i = 0; i < res.getBooks().size(); i++) {
+                Book b = res.getBooks().get(i);
+                if (i > 0) sb.append(",");
+                sb.append(String.format(
+                        "{\"id\":%d,\"code\":%s,\"title\":%s,\"author\":%s,\"publisher\":%s,\"price\":%.0f,\"formattedPrice\":%s,\"category\":%s,\"stock\":%d,\"stockStatus\":%s,\"isOutOfStock\":%b,\"image\":%s,\"promotion\":%s}",
+                        b.getId(),
+                        escapeJson(b.getCode()),
+                        escapeJson(b.getTitle()),
+                        escapeJson(b.getAuthor()),
+                        escapeJson(b.getPublisher()),
+                        b.getPrice(),
+                        escapeJson(b.getFormattedPrice()),
+                        escapeJson(b.getCategory()),
+                        b.getStock(),
+                        escapeJson(b.getStockStatusText()),
+                        b.isOutOfStock(),
+                        escapeJson(b.getImage()),
+                        escapeJson(b.getPromotion())
+                ));
+            }
+            sb.append("],");
+
+            // 2. Categories
+            sb.append("\"categories\":[");
+            for (int i = 0; i < res.getCategories().size(); i++) {
+                if (i > 0) sb.append(",");
+                sb.append(escapeJson(res.getCategories().get(i)));
+            }
+            sb.append("],");
+
+            // 3. Authors
+            sb.append("\"authors\":[");
+            for (int i = 0; i < res.getAuthors().size(); i++) {
+                if (i > 0) sb.append(",");
+                sb.append(escapeJson(res.getAuthors().get(i)));
+            }
+            sb.append("],");
+
+            // 4. Promotions
+            sb.append("\"promotions\":[");
+            for (int i = 0; i < res.getPromotions().size(); i++) {
+                DataStore.PromotionItem p = res.getPromotions().get(i);
+                if (i > 0) sb.append(",");
+                sb.append(String.format(
+                        "{\"code\":%s,\"title\":%s,\"category\":%s,\"description\":%s}",
+                        escapeJson(p.getCode()),
+                        escapeJson(p.getTitle()),
+                        escapeJson(p.getApplicableCategory()),
+                        escapeJson(p.getDescription())
+                ));
+            }
+            sb.append("]}");
+
+            sendResponse(exchange, 200, "application/json; charset=UTF-8", sb.toString());
+        }
+    }
+
+    /**
+     * API Chatbot AI tư vấn sách thông minh theo Use Case Luồng rẽ nhánh (2a.2)
+     */
+    static class ApiChatbotHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            String message = "";
+            if ("POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                Map<String, String> params = parseFormData(exchange);
+                message = params.getOrDefault("message", "").trim();
+            } else {
+                String query = exchange.getRequestURI().getQuery();
+                if (query != null) {
+                    Map<String, String> qp = parseQueryString(query);
+                    if (qp.containsKey("message")) message = qp.get("message").trim();
+                    if (qp.containsKey("msg")) message = qp.get("msg").trim();
+                }
+            }
+
+            String lowerMsg = message.toLowerCase();
+            String reply;
+            List<Book> suggestedBooks = new ArrayList<>();
+            List<Book> all = DataStore.getAllBooks();
+
+            if (lowerMsg.isEmpty() || lowerMsg.contains("chào") || lowerMsg.contains("hello") || lowerMsg.contains("hi")) {
+                reply = "Xin chào bạn! Tôi là Trợ lý AI Bookora 📚. Tôi có thể giúp bạn tìm kiếm sách theo sở thích, giới thiệu các tác phẩm nổi bật, kiểm tra tình trạng tồn kho hoặc tư vấn các chương trình khuyến mãi tốt nhất. Bạn muốn tìm sách thuộc thể loại nào?";
+                for (Book b : all) {
+                    if (b.isBestSeller() && suggestedBooks.size() < 3) suggestedBooks.add(b);
+                }
+            } else if (lowerMsg.contains("lập trình") || lowerMsg.contains("công nghệ") || lowerMsg.contains("code") || lowerMsg.contains("software")) {
+                reply = "Dành cho dân công nghệ & lập trình viên, Bookora có các cẩm nang kinh điển của Uncle Bob và các bậc thầy thế giới! Đặc biệt tháng này đang có ưu đãi 25% cho danh mục Công nghệ:";
+                for (Book b : all) {
+                    if ("Công nghệ".equalsIgnoreCase(b.getCategory()) && suggestedBooks.size() < 3) suggestedBooks.add(b);
+                }
+            } else if (lowerMsg.contains("kinh tế") || lowerMsg.contains("tài chính") || lowerMsg.contains("làm giàu") || lowerMsg.contains("tiền")) {
+                reply = "Nếu bạn muốn nâng cao tư duy tài chính độc lập và phương pháp quản trị doanh nghiệp, đây là các tác phẩm được hàng triệu độc giả đánh giá cao nhất:";
+                for (Book b : all) {
+                    if ("Kinh tế".equalsIgnoreCase(b.getCategory()) && suggestedBooks.size() < 3) suggestedBooks.add(b);
+                }
+            } else if (lowerMsg.contains("văn học") || lowerMsg.contains("tiểu thuyết") || lowerMsg.contains("truyện")) {
+                reply = "Về mảng Văn học, Bookora tuyển chọn những kiệt tác văn chương lay động lòng người, với ưu đãi giảm 20% mùa thu này:";
+                for (Book b : all) {
+                    if ("Văn học".equalsIgnoreCase(b.getCategory()) && suggestedBooks.size() < 3) suggestedBooks.add(b);
+                }
+            } else if (lowerMsg.contains("kỹ năng") || lowerMsg.contains("thói quen") || lowerMsg.contains("phát triển bản thân")) {
+                reply = "Để phát triển bản thân và rèn luyện thói quen tích cực mỗi ngày, tôi đặc biệt gợi ý cho bạn những cuốn sách gối đầu giường sau:";
+                for (Book b : all) {
+                    if ("Kỹ năng sống".equalsIgnoreCase(b.getCategory()) && suggestedBooks.size() < 3) suggestedBooks.add(b);
+                }
+            } else if (lowerMsg.contains("tâm lý") || lowerMsg.contains("tư duy")) {
+                reply = "Khám phá chiều sâu nội tâm và cách vận hành của tư duy con người qua những cuốn sách tâm lý học xuất sắc:";
+                for (Book b : all) {
+                    if ("Tâm lý học".equalsIgnoreCase(b.getCategory()) && suggestedBooks.size() < 3) suggestedBooks.add(b);
+                }
+            } else if (lowerMsg.contains("hết hàng") || lowerMsg.contains("tồn kho") || lowerMsg.contains("kho")) {
+                reply = "Hệ thống Bookora kiểm tra kho hàng theo thời gian thực (Real-time Inventory). Nếu cuốn sách hiển thị nhãn 'Hết hàng', bạn có thể bấm 'Xem chi tiết' để theo dõi hoặc nhận thông báo ngay khi sách được tái bản về kho!";
+                for (Book b : all) {
+                    if (b.isOutOfStock() && suggestedBooks.size() < 3) suggestedBooks.add(b);
+                }
+            } else if (lowerMsg.contains("khuyến mãi") || lowerMsg.contains("giảm giá") || lowerMsg.contains("voucher") || lowerMsg.contains("freeship")) {
+                reply = "Hiện tại Bookora đang áp dụng các chương trình ưu đãi nổi bật: Giảm 20% sách Văn học (KM_VANHOC), Ưu đãi 25% sách Công nghệ (KM_TECH2026), và Miễn phí vận chuyển cho đơn hàng từ 250.000 đ!";
+                for (Book b : all) {
+                    if (b.getDiscountPercent() > 0 && suggestedBooks.size() < 3) suggestedBooks.add(b);
+                }
+            } else {
+                // Tìm kiếm theo từ khóa người dùng nhập vào
+                List<Book> matches = DataStore.searchBooks(message, "Tất cả");
+                if (!matches.isEmpty()) {
+                    reply = "Tôi đã tìm thấy " + matches.size() + " cuốn sách phù hợp với yêu cầu '" + message + "' của bạn:";
+                    for (int i = 0; i < Math.min(3, matches.size()); i++) {
+                        suggestedBooks.add(matches.get(i));
+                    }
+                } else {
+                    reply = "Rất tiếc tôi chưa tìm thấy đầu sách nào khớp hoàn toàn với '" + message + "'. Tuy nhiên, bạn có thể tham khảo một số tác phẩm kinh điển đang được bạn đọc săn đón nhiều nhất tại Bookora:";
+                    for (Book b : all) {
+                        if (b.isBestSeller() && suggestedBooks.size() < 3) suggestedBooks.add(b);
+                    }
+                }
+            }
+
+            StringBuilder sb = new StringBuilder("{");
+            sb.append("\"reply\":").append(escapeJson(reply)).append(",");
+            sb.append("\"books\":[");
+            for (int i = 0; i < suggestedBooks.size(); i++) {
+                Book b = suggestedBooks.get(i);
+                if (i > 0) sb.append(",");
+                sb.append(String.format(
+                        "{\"id\":%d,\"code\":%s,\"title\":%s,\"author\":%s,\"publisher\":%s,\"price\":%.0f,\"formattedPrice\":%s,\"category\":%s,\"stock\":%d,\"stockStatus\":%s,\"isOutOfStock\":%b,\"image\":%s}",
+                        b.getId(),
+                        escapeJson(b.getCode()),
+                        escapeJson(b.getTitle()),
+                        escapeJson(b.getAuthor()),
+                        escapeJson(b.getPublisher()),
+                        b.getPrice(),
+                        escapeJson(b.getFormattedPrice()),
+                        escapeJson(b.getCategory()),
+                        b.getStock(),
+                        escapeJson(b.getStockStatusText()),
+                        b.isOutOfStock(),
+                        escapeJson(b.getImage())
+                ));
+            }
+            sb.append("],\"recommendations\":[");
+            for (int i = 0; i < suggestedBooks.size(); i++) {
+                Book b = suggestedBooks.get(i);
+                if (i > 0) sb.append(",");
+                sb.append(String.format(
+                        "{\"id\":%d,\"code\":%s,\"title\":%s,\"author\":%s,\"publisher\":%s,\"price\":%.0f,\"formattedPrice\":%s,\"category\":%s,\"stock\":%d,\"stockStatus\":%s,\"isOutOfStock\":%b,\"image\":%s}",
+                        b.getId(),
+                        escapeJson(b.getCode()),
+                        escapeJson(b.getTitle()),
+                        escapeJson(b.getAuthor()),
+                        escapeJson(b.getPublisher()),
+                        b.getPrice(),
+                        escapeJson(b.getFormattedPrice()),
+                        escapeJson(b.getCategory()),
+                        b.getStock(),
+                        escapeJson(b.getStockStatusText()),
+                        b.isOutOfStock(),
+                        escapeJson(b.getImage())
+                ));
+            }
+            sb.append("]}");
+
             sendResponse(exchange, 200, "application/json; charset=UTF-8", sb.toString());
         }
     }
@@ -450,12 +799,19 @@ public class BookstoreApp {
         public void handle(HttpExchange exchange) throws IOException {
             String path = exchange.getRequestURI().getPath();
             if (path.startsWith("/")) path = path.substring(1);
+            if (path.startsWith("home/")) path = path.substring(5);
+            if (path.startsWith("login/")) path = path.substring(6);
+            if (path.startsWith("register/")) path = path.substring(9);
+            if (path.startsWith("profile/")) path = path.substring(8);
             Path filePath = WEBAPP_DIR.resolve(path);
 
             if (Files.exists(filePath) && !Files.isDirectory(filePath)) {
                 String mime = getMimeType(filePath.toString());
                 byte[] bytes = Files.readAllBytes(filePath);
                 exchange.getResponseHeaders().set("Content-Type", mime);
+                exchange.getResponseHeaders().set("Cache-Control", "no-cache, no-store, must-revalidate");
+                exchange.getResponseHeaders().set("Pragma", "no-cache");
+                exchange.getResponseHeaders().set("Expires", "0");
                 exchange.sendResponseHeaders(200, bytes.length);
                 OutputStream os = exchange.getResponseBody();
                 os.write(bytes);
@@ -537,7 +893,45 @@ public class BookstoreApp {
         return content;
     }
 
+    private static String renderProfilePage(User user, String activeTab, String success, String error) {
+        Path templatePath = WEBAPP_DIR.resolve("profile.html");
+        String content = "";
+        try {
+            content = Files.readString(templatePath, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            content = "<h1>Profile Template Missing</h1>";
+        }
+
+        String errorHtml = (error != null && !error.isEmpty()) 
+                ? "<div class=\"alert alert-danger\"><i class=\"fas fa-exclamation-circle\"></i> " + escapeHtml(error) + "</div>" 
+                : "";
+        String successHtml = (success != null && !success.isEmpty()) 
+                ? "<div class=\"alert alert-success\"><i class=\"fas fa-check-circle\"></i> " + escapeHtml(success) + "</div>" 
+                : "";
+
+        content = content.replace("<!-- ${ALERT_MESSAGE} -->", errorHtml + successHtml);
+        content = content.replace("${user.username}", escapeAttr(user.getUsername()));
+        content = content.replace("${user.fullName}", escapeAttr(user.getFullName()));
+        content = content.replace("${user.email}", escapeAttr(user.getEmail() != null ? user.getEmail() : ""));
+        content = content.replace("${user.phone}", escapeAttr(user.getPhone() != null ? user.getPhone() : ""));
+        content = content.replace("${user.role}", escapeAttr(user.getRole()));
+        content = content.replace("${user.avatar}", escapeAttr(user.getAvatar() != null ? user.getAvatar() : "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150"));
+        content = content.replace("${activeTab}", (activeTab != null && !activeTab.isEmpty()) ? activeTab : "profile");
+
+        return content;
+    }
+
     private static String renderHomePage(User user, List<Book> books, List<String> categories, String selectedCat, String keyword) {
+        return renderHomePage(user, books, categories, DataStore.getAuthors(), DataStore.getPublishers(), DataStore.getPromotions(),
+                selectedCat, "Tất cả", "Tất cả", null, null, "all", keyword);
+    }
+
+    private static String renderHomePage(User user, List<Book> books, List<String> categories, 
+                                         List<String> authors, List<String> publishers, 
+                                         List<DataStore.PromotionItem> promotions,
+                                         String selectedCat, String selectedAuthor, String selectedPublisher, 
+                                         Double selectedMinPrice, Double selectedMaxPrice, String selectedStockStatus, 
+                                         String keyword) {
         Path templatePath = WEBAPP_DIR.resolve("home.html");
         String content = "";
         try {
@@ -573,7 +967,7 @@ public class BookstoreApp {
                     "            <div style=\"font-weight: 700; font-size: 13px; color: var(--primary);\">%s</div>\n" +
                     "            <div class=\"dropdown-email\">%s</div>\n" +
                     "        </div>\n" +
-                    "        <a href=\"javascript:void(0)\" class=\"dropdown-item\" onclick=\"alert('Trang hồ sơ cá nhân của %s')\">\n" +
+                    "        <a href=\"profile\" class=\"dropdown-item\">\n" +
                     "            <i class=\"fas fa-user-circle\"></i> Hồ sơ tài khoản\n" +
                     "        </a>\n" +
                     "        <a href=\"javascript:void(0)\" class=\"dropdown-item\" onclick=\"toggleCartDrawer()\">\n" +
@@ -591,8 +985,7 @@ public class BookstoreApp {
                     escapeAttr(user.getFullName()),
                     escapeAttr(user.getRole()),
                     escapeAttr(user.getFullName()),
-                    escapeAttr(user.getEmail() != null ? user.getEmail() : ""),
-                    escapeAttr(user.getFullName())
+                    escapeAttr(user.getEmail() != null ? user.getEmail() : "")
             );
 
             content = content.replace("<!-- ${TOPBAR_AUTH} -->", topbarAuth);
@@ -633,26 +1026,79 @@ public class BookstoreApp {
 
         content = content.replace("${searchKeyword}", (keyword != null) ? keyword : "");
 
-        // Render Categories
+        // Render Categories Pills
         StringBuilder catHtml = new StringBuilder();
         for (String cat : categories) {
             boolean active = cat.equalsIgnoreCase(selectedCat);
             catHtml.append(String.format(
-                    "<button class=\"category-pill %s\" data-category=\"%s\">%s</button>",
+                    "<button type=\"button\" class=\"category-pill %s\" data-category=\"%s\">%s</button>",
                     active ? "active" : "",
-                    cat,
-                    cat
+                    escapeAttr(cat),
+                    escapeHtml(cat)
             ));
         }
         content = content.replace("<!-- ${CATEGORY_PILLS} -->", catHtml.toString());
 
+        // Render Authors Options
+        StringBuilder authorOptionsHtml = new StringBuilder();
+        for (String a : authors) {
+            boolean sel = a.equalsIgnoreCase(selectedAuthor);
+            authorOptionsHtml.append(String.format("<option value=\"%s\" %s>%s</option>",
+                    escapeAttr(a), sel ? "selected" : "", escapeHtml(a)));
+        }
+        content = content.replace("<!-- ${AUTHOR_OPTIONS} -->", authorOptionsHtml.toString());
+
+        // Render Publishers Options
+        StringBuilder pubOptionsHtml = new StringBuilder();
+        for (String p : publishers) {
+            boolean sel = p.equalsIgnoreCase(selectedPublisher);
+            pubOptionsHtml.append(String.format("<option value=\"%s\" %s>%s</option>",
+                    escapeAttr(p), sel ? "selected" : "", escapeHtml(p)));
+        }
+        content = content.replace("<!-- ${PUBLISHER_OPTIONS} -->", pubOptionsHtml.toString());
+
+        // Render Active Promotions Banner
+        StringBuilder promoBannerHtml = new StringBuilder();
+        if (promotions != null && !promotions.isEmpty()) {
+            promoBannerHtml.append("<div class=\"promo-ticker-wrap\">");
+            promoBannerHtml.append("<div class=\"promo-ticker-title\"><i class=\"fas fa-tags\"></i> ƯU ĐÃI HOT</div>");
+            promoBannerHtml.append("<div class=\"promo-ticker-items\">");
+            for (DataStore.PromotionItem pr : promotions) {
+                promoBannerHtml.append(String.format(
+                        "<div class=\"promo-ticker-item\" onclick=\"applyPromoSearch('%s')\" title=\"%s\">" +
+                        "<span class=\"promo-code-badge\">%s</span> %s" +
+                        "</div>",
+                        escapeAttr(pr.getCode()),
+                        escapeAttr(pr.getDescription()),
+                        escapeHtml(pr.getCode()),
+                        escapeHtml(pr.getTitle())
+                ));
+            }
+            promoBannerHtml.append("</div></div>");
+        }
+        content = content.replace("<!-- ${PROMOTIONS_BANNER} -->", promoBannerHtml.toString());
+
         // Render Book Cards
         StringBuilder booksHtml = new StringBuilder();
         if (books.isEmpty()) {
-            booksHtml.append("<div class=\"no-books-found\"><i class=\"fas fa-book-open\"></i><p>Không tìm thấy cuốn sách nào phù hợp.</p></div>");
+            booksHtml.append(
+                    "<div class=\"no-books-found\">\n" +
+                    "    <div class=\"empty-state-icon\"><i class=\"fas fa-book-sparkles\"></i></div>\n" +
+                    "    <h3>Không tìm thấy sản phẩm phù hợp</h3>\n" +
+                    "    <p>Rất tiếc chúng tôi không tìm thấy cuốn sách nào khớp với tiêu chí tìm kiếm của bạn. Hãy thử thay đổi từ khóa, điều chỉnh bộ lọc hoặc nhờ Chatbot AI tư vấn!</p>\n" +
+                    "    <div class=\"empty-state-actions\">\n" +
+                    "        <button type=\"button\" class=\"btn-empty-ai\" onclick=\"openChatbot('Gợi ý cho tôi các cuốn sách đang được yêu thích nhất')\">\n" +
+                    "            <i class=\"fas fa-robot\"></i> Hỏi Chatbot AI ngay\n" +
+                    "        </button>\n" +
+                    "        <button type=\"button\" class=\"btn-empty-reset\" onclick=\"resetAllFilters()\">\n" +
+                    "            <i class=\"fas fa-rotate-left\"></i> Đặt lại bộ lọc\n" +
+                    "        </button>\n" +
+                    "    </div>\n" +
+                    "</div>"
+            );
         } else {
             for (Book b : books) {
-                String badge = b.isBestSeller() ? "<span class=\"badge-tag badge-bestseller\">Bán chạy</span>" : "";
+                String bestsellerBadge = b.isBestSeller() ? "<span class=\"badge-tag badge-bestseller\">Bán chạy</span>" : "";
                 String discountBadge = (b.getDiscountPercent() > 0) 
                         ? "<span class=\"badge-tag badge-discount\">-" + b.getDiscountPercent() + "%</span>" 
                         : "";
@@ -660,14 +1106,25 @@ public class BookstoreApp {
                         ? "<span class=\"price-original\">" + b.getFormattedOriginalPrice() + "</span>" 
                         : "";
 
+                boolean outOfStock = b.isOutOfStock();
+                String stockBadge = outOfStock
+                        ? "<span class=\"badge-tag badge-stock badge-outofstock\"><i class=\"fas fa-ban\"></i> Hết hàng</span>"
+                        : "<span class=\"badge-tag badge-stock badge-instock\"><i class=\"fas fa-check\"></i> Còn " + b.getStock() + "</span>";
+
+                String cartButtonHtml = outOfStock
+                        ? String.format("<button type=\"button\" class=\"btn-add-cart disabled\" onclick=\"notifyOutOfStock('%s')\" title=\"Sách đã hết hàng trong kho\"><i class=\"fas fa-bell\"></i></button>", escapeAttr(b.getTitle()))
+                        : String.format("<button type=\"button\" class=\"btn-add-cart\" onclick=\"addToCart(%d)\" title=\"Thêm vào giỏ\"><i class=\"fas fa-cart-plus\"></i></button>", b.getId());
+
+                String cardClasses = outOfStock ? "book-card is-out-of-stock" : "book-card";
+
                 booksHtml.append(String.format(
-                        "<div class=\"book-card\" data-id=\"%d\" data-code=\"%s\" data-title=\"%s\" data-author=\"%s\" data-price=\"%.0f\" data-formatted-price=\"%s\" data-category=\"%s\" data-image=\"%s\" data-desc=\"%s\" data-rating=\"%.1f\">\n" +
+                        "<div class=\"%s\" data-id=\"%d\" data-code=\"%s\" data-title=\"%s\" data-author=\"%s\" data-publisher=\"%s\" data-price=\"%.0f\" data-formatted-price=\"%s\" data-category=\"%s\" data-stock=\"%d\" data-is-out-of-stock=\"%b\" data-promotion=\"%s\" data-image=\"%s\" data-desc=\"%s\" data-rating=\"%.1f\">\n" +
                         "    <div class=\"book-card-inner\">\n" +
                         "        <div class=\"book-cover-wrap\">\n" +
                         "            <img src=\"%s\" alt=\"%s\" class=\"book-cover\" loading=\"lazy\" onerror=\"this.src='https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500';\">\n" +
-                        "            <div class=\"badge-container\">%s%s</div>\n" +
+                        "            <div class=\"badge-container\">%s%s%s</div>\n" +
                         "            <div class=\"book-actions-overlay\">\n" +
-                        "                <button type=\"button\" class=\"btn-quickview\" onclick=\"openQuickView(%d)\"><i class=\"fas fa-eye\"></i> Xem nhanh</button>\n" +
+                        "                <button type=\"button\" class=\"btn-quickview\" onclick=\"openQuickView(%d)\"><i class=\"fas fa-eye\"></i> Xem chi tiết</button>\n" +
                         "            </div>\n" +
                         "        </div>\n" +
                         "        <div class=\"book-info\">\n" +
@@ -675,50 +1132,60 @@ public class BookstoreApp {
                         "                <span class=\"book-category\">%s</span>\n" +
                         "                <span class=\"book-code\" title=\"Mã sách: %s\"><i class=\"fas fa-barcode\"></i> %s</span>\n" +
                         "            </div>\n" +
-                        "            <h3 class=\"book-title\" title=\"%s\">%s</h3>\n" +
-                        "            <p class=\"book-author\"><i class=\"fas fa-feather-alt\"></i> %s</p>\n" +
-                        "            <div class=\"book-rating\">\n" +
+                        "            <h3 class=\"book-title\" title=\"%s\" onclick=\"openQuickView(%d)\">%s</h3>\n" +
+                        "            <p class=\"book-author\" title=\"Tác giả\"><i class=\"fas fa-feather-alt\"></i> %s</p>\n" +
+                        "            <p class=\"book-publisher\" title=\"Nhà xuất bản\"><i class=\"fas fa-building-columns\"></i> %s</p>\n" +
+                        "            <div class=\"book-rating-row\">\n" +
                         "                <div class=\"stars\"><i class=\"fas fa-star\"></i> <span>%.1f</span></div>\n" +
                         "                <span class=\"review-count\">(%d đánh giá)</span>\n" +
+                        "                <span class=\"stock-pill %s\">%s</span>\n" +
                         "            </div>\n" +
                         "            <div class=\"book-price-row\">\n" +
                         "                <div class=\"price-box\">\n" +
                         "                    <span class=\"price-current\">%s</span>\n" +
                         "                    %s\n" +
                         "                </div>\n" +
-                        "                <button type=\"button\" class=\"btn-add-cart\" onclick=\"addToCart(%d)\" title=\"Thêm vào giỏ\">\n" +
-                        "                    <i class=\"fas fa-cart-plus\"></i>\n" +
-                        "                </button>\n" +
+                        "                %s\n" +
                         "            </div>\n" +
                         "        </div>\n" +
                         "    </div>\n" +
                         "</div>\n",
+                        cardClasses,
                         b.getId(),
                         escapeAttr(b.getCode()),
                         escapeAttr(b.getTitle()),
                         escapeAttr(b.getAuthor()),
+                        escapeAttr(b.getPublisher()),
                         b.getPrice(),
                         escapeAttr(b.getFormattedPrice()),
                         escapeAttr(b.getCategory()),
+                        b.getStock(),
+                        outOfStock,
+                        escapeAttr(b.getPromotion()),
                         escapeAttr(b.getImage()),
                         escapeAttr(b.getDescription()),
                         b.getRating(),
                         b.getImage(),
                         escapeAttr(b.getTitle()),
-                        badge,
+                        stockBadge,
+                        bestsellerBadge,
                         discountBadge,
                         b.getId(),
                         escapeHtml(b.getCategory()),
                         escapeAttr(b.getCode()),
                         escapeHtml(b.getCode()),
                         escapeAttr(b.getTitle()),
+                        b.getId(),
                         escapeHtml(b.getTitle()),
                         escapeHtml(b.getAuthor()),
+                        escapeHtml(b.getPublisher()),
                         b.getRating(),
                         b.getReviewCount(),
+                        outOfStock ? "stock-pill-empty" : "stock-pill-ok",
+                        outOfStock ? "Hết hàng" : "Kho: " + b.getStock(),
                         b.getFormattedPrice(),
                         originalPriceHtml,
-                        b.getId()
+                        cartButtonHtml
                 ));
             }
         }

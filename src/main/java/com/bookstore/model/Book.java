@@ -14,38 +14,53 @@ public class Book implements Serializable {
     private String code;
     private String title;
     private String author;
+    private String publisher;
     private double price;
     private double originalPrice;
     private String category;
+    private int stock;
     private double rating;
     private int reviewCount;
     private String image;
     private String description;
+    private String promotion;
     private boolean isBestSeller;
 
     public Book() {
+        this.publisher = "NXB Trẻ";
+        this.stock = 10;
+        this.promotion = "Tặng bookmark độc quyền";
     }
 
     public Book(int id, String title, String author, double price, double originalPrice, 
                 String category, double rating, int reviewCount, String image, 
                 String description, boolean isBestSeller) {
-        this(id, String.format("MS%03d", id), title, author, price, originalPrice, category, rating, reviewCount, image, description, isBestSeller);
+        this(id, String.format("MS%03d", id), title, author, "NXB Trẻ", price, originalPrice, category, 10, rating, reviewCount, image, description, "Tặng bookmark độc quyền", isBestSeller);
     }
 
     public Book(int id, String code, String title, String author, double price, double originalPrice, 
                 String category, double rating, int reviewCount, String image, 
                 String description, boolean isBestSeller) {
+        this(id, code, title, author, "NXB Trẻ", price, originalPrice, category, 10, rating, reviewCount, image, description, "Tặng bookmark độc quyền", isBestSeller);
+    }
+
+    public Book(int id, String code, String title, String author, String publisher, double price, double originalPrice, 
+                String category, int stock, double rating, int reviewCount, String image, 
+                String description, String promotion, boolean isBestSeller) {
         this.id = id;
         this.code = (code != null && !code.trim().isEmpty()) ? code.trim() : String.format("MS%03d", id);
         this.title = title;
         this.author = author;
+        this.publisher = (publisher != null && !publisher.trim().isEmpty()) ? publisher.trim() : "NXB Trẻ";
         this.price = price;
         this.originalPrice = originalPrice;
         this.category = category;
+        this.stock = Math.max(0, stock);
         this.rating = rating;
         this.reviewCount = reviewCount;
         this.image = image;
         this.description = description;
+        this.promotion = (promotion != null && !promotion.trim().isEmpty()) ? promotion.trim() : "Tặng bookmark độc quyền";
         this.isBestSeller = isBestSeller;
     }
 
@@ -157,6 +172,41 @@ public class Book implements Serializable {
         if (originalPrice <= 0) return "";
         NumberFormat nf = NumberFormat.getInstance(Locale.of("vi", "VN"));
         return nf.format((long) originalPrice) + " đ";
+    }
+
+    public String getPublisher() {
+        return publisher != null ? publisher : "NXB Trẻ";
+    }
+
+    public void setPublisher(String publisher) {
+        this.publisher = publisher;
+    }
+
+    public int getStock() {
+        return stock;
+    }
+
+    public void setStock(int stock) {
+        this.stock = Math.max(0, stock);
+    }
+
+    public String getPromotion() {
+        return promotion != null ? promotion : "";
+    }
+
+    public void setPromotion(String promotion) {
+        this.promotion = promotion;
+    }
+
+    public boolean isOutOfStock() {
+        return stock <= 0;
+    }
+
+    public String getStockStatusText() {
+        if (isOutOfStock()) {
+            return "Hết hàng";
+        }
+        return "Còn hàng (" + stock + ")";
     }
 
     public int getDiscountPercent() {

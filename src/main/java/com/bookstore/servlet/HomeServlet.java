@@ -31,24 +31,49 @@ public class HomeServlet extends HttpServlet {
 
         // Cho phép khách vãng lai (currentUser == null) xem trang chủ và danh mục sách
 
-        // Lấy từ khóa tìm kiếm & danh mục (nếu có)
+        // Lấy các tham số tìm kiếm & bộ lọc đa tiêu chí theo Use Case của BA
         String keyword = request.getParameter("q");
         String category = request.getParameter("category");
+        String author = request.getParameter("author");
+        String publisher = request.getParameter("publisher");
+        String stockStatus = request.getParameter("stockStatus");
+        
+        Double minPrice = null;
+        Double maxPrice = null;
+        try {
+            String minP = request.getParameter("minPrice");
+            if (minP != null && !minP.trim().isEmpty()) {
+                minPrice = Double.parseDouble(minP.trim());
+            }
+        } catch (NumberFormatException ignored) {}
 
-        List<Book> books;
-        if ((keyword != null && !keyword.trim().isEmpty()) || (category != null && !category.trim().isEmpty())) {
-            books = DataStore.searchBooks(keyword, category);
-        } else {
-            books = DataStore.getAllBooks();
-        }
+        try {
+            String maxP = request.getParameter("maxPrice");
+            if (maxP != null && !maxP.trim().isEmpty()) {
+                maxPrice = Double.parseDouble(maxP.trim());
+            }
+        } catch (NumberFormatException ignored) {}
+
+        List<Book> books = DataStore.searchBooks(keyword, category, author, publisher, minPrice, maxPrice, stockStatus);
 
         List<String> categories = DataStore.getCategories();
+        List<String> authors = DataStore.getAuthors();
+        List<String> publishers = DataStore.getPublishers();
+        List<DataStore.PromotionItem> promotions = DataStore.getPromotions();
 
         // Đưa dữ liệu vào request attributes
         request.setAttribute("currentUser", currentUser);
         request.setAttribute("books", books);
         request.setAttribute("categories", categories);
+        request.setAttribute("authors", authors);
+        request.setAttribute("publishers", publishers);
+        request.setAttribute("promotions", promotions);
         request.setAttribute("currentCategory", (category != null) ? category : "Tất cả");
+        request.setAttribute("currentAuthor", (author != null) ? author : "Tất cả");
+        request.setAttribute("currentPublisher", (publisher != null) ? publisher : "Tất cả");
+        request.setAttribute("currentStockStatus", (stockStatus != null) ? stockStatus : "all");
+        request.setAttribute("currentMinPrice", minPrice);
+        request.setAttribute("currentMaxPrice", maxPrice);
         request.setAttribute("searchKeyword", (keyword != null) ? keyword : "");
 
         // Chuyển tiếp tới trang chủ

@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hồ Sơ Tài Khoản - Bookora | Tiệm Sách Tri Thức</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- 1. HEADER CHÍNH -->
+    <header class="main-header" style="position: sticky; top: 0; z-index: 100; background: var(--surface-glass); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border);">
+        <div class="header-container" style="max-width: 1280px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between;">
+            <a href="home" class="site-logo">
+                <div class="logo-icon">
+                    <i class="fas fa-book-bookmark"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>Bookora</h1>
+                    <span>Tiệm Sách Tri Thức</span>
+                </div>
+            </a>
+
+            <div class="header-actions" style="display: flex; align-items: center; gap: 16px;">
+                <a href="home" class="btn-guest" style="border: 1px solid var(--border); padding: 8px 16px; border-radius: var(--radius-full); font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 8px; color: var(--text-primary);">
+                    <i class="fas fa-house"></i>
+                    <span>Về Trang Chủ</span>
+                </a>
+                <a href="logout" class="btn-guest" style="background: var(--danger-soft); color: var(--danger); padding: 8px 16px; border-radius: var(--radius-full); font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-arrow-right-from-bracket"></i>
+                    <span>Đăng Xuất</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 2. BREADCRUMB & HERO HEADER -->
+    <div class="profile-header-banner">
+        <div class="profile-header-container">
+            <div class="breadcrumb-nav">
+                <a href="home"><i class="fas fa-house"></i> Trang chủ</a>
+                <i class="fas fa-chevron-right separator"></i>
+                <span>Hồ sơ tài khoản</span>
+            </div>
+            <h1 class="profile-header-title">Quản Lý Tài Khoản Cá Nhân</h1>
+            <p class="profile-header-sub">Xem, cập nhật thông tin cá nhân và thiết lập bảo mật mật khẩu của bạn</p>
+        </div>
+    </div>
+
+    <!-- 3. NỘI DUNG CHÍNH (2 CỘT) -->
+    <main class="profile-page-main">
+        <div class="profile-layout-grid">
+            
+            <!-- CỘT TRÁI: SIDEBAR THÔNG TIN VẮN TẮT & ĐIỀU HƯỚNG TAB -->
+            <aside class="profile-sidebar">
+                <div class="profile-user-summary-card">
+                    <div class="profile-avatar-wrapper">
+                        <img src="${user.avatar}" alt="Avatar" id="sidebarAvatarImg" class="profile-avatar-lg" onerror="this.src='https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150';">
+                        <div class="profile-role-badge badge-${user.role}">${user.role}</div>
+                    </div>
+                    <h2 class="profile-summary-name" id="sidebarFullName">${user.fullName}</h2>
+                    <p class="profile-summary-user"><i class="fas fa-at"></i> ${user.username}</p>
+                    <div class="profile-summary-email"><i class="fas fa-envelope"></i> ${user.email}</div>
+                    
+                    <hr class="profile-sidebar-divider">
+
+                    <!-- Danh mục Tab điều hướng -->
+                    <nav class="profile-tab-nav">
+                        <button type="button" class="tab-nav-btn active" id="tabNavProfile" onclick="switchProfileTab('profile')">
+                            <i class="fas fa-id-card-clip"></i>
+                            <span>Thông tin cá nhân</span>
+                            <i class="fas fa-chevron-right tab-nav-arrow"></i>
+                        </button>
+                        <button type="button" class="tab-nav-btn" id="tabNavPassword" onclick="switchProfileTab('password')">
+                            <i class="fas fa-shield-halved"></i>
+                            <span>Đổi mật khẩu</span>
+                            <i class="fas fa-chevron-right tab-nav-arrow"></i>
+                        </button>
+                        <a href="db" class="tab-nav-btn" target="_blank" title="Xem cơ sở dữ liệu MySQL">
+                            <i class="fas fa-database"></i>
+                            <span>Xem Database MySQL</span>
+                            <i class="fas fa-arrow-up-right-from-square tab-nav-arrow"></i>
+                        </a>
+                        <a href="logout" class="tab-nav-btn tab-logout-btn">
+                            <i class="fas fa-arrow-right-from-bracket"></i>
+                            <span>Đăng xuất tài khoản</span>
+                        </a>
+                    </nav>
+                </div>
+            </aside>
+
+            <!-- CỘT PHẢI: NỘI DUNG TỪNG TAB -->
+            <section class="profile-content-area">
+
+                <!-- Vị trí thông báo thành công hoặc lỗi từ server -->
+                <!-- ${ALERT_MESSAGE} -->
+
+                <!-- ================= TAB 1: THÔNG TIN CÁ NHÂN ================= -->
+                <div class="profile-tab-pane active" id="paneProfile">
+                    <div class="profile-card">
+                        <div class="profile-card-header">
+                            <div class="profile-card-header-icon">
+                                <i class="fas fa-user-pen"></i>
+                            </div>
+                            <div>
+                                <h3 class="profile-card-title">Thông Tin Cá Nhân</h3>
+                                <p class="profile-card-desc">Cập nhật họ tên, địa chỉ email, số điện thoại và ảnh đại diện</p>
+                            </div>
+                        </div>
+
+                        <form action="profile" method="POST" id="formUpdateProfile" class="profile-form">
+                            <input type="hidden" name="action" value="updateProfile">
+
+                            <!-- Hàng 1: Username & Quyền hạn (Chỉ đọc) -->
+                            <div class="form-row-2">
+                                <div class="form-group">
+                                    <label class="form-label">Tên đăng nhập (Username) <span class="label-lock"><i class="fas fa-lock"></i> Cố định</span></label>
+                                    <div class="input-with-icon input-readonly">
+                                        <i class="fas fa-user input-icon"></i>
+                                        <input type="text" class="form-input" value="${user.username}" readonly disabled>
+                                    </div>
+                                    <small class="form-hint">Tên đăng nhập được gắn liền với tài khoản và không thể sửa đổi.</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">Vai trò tài khoản <span class="label-lock"><i class="fas fa-shield-alt"></i> Hệ thống</span></label>
+                                    <div class="input-with-icon input-readonly">
+                                        <i class="fas fa-user-shield input-icon"></i>
+                                        <input type="text" class="form-input" value="${user.role}" readonly disabled>
+                                    </div>
+                                    <small class="form-hint">Quyền hạn trong hệ thống: ${user.role}.</small>
+                                </div>
+                            </div>
+
+                            <!-- Hàng 2: Họ và tên & Số điện thoại -->
+                            <div class="form-row-2">
+                                <div class="form-group">
+                                    <label for="fullName" class="form-label">Họ và tên của bạn <span class="required">*</span></label>
+                                    <div class="input-with-icon">
+                                        <i class="fas fa-address-card input-icon"></i>
+                                        <input type="text" id="fullName" name="fullName" class="form-input" value="${user.fullName}" placeholder="Nhập họ và tên..." required>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="phone" class="form-label">Số điện thoại liên hệ</label>
+                                    <div class="input-with-icon">
+                                        <i class="fas fa-phone input-icon"></i>
+                                        <input type="tel" id="phone" name="phone" class="form-input" value="${user.phone}" placeholder="Ví dụ: 0912345678">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Hàng 3: Email -->
+                            <div class="form-group">
+                                <label for="email" class="form-label">Địa chỉ Email <span class="required">*</span></label>
+                                <div class="input-with-icon">
+                                    <i class="fas fa-envelope input-icon"></i>
+                                    <input type="email" id="email" name="email" class="form-input" value="${user.email}" placeholder="yourname@gmail.com" required>
+                                </div>
+                                <small class="form-hint">Email dùng để nhận thông báo đơn hàng và mã xác thực OTP.</small>
+                            </div>
+
+                            <!-- Hàng 4: Ảnh đại diện (URL) & Xem trước -->
+                            <div class="form-group">
+                                <label for="avatar" class="form-label">Đường dẫn ảnh đại diện (Avatar URL)</label>
+                                <div class="input-with-icon">
+                                    <i class="fas fa-image input-icon"></i>
+                                    <input type="url" id="avatar" name="avatar" class="form-input" value="${user.avatar}" placeholder="https://images.unsplash.com/..." oninput="previewAvatar(this.value)">
+                                </div>
+                                
+                                <!-- Gợi ý chọn nhanh các avatar mẫu -->
+                                <div class="avatar-presets-wrap">
+                                    <span class="avatar-presets-title"><i class="fas fa-wand-magic-sparkles"></i> Hoặc chọn nhanh ảnh đại diện mẫu:</span>
+                                    <div class="avatar-presets-list">
+                                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150" alt="Preset 1" class="avatar-preset-item" onclick="choosePresetAvatar(this.src)" title="Ảnh 1 - Nữ công sở">
+                                        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150" alt="Preset 2" class="avatar-preset-item" onclick="choosePresetAvatar(this.src)" title="Ảnh 2 - Nữ trẻ trung">
+                                        <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150" alt="Preset 3" class="avatar-preset-item" onclick="choosePresetAvatar(this.src)" title="Ảnh 3 - Nam phong cách">
+                                        <img src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150" alt="Preset 4" class="avatar-preset-item" onclick="choosePresetAvatar(this.src)" title="Ảnh 4 - Nam lịch lãm">
+                                        <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150" alt="Preset 5" class="avatar-preset-item" onclick="choosePresetAvatar(this.src)" title="Ảnh 5 - Nữ nụ cười">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="profile-form-footer">
+                                <button type="submit" class="btn-primary btn-save-profile">
+                                    <i class="fas fa-floppy-disk"></i>
+                                    <span>Lưu Thông Tin Thay Đổi</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- ================= TAB 2: ĐỔI MẬT KHẨU ================= -->
+                <div class="profile-tab-pane" id="panePassword">
+                    <div class="profile-card">
+                        <div class="profile-card-header">
+                            <div class="profile-card-header-icon" style="background: #fef3c7; color: var(--accent);">
+                                <i class="fas fa-key"></i>
+                            </div>
+                            <div>
+                                <h3 class="profile-card-title">Thay Đổi Mật Khẩu</h3>
+                                <p class="profile-card-desc">Cập nhật mật khẩu định kỳ để nâng cao an toàn cho tài khoản của bạn</p>
+                            </div>
+                        </div>
+
+                        <form action="profile" method="POST" id="formChangePassword" class="profile-form">
+                            <input type="hidden" name="action" value="changePassword">
+
+                            <!-- Mật khẩu hiện tại -->
+                            <div class="form-group">
+                                <label for="oldPassword" class="form-label">Mật khẩu hiện tại <span class="required">*</span></label>
+                                <div class="input-with-icon">
+                                    <i class="fas fa-lock-open input-icon"></i>
+                                    <input type="password" id="oldPassword" name="oldPassword" class="form-input" placeholder="Nhập mật khẩu hiện tại..." required>
+                                    <button type="button" class="password-toggle" onclick="togglePassVisibility('oldPassword', this)" title="Ẩn/hiện mật khẩu">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Mật khẩu mới -->
+                            <div class="form-group">
+                                <label for="newPassword" class="form-label">Mật khẩu mới <span class="required">*</span></label>
+                                <div class="input-with-icon">
+                                    <i class="fas fa-lock input-icon"></i>
+                                    <input type="password" id="newPassword" name="newPassword" class="form-input" placeholder="Tối thiểu 8 ký tự, có chữ hoa, thường, số, ký tự đặc biệt..." required oninput="checkPasswordStrength(this.value)">
+                                    <button type="button" class="password-toggle" onclick="togglePassVisibility('newPassword', this)" title="Ẩn/hiện mật khẩu">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Bảng tiêu chuẩn độ mạnh mật khẩu -->
+                                <div class="password-strength-box" id="pwdStrengthBox">
+                                    <div class="strength-meter-bar">
+                                        <div class="strength-meter-fill" id="strengthFill"></div>
+                                    </div>
+                                    <div class="strength-status-text" id="strengthStatusText">Độ mạnh mật khẩu: Chưa nhập</div>
+                                    <ul class="strength-criteria-list">
+                                        <li id="critLength"><i class="fas fa-circle-xmark"></i> Tối thiểu 8 ký tự</li>
+                                        <li id="critUpper"><i class="fas fa-circle-xmark"></i> Ít nhất 1 chữ in hoa (A-Z)</li>
+                                        <li id="critLower"><i class="fas fa-circle-xmark"></i> Ít nhất 1 chữ in thường (a-z)</li>
+                                        <li id="critNumber"><i class="fas fa-circle-xmark"></i> Ít nhất 1 chữ số (0-9)</li>
+                                        <li id="critSpecial"><i class="fas fa-circle-xmark"></i> Ít nhất 1 ký tự đặc biệt (!@#$%^&*...)</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- Xác nhận mật khẩu mới -->
+                            <div class="form-group">
+                                <label for="confirmPassword" class="form-label">Xác nhận mật khẩu mới <span class="required">*</span></label>
+                                <div class="input-with-icon">
+                                    <i class="fas fa-shield-halved input-icon"></i>
+                                    <input type="password" id="confirmPassword" name="confirmPassword" class="form-input" placeholder="Nhập lại mật khẩu mới..." required oninput="checkPasswordMatch()">
+                                    <button type="button" class="password-toggle" onclick="togglePassVisibility('confirmPassword', this)" title="Ẩn/hiện mật khẩu">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <small id="pwdMatchMsg" class="form-hint" style="display: none;"></small>
+                            </div>
+
+                            <div class="profile-form-footer">
+                                <button type="submit" class="btn-primary btn-save-profile" style="background: linear-gradient(135deg, #d97706 0%, #b45309 100%);">
+                                    <i class="fas fa-key"></i>
+                                    <span>Cập Nhật Mật Khẩu Mới</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+            </section>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="site-footer" style="margin-top: 60px; padding: 30px 24px; text-align: center; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 13px;">
+        <p>© 2026 <strong>Bookora</strong> - Tiệm Sách Tri Thức. Bản quyền thuộc về Hoàng Oanh.</p>
+    </footer>
+
+    <!-- JAVASCRIPT ĐIỀU KHIỂN TRANG PROFILE -->
+    <script>
+        // Chuyển Tab
+        function switchProfileTab(tabName) {
+            const tabNavProfile = document.getElementById('tabNavProfile');
+            const tabNavPassword = document.getElementById('tabNavPassword');
+            const paneProfile = document.getElementById('paneProfile');
+            const panePassword = document.getElementById('panePassword');
+
+            if (tabName === 'password') {
+                tabNavProfile.classList.remove('active');
+                tabNavPassword.classList.add('active');
+                paneProfile.classList.remove('active');
+                panePassword.classList.add('active');
+                history.replaceState(null, null, '#password');
+            } else {
+                tabNavProfile.classList.add('active');
+                tabNavPassword.classList.remove('active');
+                paneProfile.classList.add('active');
+                panePassword.classList.remove('active');
+                history.replaceState(null, null, '#profile');
+            }
+        }
+
+        // Tự động mở đúng tab khi URL có hash hoặc biến server truyền
+        document.addEventListener('DOMContentLoaded', () => {
+            const initialTab = '${activeTab}';
+            const hash = window.location.hash;
+            if (initialTab === 'password' || hash === '#password') {
+                switchProfileTab('password');
+            } else {
+                switchProfileTab('profile');
+            }
+        });
+
+        // Hiện/ẩn mật khẩu
+        function togglePassVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            const isPass = input.type === 'password';
+            input.type = isPass ? 'text' : 'password';
+            btn.innerHTML = isPass ? '<i class="fas fa-eye-slash"></i>' : '<i class="fas fa-eye"></i>';
+        }
+
+        // Xem trước Avatar
+        function previewAvatar(url) {
+            const trimmed = url ? url.trim() : '';
+            const sidebarImg = document.getElementById('sidebarAvatarImg');
+            if (sidebarImg && trimmed) {
+                sidebarImg.src = trimmed;
+            }
+        }
+
+        function choosePresetAvatar(src) {
+            const avatarInput = document.getElementById('avatar');
+            if (avatarInput) {
+                avatarInput.value = src;
+                previewAvatar(src);
+            }
+        }
+
+        // Kiểm tra độ mạnh mật khẩu theo thời gian thực
+        function checkPasswordStrength(password) {
+            const box = document.getElementById('pwdStrengthBox');
+            if (!box) return;
+            box.style.display = password.length > 0 ? 'block' : 'none';
+
+            const hasLen = password.length >= 8;
+            const hasUpper = /[A-Z]/.test(password);
+            const hasLower = /[a-z]/.test(password);
+            const hasDigit = /[0-9]/.test(password);
+            const hasSpecial = /[^A-Za-z0-9]/.test(password);
+
+            updateCrit('critLength', hasLen);
+            updateCrit('critUpper', hasUpper);
+            updateCrit('critLower', hasLower);
+            updateCrit('critNumber', hasDigit);
+            updateCrit('critSpecial', hasSpecial);
+
+            let score = 0;
+            if (hasLen) score++;
+            if (hasUpper) score++;
+            if (hasLower) score++;
+            if (hasDigit) score++;
+            if (hasSpecial) score++;
+
+            const fill = document.getElementById('strengthFill');
+            const statusText = document.getElementById('strengthStatusText');
+
+            if (score <= 2) {
+                fill.style.width = '30%';
+                fill.style.background = '#ef4444';
+                statusText.innerHTML = 'Độ mạnh: <span style="color:#ef4444; font-weight:700;">Yếu</span> (Chưa đạt chuẩn)';
+            } else if (score === 3 || score === 4) {
+                fill.style.width = '70%';
+                fill.style.background = '#f59e0b';
+                statusText.innerHTML = 'Độ mạnh: <span style="color:#f59e0b; font-weight:700;">Khá</span> (Cần thêm ký tự)';
+            } else {
+                fill.style.width = '100%';
+                fill.style.background = '#10b981';
+                statusText.innerHTML = 'Độ mạnh: <span style="color:#10b981; font-weight:700;">Rất An Toàn!</span>';
+            }
+
+            checkPasswordMatch();
+        }
+
+        function updateCrit(elementId, isValid) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            if (isValid) {
+                el.className = 'crit-valid';
+                el.innerHTML = '<i class="fas fa-circle-check"></i> ' + el.textContent.trim();
+            } else {
+                el.className = 'crit-invalid';
+                el.innerHTML = '<i class="fas fa-circle-xmark"></i> ' + el.textContent.trim();
+            }
+        }
+
+        // Kiểm tra mật khẩu xác nhận trùng khớp
+        function checkPasswordMatch() {
+            const newPass = document.getElementById('newPassword').value;
+            const confirmPass = document.getElementById('confirmPassword').value;
+            const msg = document.getElementById('pwdMatchMsg');
+            if (!msg || !confirmPass) {
+                if (msg) msg.style.display = 'none';
+                return;
+            }
+
+            msg.style.display = 'block';
+            if (newPass === confirmPass) {
+                msg.style.color = '#10b981';
+                msg.innerHTML = '<i class="fas fa-check-circle"></i> Mật khẩu xác nhận trùng khớp!';
+            } else {
+                msg.style.color = '#ef4444';
+                msg.innerHTML = '<i class="fas fa-circle-exclamation"></i> Mật khẩu xác nhận chưa trùng khớp!';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -23,6 +23,12 @@ Dự án mô phỏng website bán sách trực tuyến hoàn chỉnh với 2 ch�
    - **Giỏ hàng mini (Cart Drawer)** trượt từ cạnh phải, thêm bớt sách, tính tổng tiền tự động.
    - Chức năng **Đăng xuất (Logout)** hủy session an toàn và điều hướng về màn hình đăng nhập.
 
+3. **Quản Lý Hồ Sơ Tài Khoản & Đổi Mật Khẩu (Profile & Security)**:
+   - Xem đầy đủ thông tin: Ảnh đại diện Avatar, Tên đăng nhập (chỉ đọc), Vai trò tài khoản, Họ tên, Email, SĐT.
+   - Cập nhật thông tin cá nhân: Đổi họ tên, email, số điện thoại, đường dẫn avatar kèm bộ sưu tập avatar mẫu chọn nhanh.
+   - Đổi mật khẩu an toàn: Xác thực mật khẩu cũ, đo lường độ mạnh mật khẩu theo thời gian thực (real-time checklist), kiểm tra mật khẩu xác nhận và đồng bộ trực tiếp vào MySQL.
+   - Truy cập nhanh từ menu dropdown trên Header của trang chủ.
+
 ---
 
 ## 🚀 2. Hướng dẫn chạy nhanh (Không cần cài đặt thêm)
