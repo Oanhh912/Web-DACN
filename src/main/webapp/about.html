@@ -1,0 +1,413 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giới Thiệu - Bookora | Tiệm Sách Tri Thức</title>
+    <meta name="description" content="Tìm hiểu về Bookora - Nhà sách trực tuyến hàng đầu Việt Nam, sứ mệnh lan tỏa tình yêu sách và tri thức đến mọi độc giả.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css?v=20260925_05">
+</head>
+<body>
+    <!-- 1. HEADER & NAVIGATION -->
+    <header class="main-header">
+        <div class="top-bar">
+            <div class="topbar-contact-info">
+                <span><i class="fas fa-phone"></i> 028.73008182</span>
+                <span><i class="fas fa-envelope"></i> hotro@bookora.com</span>
+                <span><i class="fas fa-location-dot"></i> Số 25, ngõ 68 phố Cầu Giấy, phường Quan Hoa, quận Cầu Giấy, TP. Hà Nội</span>
+            </div>
+            <!-- ${TOPBAR_AUTH} -->
+        </div>
+
+        <div class="navbar-container">
+            <!-- Logo -->
+            <a href="home" class="site-logo">
+                <div class="logo-icon">
+                    <i class="fas fa-book-bookmark"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>Bookora</h1>
+                    <span>Tiệm Sách Tri Thức</span>
+                </div>
+            </a>
+
+            <!-- Thanh tìm kiếm sách -->
+            <form action="home" method="GET" class="search-form" id="searchForm">
+                <div class="search-input-wrap">
+                    <input type="text" id="searchInput" name="q" class="search-input" 
+                           placeholder="Tìm kiếm theo tựa sách, tác giả, NXB, mã sách (MS001)..." 
+                           value="${searchKeyword}" autocomplete="off">
+                    <button type="button" class="btn-search" id="btnSearchSubmit" title="Tìm kiếm">
+                        Tìm kiếm
+                    </button>
+                </div>
+                <div class="search-suggestions-dropdown" id="searchSuggestionsDropdown"></div>
+            </form>
+
+            <!-- Hotline tư vấn Bookora -->
+            <div class="header-hotline">
+                <div class="hotline-icon">
+                    <i class="fas fa-phone-volume"></i>
+                </div>
+                <div class="hotline-text">
+                    <small>Tư vấn bán hàng</small>
+                    <strong>028.73008182</strong>
+                </div>
+            </div>
+
+            <!-- Khối hành động: Giỏ hàng & User Profile / Đăng nhập Đăng ký -->
+            <div class="header-actions">
+                <!-- Nút mở giỏ hàng -->
+                <div class="cart-dropdown-wrapper" id="cartDropdownWrapper">
+                    <button type="button" class="btn-cart-toggle" id="btnCartToggle" onclick="toggleCartPopover(event)" title="Xem giỏ hàng">
+                        <i class="fas fa-bag-shopping"></i>
+                        <span class="cart-badge" id="cartBadge" style="display: none;">0</span>
+                    </button>
+
+                    <!-- Popover giỏ hàng -->
+                    <div class="cart-popover" id="cartPopover">
+                        <div class="cart-popover-caret"></div>
+                        <div class="cart-popover-items" id="cartPopoverItems"></div>
+                        <div class="cart-popover-divider"></div>
+                        <div class="cart-popover-total-row">
+                            <span class="cart-popover-total-label">TỔNG TIỀN:</span>
+                            <span class="cart-popover-total-val" id="cartPopoverTotal">0đ</span>
+                        </div>
+                        <div class="cart-popover-actions">
+                            <a href="cart" class="btn-popover-view-cart">XEM GIỎ HÀNG</a>
+                            <button type="button" class="btn-popover-checkout" onclick="proceedToCheckout()">THANH TOÁN</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ${HEADER_AUTH} -->
+            </div>
+        </div>
+
+        <!-- 2. THANH ĐIỀU HƯỚNG CHÍNH (HEADER NAVIGATION BAR) -->
+        <nav class="main-nav-bar">
+            <div class="nav-bar-container">
+                <ul class="nav-menu-list">
+                    <li class="nav-menu-item">
+                        <a href="home" class="nav-menu-link">
+                            <i class="fas fa-house"></i> TRANG CHỦ
+                        </a>
+                    </li>
+                    <li class="nav-menu-item">
+                        <a href="about" class="nav-menu-link active">
+                            <i class="fas fa-circle-info"></i> GIỚI THIỆU
+                        </a>
+                    </li>
+                    <li class="nav-menu-item nav-dropdown-item" id="navCategoryDropdownWrapper">
+                        <a href="javascript:void(0)" class="nav-menu-link nav-dropdown-toggle" onclick="toggleNavCategoryDropdown(event)">
+                            <i class="fas fa-list-ul"></i> DANH MỤC SÁCH <i class="fas fa-chevron-down nav-caret"></i>
+                        </a>
+                        <!-- Dropdown tổng hợp danh mục sách thực tế của Bookora -->
+                        <div class="nav-category-dropdown" id="navCategoryDropdown">
+                            <div class="nav-dropdown-header">
+                                <span><i class="fas fa-layer-group"></i> Danh Mục Sách</span>
+                            </div>
+                            <div class="nav-category-vertical-list">
+                                <a href="category?name=Tất cả" class="nav-cat-list-link"><i class="fas fa-border-all"></i> Tất cả sách</a>
+                                <a href="category?name=Văn học" class="nav-cat-list-link"><i class="fas fa-book-open"></i> Văn học</a>
+                                <a href="category?name=Kinh tế" class="nav-cat-list-link"><i class="fas fa-chart-line"></i> Kinh tế</a>
+                                <a href="category?name=Kỹ năng sống" class="nav-cat-list-link"><i class="fas fa-seedling"></i> Kỹ năng sống</a>
+                                <a href="category?name=Tâm lý học" class="nav-cat-list-link"><i class="fas fa-brain"></i> Tâm lý học</a>
+                                <a href="category?name=Công nghệ thông tin" class="nav-cat-list-link"><i class="fas fa-laptop-code"></i> Công nghệ thông tin</a>
+                                <a href="category?name=Tâm linh & Đời sống" class="nav-cat-list-link"><i class="fas fa-spa"></i> Tâm linh & Đời sống</a>
+                                <a href="category?name=Khoa học" class="nav-cat-list-link"><i class="fas fa-atom"></i> Khoa học</a>
+                                <a href="category?name=Trinh thám" class="nav-cat-list-link"><i class="fas fa-mask"></i> Trinh thám & Bí ẩn</a>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="nav-menu-item">
+                        <a href="javascript:void(0)" class="nav-menu-link" onclick="handleNavBestSellers()">
+                            <i class="fas fa-fire" style="color: #ef4444;"></i> SÁCH BÁN CHẠY
+                        </a>
+                    </li>
+                    <li class="nav-menu-item">
+                        <a href="promotions" class="nav-menu-link">
+                            <i class="fas fa-gift" style="color: #f59e0b;"></i> KHUYẾN MÃI
+                            <span class="nav-badge-hot">HOT</span>
+                        </a>
+                    </li>
+                    <li class="nav-menu-item">
+                        <a href="contact" class="nav-menu-link">
+                            <i class="fas fa-headset" style="color: #06b6d4;"></i> LIÊN HỆ
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <!-- BREADCRUMBS -->
+    <nav class="breadcrumb-bar" aria-label="Breadcrumb">
+        <div class="container breadcrumb-inner">
+            <a href="home" class="bc-link">Trang chủ</a>
+            <span class="bc-sep">/</span>
+            <span class="bc-current">Giới thiệu</span>
+        </div>
+    </nav>
+
+    <!-- MAIN ARTICLE CONTENT LAYOUT -->
+    <main class="content-page-main">
+        <div class="content-page-container">
+            <div class="content-page-layout">
+                
+                <!-- CỘT TRÁI: BÀI VIẾT GIỚI THIỆU CHÍNH (CHUẨN FORM MẪU NHÀ SÁCH) -->
+                <article class="content-article-body">
+                    <h1 class="content-page-title">Giới thiệu</h1>
+                    
+                    <div class="content-prose">
+                        <p><strong>CTY Cổ phần Thương Mại và Dịch vụ BOOKORA (Bookora JSC)</strong> là một trong số các doanh nghiệp Thương mại điện tử chuyên ngành sách tiên phong tại Việt Nam, bắt đầu với nền tảng Website <strong>www.bookora.com</strong>.</p>
+
+                        <p>Từ khi thành lập đến nay, <strong>Bookora.com</strong> luôn là <strong>Nhà sách trên mạng hàng đầu tại Việt Nam</strong> và được ghi nhận từ nhiều cơ quan, tổ chức xuất bản uy tín trong và ngoài nước. Quan trọng hơn hết, <strong>Bookora.com</strong> được <strong>hàng triệu khách hàng thường xuyên mua sắm trực tuyến</strong> đặt sự tin tưởng và tín nhiệm của mình trong suốt quá trình phát triển để <strong>Bookora.com</strong> luôn được phục vụ và hoàn thiện.</p>
+
+                        <p>Với sứ mệnh xóa bỏ mọi giới hạn về không gian trong việc phân phối <em>"tri thức"</em> đến mọi miền đất nước bằng <strong>mô hình mua sắm trực tuyến hiện đại</strong>, từ miền núi đến hải đảo xa xôi, từ thành phố đến vùng quê và từ Việt Nam đến kiều bào ta ở trên toàn thế giới.</p>
+
+                        <p>Mục tiêu của chúng tôi là luôn mở rộng thị trường sách trực tuyến cùng với đà phát triển của công nghệ thông tin. Để thực hiện mục tiêu đó, chúng tôi đã có những nhận thức đúng đắn về vai trò của nguồn nhân lực trong xây dựng và phát triển kinh doanh. Chúng tôi đã và đang không ngừng hoàn thiện hơn nữa môi trường làm việc với các trang thiết bị hiện đại, cung cách làm việc hiệu quả để ngày càng hoàn thiện việc phục vụ khách hàng.</p>
+
+                        <!-- Thống kê số liệu -->
+                        <div class="brand-stats-row">
+                            <div class="brand-stat-card">
+                                <strong>50.000+</strong>
+                                <span>Đầu sách bản quyền chọn lọc</span>
+                            </div>
+                            <div class="brand-stat-card">
+                                <strong>200+</strong>
+                                <span>Nhà xuất bản & Tác giả đối tác</span>
+                            </div>
+                            <div class="brand-stat-card">
+                                <strong>1.000.000+</strong>
+                                <span>Khách hàng tin yêu trên toàn quốc</span>
+                            </div>
+                        </div>
+
+                        <h3>Đội ngũ Bookora.com</h3>
+                        <ul>
+                            <li>Với đội ngũ trẻ trung, yêu mến sách và với mong muốn thúc đẩy văn hóa đọc của người Việt, các nhân viên Bookora sẵn sàng đáp ứng mọi nhu cầu quý khách về sách với chất lượng phục vụ tốt nhất.</li>
+                            <li>Hệ thống quản lý kho vận thông minh kết hợp với Trợ lý AI Bookora giúp hỗ trợ độc giả 24/7 tìm kiếm cuốn sách tâm đắc một cách dễ dàng và chính xác nhất.</li>
+                        </ul>
+
+                        <h3>⭐ 4 Cam Kết Vàng Về Dịch Vụ Tại Bookora</h3>
+                        <div class="commit-cards-grid">
+                            <div class="commit-card-item">
+                                <div class="commit-card-icon"><i class="fas fa-shield-check"></i></div>
+                                <div class="commit-card-text">
+                                    <strong>100% Sách Thật & Bản Quyền</strong>
+                                    <p>Nói không tuyệt đối với sách lậu, sách photocopy kém chất lượng. Tất cả đều có tem chống hàng giả và hợp đồng bản quyền.</p>
+                                </div>
+                            </div>
+                            <div class="commit-card-item">
+                                <div class="commit-card-icon"><i class="fas fa-truck-fast"></i></div>
+                                <div class="commit-card-text">
+                                    <strong>Giao Hàng Nhanh & Đóng Gói Kỹ</strong>
+                                    <p>Đóng gói chống sốc 3 lớp cẩn thận, miễn phí vận chuyển cho đơn hàng từ 250.000đ trên phạm vi toàn quốc.</p>
+                                </div>
+                            </div>
+                            <div class="commit-card-item">
+                                <div class="commit-card-icon"><i class="fas fa-rotate-left"></i></div>
+                                <div class="commit-card-text">
+                                    <strong>Đổi Trả Linh Hoạt 30 Ngày</strong>
+                                    <p>Hỗ trợ đổi mới miễn phí nếu sách có bất kỳ lỗi in ấn, rách trang hoặc va đập trong quá trình giao nhận.</p>
+                                </div>
+                            </div>
+                            <div class="commit-card-item">
+                                <div class="commit-card-icon"><i class="fas fa-headset"></i></div>
+                                <div class="commit-card-text">
+                                    <strong>Tư Vấn Tận Tâm 24/7</strong>
+                                    <p>Đội ngũ chuyên viên yêu sách cùng Trợ lý AI sẵn sàng giải đáp thắc mắc, gợi ý tựa sách phù hợp với mọi độ tuổi.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="content-highlight-box">
+                            <i class="fas fa-quote-left" style="color: var(--accent); margin-right: 8px;"></i>
+                            <em>"Đọc một cuốn sách hay giống như được trò chuyện với những bộ óc vĩ đại nhất của những thế kỷ đã qua."</em> — <strong>René Descartes</strong>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- CỘT PHẢI: BÀI VIẾT MỚI NHẤT (CHUẨN ẢNH THIẾT KẾ MẪU) -->
+                <aside class="content-sidebar-wrap">
+                    <div class="sidebar-widget-card">
+                        <h3 class="sidebar-widget-title">BÀI VIẾT MỚI NHẤT</h3>
+                        <div class="sidebar-articles-list">
+                            <a href="javascript:void(0)" class="sidebar-article-item" onclick="alert('Đang mở bài viết: Minh Ám - Natsume Soseki')">
+                                <img src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=150" alt="Minh Ám" class="sidebar-art-thumb">
+                                <div class="sidebar-art-info">
+                                    <h4 class="sidebar-art-title">Minh Ám - Cuốn Tiểu Thuyết Dang Dở Đầy Ám Ảnh Của Natsume Soseki</h4>
+                                    <span class="sidebar-art-date">25.12.2024</span>
+                                </div>
+                            </a>
+
+                            <a href="javascript:void(0)" class="sidebar-article-item" onclick="alert('Đang mở bài viết: Review Sách Stop Overthinking')">
+                                <img src="https://images.unsplash.com/photo-1512820790803-83ca734da794?w=150" alt="Stop Overthinking" class="sidebar-art-thumb">
+                                <div class="sidebar-art-info">
+                                    <h4 class="sidebar-art-title">Review Sách: "Stop Overthinking - Sống Tự Do, Không Âu Lo"</h4>
+                                    <span class="sidebar-art-date">23.12.2024</span>
+                                </div>
+                            </a>
+
+                            <a href="javascript:void(0)" class="sidebar-article-item" onclick="alert('Đang mở bài viết: Phân tích tác phẩm Sống - Dư Hoa')">
+                                <img src="https://images.unsplash.com/photo-1495640388908-05fa85288e61?w=150" alt="Sống - Dư Hoa" class="sidebar-art-thumb">
+                                <div class="sidebar-art-info">
+                                    <h4 class="sidebar-art-title">"Sống" - Dư Hoa: Tóm Tắt Chi Tiết, Phân Tích Sâu Sắc và Lý Do Bạn Nên Đọc</h4>
+                                    <span class="sidebar-art-date">23.12.2024</span>
+                                </div>
+                            </a>
+
+                            <a href="javascript:void(0)" class="sidebar-article-item" onclick="alert('Đang mở bài viết: Đám Trẻ Ở Đại Dương Đen')">
+                                <img src="https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=150" alt="Đám Trẻ Ở Đại Dương Đen" class="sidebar-art-thumb">
+                                <div class="sidebar-art-info">
+                                    <h4 class="sidebar-art-title">Đám Trẻ Ở Đại Dương Đen</h4>
+                                    <span class="sidebar-art-date">23.12.2024</span>
+                                </div>
+                            </a>
+
+                            <a href="javascript:void(0)" class="sidebar-article-item" onclick="alert('Đang mở bài viết: Cây Cam Ngọt Của Tôi')">
+                                <img src="https://images.unsplash.com/photo-1532012164546-f432f2e3777a?w=150" alt="Cây Cam Ngọt Của Tôi" class="sidebar-art-thumb">
+                                <div class="sidebar-art-info">
+                                    <h4 class="sidebar-art-title">Cây Cam Ngọt Của Tôi: Khúc Ca Về Tình Yêu Thương Và Sự Trưởng Thành</h4>
+                                    <span class="sidebar-art-date">20.12.2024</span>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Hotline & Hỗ trợ khách hàng Widget -->
+                    <div class="sidebar-widget-card" style="background: linear-gradient(135deg, #1e293b, #0f172a); color: white;">
+                        <h4 style="color: #fde68a; margin: 0 0 10px; font-size: 15px;"><i class="fas fa-headset"></i> TỔNG ĐÀI HỖ TRỢ</h4>
+                        <p style="font-size: 13px; color: #cbd5e1; margin: 0 0 12px; line-height: 1.5;">Bạn cần tư vấn đặt sách theo số lượng lớn hoặc cần hợp tác xuất bản?</p>
+                        <div style="font-size: 18px; font-weight: 800; color: #38bdf8; margin-bottom: 6px;">1900 6401</div>
+                        <div style="font-size: 13px; color: #94a3b8;">Email: lienhe@bookora.com</div>
+                    </div>
+                </aside>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <div class="footer-col">
+                <div class="site-logo" style="margin-bottom: 12px;">
+                    <div class="logo-icon" style="background: white; color: var(--primary);">
+                        <i class="fas fa-book-bookmark"></i>
+                    </div>
+                    <div class="logo-text">
+                        <h1 style="color: white;">Bookora</h1>
+                        <span style="color: #fde68a;">Tiệm Sách Tri Thức</span>
+                    </div>
+                </div>
+                <p class="footer-desc">
+                    Nơi lan tỏa tình yêu sách và nâng tầm tri thức Việt. Cam kết 100% sách có bản quyền từ các nhà xuất bản uy tín hàng đầu.
+                </p>
+                <div style="font-size: 13px; color: #94a3b8; margin-top: 10px; line-height: 1.6;">
+                    <p style="margin: 4px 0;"><i class="fas fa-location-dot" style="color: var(--accent); margin-right: 6px;"></i> Số 25, ngõ 68 phố Cầu Giấy, TP. Hà Nội</p>
+                    <p style="margin: 4px 0;"><i class="fas fa-phone" style="color: var(--accent); margin-right: 6px;"></i> Hotline: 1900 6401 - 028.73008182</p>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h4>VỀ CHÚNG TÔI</h4>
+                <ul>
+                    <li><a href="about">Giới thiệu nhà sách</a></li>
+                    <li><a href="contact">Hệ thống cửa hàng</a></li>
+                    <li><a href="about">Tuyển dụng</a></li>
+                    <li><a href="contact">Liên hệ hợp tác</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>HỖ TRỢ KHÁCH HÀNG</h4>
+                <ul>
+                    <li><a href="javascript:void(0)">Chính sách đổi trả</a></li>
+                    <li><a href="javascript:void(0)">Phương thức vận chuyển</a></li>
+                    <li><a href="javascript:void(0)">Hướng dẫn thanh toán</a></li>
+                    <li><a href="javascript:void(0)">Bảo mật thông tin</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>KẾT NỐI VỚI CHÚNG TÔI</h4>
+                <div class="footer-social-links" style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <a href="javascript:void(0)" class="social-btn facebook" style="width: 36px; height: 36px; border-radius: 50%; background: #1e293b; color: #38bdf8; display: flex; align-items: center; justify-content: center;"><i class="fab fa-facebook-f"></i></a>
+                    <a href="javascript:void(0)" class="social-btn youtube" style="width: 36px; height: 36px; border-radius: 50%; background: #1e293b; color: #f43f5e; display: flex; align-items: center; justify-content: center;"><i class="fab fa-youtube"></i></a>
+                    <a href="javascript:void(0)" class="social-btn tiktok" style="width: 36px; height: 36px; border-radius: 50%; background: #1e293b; color: #e2e8f0; display: flex; align-items: center; justify-content: center;"><i class="fab fa-tiktok"></i></a>
+                    <a href="javascript:void(0)" class="social-btn instagram" style="width: 36px; height: 36px; border-radius: 50%; background: #1e293b; color: #ec4899; display: flex; align-items: center; justify-content: center;"><i class="fab fa-instagram"></i></a>
+                </div>
+                <div style="font-size: 12px; color: #64748b;">
+                    <span style="display: inline-block; padding: 4px 8px; background: #1e293b; border-radius: 4px; border: 1px solid #334155;"><i class="fas fa-shield-check" style="color: #10b981;"></i> Đã thông báo Bộ Công Thương</span>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2026 Bookora - Đồ án chuyên ngành Web Bán Sách Java. Bản quyền thuộc về Tiệm Sách Tri Thức.</p>
+        </div>
+    </footer>
+
+    <!-- SLIDE-IN CART DRAWER -->
+    <div class="cart-drawer-backdrop" id="cartDrawerBackdrop" onclick="toggleCartDrawer()"></div>
+    <div class="cart-drawer" id="cartDrawer">
+        <div class="cart-drawer-header">
+            <h3><i class="fas fa-bag-shopping"></i> Giỏ Hàng Của Bạn (<span id="cartDrawerCount">0</span>)</h3>
+            <button type="button" class="btn-close-drawer" onclick="toggleCartDrawer()">&times;</button>
+        </div>
+        <div class="cart-drawer-body" id="cartDrawerBody"></div>
+        <div class="cart-drawer-footer">
+            <div class="cart-drawer-total">
+                <span>Tổng thành tiền:</span>
+                <strong id="cartDrawerTotal" class="text-orange">0 đ</strong>
+            </div>
+            <div class="cart-drawer-actions">
+                <a href="cart" class="btn-drawer-cart">Xem chi tiết giỏ hàng</a>
+                <a href="cart" class="btn-drawer-checkout">Thanh toán ngay</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- CHATBOT AI WIDGET -->
+    <button type="button" class="chatbot-fab" id="chatbotFab" onclick="toggleChatbot()" title="Trò chuyện với Trợ lý AI Bookora">
+        <i class="fas fa-robot"></i>
+        <span class="chatbot-fab-badge">AI</span>
+    </button>
+    <div class="chatbot-window" id="chatbotWindow">
+        <div class="chatbot-header">
+            <div class="chatbot-header-info">
+                <div class="chatbot-avatar"><i class="fas fa-brain"></i></div>
+                <div class="chatbot-title">
+                    <h4>Bookora AI Assistant</h4>
+                    <span>Trợ lý tư vấn sách 24/7</span>
+                </div>
+            </div>
+            <button type="button" class="chatbot-close-btn" onclick="closeChatbot()" title="Đóng"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="chatbot-messages" id="chatbotMessages">
+            <div class="chat-bubble chat-bubble-ai">
+                Xin chào quý độc giả! 👋 Tôi là <strong>Bookora AI Assistant</strong>. Bạn cần tôi tư vấn về tựa sách nào hay chương trình khuyến mãi nào?
+            </div>
+        </div>
+        <div class="chatbot-prompts-bar">
+            <span class="chat-prompt-chip" onclick="sendChatbotPrompt('Gợi ý sách văn học kinh điển')">📚 Sách Văn học</span>
+            <span class="chat-prompt-chip" onclick="sendChatbotPrompt('Tìm sách lập trình công nghệ')">💻 Sách Công nghệ</span>
+            <span class="chat-prompt-chip" onclick="sendChatbotPrompt('Sách tư duy tài chính kinh tế')">📈 Sách Kinh tế</span>
+            <span class="chat-prompt-chip" onclick="sendChatbotPrompt('Các chương trình khuyến mãi hiện có')">🎁 Khuyến mãi</span>
+        </div>
+        <div class="chatbot-input-wrap">
+            <input type="text" id="chatbotInput" class="chatbot-input" placeholder="Hỏi AI về sách, tác giả, giá tiền..." onkeydown="if(event.key==='Enter') sendChatbotMessage()">
+            <button type="button" class="btn-chatbot-send" onclick="sendChatbotMessage()" title="Gửi tin nhắn">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
+    <script src="/js/app.js?v=20260926_10"></script>
+</body>
+</html>

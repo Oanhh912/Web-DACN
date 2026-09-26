@@ -69,15 +69,15 @@
                     <input type="text" id="searchInput" name="q" class="search-input" 
                            placeholder="Tìm kiếm theo tựa sách, tác giả, NXB, mã sách..." 
                            value="<%= searchKeyword %>" autocomplete="off">
-                    <button type="submit" class="btn-search" title="Tìm kiếm">
-                        <i class="fas fa-search"></i>
+                    <button type="submit" class="btn-search" id="btnSearchSubmit" title="Tìm kiếm">
+                        Tìm kiếm
                     </button>
-                    <!-- Dropdown gợi ý tìm kiếm tức thì theo Use Case Luồng cơ bản (1) -->
-                    <div class="search-suggestions-dropdown" id="searchSuggestionsDropdown" style="display:none;"></div>
                 </div>
+                <!-- Dropdown gợi ý tìm kiếm tức thì theo Use Case Luồng cơ bản (1) -->
+                <div class="search-suggestions-dropdown" id="searchSuggestionsDropdown" style="display:none;"></div>
             </form>
 
-            <!-- Hotline tư vấn phong cách Vinabook -->
+            <!-- Hotline tư vấn Bookora -->
             <div class="header-hotline">
                 <div class="hotline-icon">
                     <i class="fas fa-phone-volume"></i>
@@ -90,11 +90,30 @@
 
             <!-- Khối hành động: Giỏ hàng & User Profile / Đăng nhập Đăng ký -->
             <div class="header-actions">
-                <!-- Nút mở giỏ hàng -->
-                <button type="button" class="btn-cart-toggle" onclick="toggleCartDrawer()" title="Xem giỏ hàng">
-                    <i class="fas fa-bag-shopping"></i>
-                    <span class="cart-badge" id="cartBadge" style="display: none;">0</span>
-                </button>
+                <!-- Nút mở giỏ hàng kèm Popover chuẩn ảnh mẫu 1 -->
+                <div class="cart-dropdown-wrapper" id="cartDropdownWrapper">
+                    <button type="button" class="btn-cart-toggle" id="btnCartToggle" onclick="toggleCartPopover(event)" title="Xem giỏ hàng">
+                        <i class="fas fa-bag-shopping"></i>
+                        <span class="cart-badge" id="cartBadge" style="display: none;">0</span>
+                    </button>
+
+                    <!-- Popover giỏ hàng chuẩn ảnh mẫu 1 -->
+                    <div class="cart-popover" id="cartPopover">
+                        <div class="cart-popover-caret"></div>
+                        <div class="cart-popover-items" id="cartPopoverItems">
+                            <!-- Render bằng JS -->
+                        </div>
+                        <div class="cart-popover-divider"></div>
+                        <div class="cart-popover-total-row">
+                            <span class="cart-popover-total-label">TỔNG TIỀN:</span>
+                            <span class="cart-popover-total-val" id="cartPopoverTotal">0đ</span>
+                        </div>
+                        <div class="cart-popover-actions">
+                            <a href="cart" class="btn-popover-view-cart">XEM GIỎ HÀNG</a>
+                            <button type="button" class="btn-popover-checkout" onclick="proceedToCheckout()">THANH TOÁN</button>
+                        </div>
+                    </div>
+                </div>
 
                 <% if (isLoggedIn) { %>
                 <!-- Menu người dùng đã đăng nhập -->
@@ -143,6 +162,62 @@
                 <% } %>
             </div>
         </div>
+
+        <!-- 2. THANH ĐIỀU HƯỚNG CHÍNH (HEADER NAVIGATION BAR) -->
+        <nav class="main-nav-bar">
+            <div class="nav-bar-container">
+                <ul class="nav-menu-list">
+                    <li class="nav-menu-item">
+                        <a href="home" class="nav-menu-link active">
+                            <i class="fas fa-house"></i> TRANG CHỦ
+                        </a>
+                    </li>
+                    <li class="nav-menu-item">
+                        <a href="about" class="nav-menu-link">
+                            <i class="fas fa-circle-info"></i> GIỚI THIỆU
+                        </a>
+                    </li>
+                    <li class="nav-menu-item nav-dropdown-item" id="navCategoryDropdownWrapper">
+                        <a href="javascript:void(0)" class="nav-menu-link nav-dropdown-toggle" onclick="toggleNavCategoryDropdown(event)">
+                            <i class="fas fa-list-ul"></i> DANH MỤC SÁCH <i class="fas fa-chevron-down nav-caret"></i>
+                        </a>
+                        <!-- Dropdown tổng hợp danh mục sách thực tế của Bookora -->
+                        <div class="nav-category-dropdown" id="navCategoryDropdown">
+                            <div class="nav-dropdown-header">
+                                <span><i class="fas fa-layer-group"></i> Danh Mục Sách</span>
+                            </div>
+                            <div class="nav-category-vertical-list">
+                                <a href="category?name=Tất cả" class="nav-cat-list-link"><i class="fas fa-border-all"></i> Tất cả sách</a>
+                                <a href="category?name=Văn học" class="nav-cat-list-link"><i class="fas fa-book-open"></i> Văn học</a>
+                                <a href="category?name=Kinh tế" class="nav-cat-list-link"><i class="fas fa-chart-line"></i> Kinh tế</a>
+                                <a href="category?name=Kỹ năng sống" class="nav-cat-list-link"><i class="fas fa-seedling"></i> Kỹ năng sống</a>
+                                <a href="category?name=Tâm lý học" class="nav-cat-list-link"><i class="fas fa-brain"></i> Tâm lý học</a>
+                                <a href="category?name=Công nghệ thông tin" class="nav-cat-list-link"><i class="fas fa-laptop-code"></i> Công nghệ thông tin</a>
+                                <a href="category?name=Tâm linh & Đời sống" class="nav-cat-list-link"><i class="fas fa-spa"></i> Tâm linh & Đời sống</a>
+                                <a href="category?name=Khoa học" class="nav-cat-list-link"><i class="fas fa-atom"></i> Khoa học</a>
+                                <a href="category?name=Trinh thám" class="nav-cat-list-link"><i class="fas fa-mask"></i> Trinh thám & Bí ẩn</a>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="nav-menu-item">
+                        <a href="javascript:void(0)" class="nav-menu-link" onclick="handleNavBestSellers()">
+                            <i class="fas fa-fire" style="color: #ef4444;"></i> SÁCH BÁN CHẠY
+                        </a>
+                    </li>
+                    <li class="nav-menu-item">
+                        <a href="promotions" class="nav-menu-link">
+                            <i class="fas fa-gift" style="color: #f59e0b;"></i> KHUYẾN MÃI
+                            <span class="nav-badge-hot">HOT</span>
+                        </a>
+                    </li>
+                    <li class="nav-menu-item">
+                        <a href="contact" class="nav-menu-link">
+                            <i class="fas fa-headset" style="color: #06b6d4;"></i> LIÊN HỆ
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
     </header>
 
     <!-- 2. HERO BANNER -->
@@ -265,13 +340,20 @@
             <% if (books == null || books.isEmpty()) { %>
                 <div class="no-books-found">
                     <div class="empty-icon-wrap"><i class="fas fa-book-open"></i></div>
-                    <h3>Không tìm thấy sản phẩm phù hợp</h3>
-                    <p>Rất tiếc, không có cuốn sách nào khớp với từ khóa hoặc tiêu chí lọc của bạn.</p>
+                    <h3 class="empty-title">Không tìm thấy sản phẩm phù hợp</h3>
                     <div class="empty-ai-suggestion">
-                        <p><i class="fas fa-robot" style="color: var(--accent);"></i> Gợi ý: Bạn có thể thử tìm kiếm với từ khóa ngắn hơn hoặc hỏi Trợ lý AI của chúng tôi để được gợi ý sách tương đương!</p>
-                        <button type="button" class="btn-empty-ai" onclick="openChatbot('Gợi ý sách tương tự từ khóa: <%= searchKeyword %>')">
-                            <i class="fas fa-comments"></i> Hỏi Chatbot AI tư vấn ngay
-                        </button>
+                        <div class="empty-ai-msg" onclick="openChatbot('Gợi ý sách cho tôi')">
+                            <i class="fas fa-robot ai-robot-icon"></i>
+                            <span>Gợi ý: Bạn có thể tìm kiếm bằng Chatbot AI!</span>
+                        </div>
+                        <div class="empty-ai-action">
+                            <button type="button" class="btn-empty-ai" onclick="openChatbot('Gợi ý sách cho tôi<%= (searchKeyword != null && !searchKeyword.isEmpty()) ? " với từ khóa: " + searchKeyword : "" %>')">
+                                <i class="fas fa-comments"></i> Hỏi Chatbot AI tư vấn ngay
+                            </button>
+                            <button type="button" class="btn-empty-reset" onclick="resetAllFilters()">
+                                <i class="fas fa-rotate-left"></i> Đặt lại bộ lọc
+                            </button>
+                        </div>
                     </div>
                 </div>
             <% } else {
@@ -296,7 +378,7 @@
                      data-promotion="<%= b.getPromotion() != null ? b.getPromotion().replace("\"", "&quot;") : "" %>">
                     <div class="book-card-inner">
                         <div class="book-cover-wrap">
-                            <img src="<%= b.getImage() %>" alt="<%= b.getTitle() %>" class="book-cover" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500';">
+                            <img src="<%= b.getImage() %>" alt="<%= b.getTitle() %>" class="book-cover" loading="lazy" onclick="goToBookDetail(<%= b.getId() %>)" style="cursor: pointer;" onerror="this.src='https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500';">
                             <div class="badge-container">
                                 <% if (b.isOutOfStock()) { %>
                                     <span class="badge-tag badge-out-of-stock"><i class="fas fa-circle-exclamation"></i> Hết hàng</span>
@@ -311,7 +393,7 @@
                                 <% } %>
                             </div>
                             <div class="book-actions-overlay">
-                                <button type="button" class="btn-quickview" onclick="openQuickView(<%= b.getId() %>)"><i class="fas fa-eye"></i> Xem nhanh</button>
+                                <button type="button" class="btn-quickview" onclick="openQuickView(<%= b.getId() %>)"><i class="fas fa-eye"></i> Xem chi tiết</button>
                             </div>
                         </div>
                         <div class="book-info">
@@ -319,7 +401,7 @@
                                 <span class="book-category"><%= b.getCategory() %></span>
                                 <span class="book-code" title="Mã sách: <%= b.getCode() %>"><i class="fas fa-barcode"></i> <%= b.getCode() %></span>
                             </div>
-                            <h3 class="book-title" title="<%= b.getTitle() %>"><%= b.getTitle() %></h3>
+                            <h3 class="book-title" title="<%= b.getTitle() %>" onclick="goToBookDetail(<%= b.getId() %>)"><%= b.getTitle() %></h3>
                             <p class="book-author"><i class="fas fa-feather-alt"></i> <%= b.getAuthor() %></p>
                             <p class="book-publisher-mini"><i class="fas fa-building-columns"></i> <%= b.getPublisher() != null ? b.getPublisher() : "NXB Tri Thức" %></p>
                             <div class="book-rating">
@@ -423,12 +505,15 @@
                     <!-- Khối hành động Mua hàng -->
                     <div class="modal-actions" id="modalActionsWrap">
                         <div class="qty-control" id="modalQtyControl">
-                            <button type="button" class="btn-qty" onclick="changeModalQty(-1)">-</button>
+                            <button type="button" class="btn-qty" onclick="changeModalQty(-1)"><i class="fas fa-minus"></i></button>
                             <input type="text" id="modalQty" class="qty-input" value="1" readonly>
-                            <button type="button" class="btn-qty" onclick="changeModalQty(1)">+</button>
+                            <button type="button" class="btn-qty" onclick="changeModalQty(1)"><i class="fas fa-plus"></i></button>
                         </div>
-                        <button type="button" class="btn-modal-cart" id="btnModalAddToCart" onclick="addModalBookToCart()">
+                        <button type="button" class="btn-modal-cart btn-modal-add-cart" id="btnModalAddToCart" onclick="addModalBookToCart()">
                             <i class="fas fa-cart-plus"></i> Thêm Vào Giỏ Hàng
+                        </button>
+                        <button type="button" class="btn-modal-cart btn-modal-buy-now" id="btnModalBuyNow" style="background: #2c3e50;" onclick="buyNowFromModal()">
+                            <i class="fas fa-bolt"></i> Mua Ngay
                         </button>
                         <button type="button" class="btn-modal-cart" id="btnModalNotify" style="display:none; background: #dc2626;" onclick="notifyOutOfStockFromModal()">
                             <i class="fas fa-bell"></i> Báo Khi Có Hàng Lại
@@ -559,6 +644,183 @@
         </div>
     </footer>
 
-    <script src="${pageContext.request.contextPath}/js/app.js"></script>
+    <!-- ==================== CÁC MODAL THÔNG TIN MÔ PHỎNG ==================== -->
+    <div class="nav-info-modal-backdrop" id="navInfoModalBackdrop" onclick="closeAllInfoModals()"></div>
+
+    <!-- 1. Modal Giới Thiệu -->
+    <div class="nav-info-modal" id="aboutModal">
+        <div class="nav-info-modal-header">
+            <h3><i class="fas fa-circle-info"></i> Giới Thiệu Về Tiệm Sách Tri Thức Bookora</h3>
+            <button type="button" class="btn-close-info-modal" onclick="closeAboutModal()">&times;</button>
+        </div>
+        <div class="nav-info-modal-body">
+            <div class="about-hero-box">
+                <h4>📚 Nơi Hội Tụ Tinh Hoa Tri Thức Nhân Loại</h4>
+                <p style="margin: 0; font-size: 13px; color: #475569;">Được thành lập với sứ mệnh kết nối độc giả Việt Nam với nguồn tri thức nhân loại quý giá nhất.</p>
+            </div>
+
+            <div class="about-stats-grid">
+                <div class="about-stat-item">
+                    <strong>50.000+</strong>
+                    <span>Đầu sách bản quyền</span>
+                </div>
+                <div class="about-stat-item">
+                    <strong>200+</strong>
+                    <span>NXB & Đối tác lớn</span>
+                </div>
+                <div class="about-stat-item">
+                    <strong>1.000.000+</strong>
+                    <span>Độc giả toàn quốc</span>
+                </div>
+            </div>
+
+            <h5 style="margin: 15px 0 10px; color: #1e293b; font-size: 14.5px;">⭐ 4 Cam Kết Vàng Từ Bookora:</h5>
+            <div class="about-commit-list">
+                <div class="about-commit-item">
+                    <i class="fas fa-shield-check"></i>
+                    <div><strong>100% Sách Thật & Bản Quyền:</strong> Nói không tuyệt đối với sách lậu, sách photocopy kém chất lượng.</div>
+                </div>
+                <div class="about-commit-item">
+                    <i class="fas fa-truck-fast"></i>
+                    <div><strong>Giao Hàng Siêu Tốc & An Toàn:</strong> Đóng gói chống sốc 3 lớp, miễn phí vận chuyển cho đơn từ 250.000đ.</div>
+                </div>
+                <div class="about-commit-item">
+                    <i class="fas fa-rotate-left"></i>
+                    <div><strong>Đổi Trả Linh Hoạt 30 Ngày:</strong> Hỗ trợ 1 đổi 1 nếu sách bị lỗi in ấn hoặc hư hỏng trong quá trình vận chuyển.</div>
+                </div>
+                <div class="about-commit-item">
+                    <i class="fas fa-headset"></i>
+                    <div><strong>Tư Vấn Tận Tâm 24/7:</strong> Trợ lý AI Bookora và đội ngũ tư vấn luôn sẵn sàng gợi ý cuốn sách phù hợp nhất cho bạn.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Modal Khuyến Mãi -->
+    <div class="nav-info-modal" id="promotionModal">
+        <div class="nav-info-modal-header">
+            <h3><i class="fas fa-gift"></i> Mã Giảm Giá & Ưu Đãi Độc Quyền Bookora</h3>
+            <button type="button" class="btn-close-info-modal" onclick="closePromotionModal()">&times;</button>
+        </div>
+        <div class="nav-info-modal-body">
+            <p style="margin-top: 0; font-size: 13px; color: #64748b;">Nhấp <strong>Sao chép</strong> mã ưu đãi để áp dụng khi thanh toán đơn hàng:</p>
+            <div class="promo-list-wrap">
+                <div class="promo-ticket-card">
+                    <div class="promo-ticket-left">
+                        <i class="fas fa-tag"></i>
+                        <span>GIẢM 30K</span>
+                    </div>
+                    <div class="promo-ticket-right">
+                        <div class="promo-ticket-info">
+                            <h5>Giảm 30.000đ cho đơn từ 200.000đ</h5>
+                            <p>Áp dụng cho toàn bộ đầu sách trên hệ thống</p>
+                            <span class="promo-code-badge">BOOKORA2026</span>
+                        </div>
+                        <button type="button" class="btn-copy-promo" onclick="copyPromoCode('BOOKORA2026')">
+                            <i class="fas fa-copy"></i> Sao chép
+                        </button>
+                    </div>
+                </div>
+
+                <div class="promo-ticket-card">
+                    <div class="promo-ticket-left" style="background: linear-gradient(135deg, #10b981, #047857);">
+                        <i class="fas fa-truck-fast"></i>
+                        <span>FREESHIP</span>
+                    </div>
+                    <div class="promo-ticket-right">
+                        <div class="promo-ticket-info">
+                            <h5>Miễn phí vận chuyển toàn quốc</h5>
+                            <p>Áp dụng cho đơn hàng giá trị từ 250.000đ</p>
+                            <span class="promo-code-badge">FREESHIP</span>
+                        </div>
+                        <button type="button" class="btn-copy-promo" onclick="copyPromoCode('FREESHIP')">
+                            <i class="fas fa-copy"></i> Sao chép
+                        </button>
+                    </div>
+                </div>
+
+                <div class="promo-ticket-card">
+                    <div class="promo-ticket-left" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">
+                        <i class="fas fa-laptop-code"></i>
+                        <span>GIẢM 30%</span>
+                    </div>
+                    <div class="promo-ticket-right">
+                        <div class="promo-ticket-info">
+                            <h5>Giảm 30% Sách Công Nghệ & AI</h5>
+                            <p>Dành riêng cho sinh viên & lập trình viên</p>
+                            <span class="promo-code-badge">TECH30</span>
+                        </div>
+                        <button type="button" class="btn-copy-promo" onclick="copyPromoCode('TECH30')">
+                            <i class="fas fa-copy"></i> Sao chép
+                        </button>
+                    </div>
+                </div>
+
+                <div class="promo-ticket-card">
+                    <div class="promo-ticket-left" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9);">
+                        <i class="fas fa-brain"></i>
+                        <span>GIẢM 15%</span>
+                    </div>
+                    <div class="promo-ticket-right">
+                        <div class="promo-ticket-info">
+                            <h5>Giảm 15% Sách Kỹ Năng & Tâm Lý</h5>
+                            <p>Bộ sách nuôi dưỡng tâm hồn và phát triển bản thân</p>
+                            <span class="promo-code-badge">TRI_THUC</span>
+                        </div>
+                        <button type="button" class="btn-copy-promo" onclick="copyPromoCode('TRI_THUC')">
+                            <i class="fas fa-copy"></i> Sao chép
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Modal Liên Hệ -->
+    <div class="nav-info-modal" id="contactModal">
+        <div class="nav-info-modal-header">
+            <h3><i class="fas fa-headset"></i> Liên Hệ & Chăm Sóc Khách Hàng Bookora</h3>
+            <button type="button" class="btn-close-info-modal" onclick="closeContactModal()">&times;</button>
+        </div>
+        <div class="nav-info-modal-body">
+            <div class="contact-layout-grid">
+                <div class="contact-info-col">
+                    <h5>📍 Thông Tin Nhà Sách</h5>
+                    <div class="contact-list-items">
+                        <div class="contact-item">
+                            <i class="fas fa-location-dot"></i>
+                            <div><strong>Địa chỉ:</strong> Số 25, ngõ 68 phố Cầu Giấy, P. Quan Hoa, Q. Cầu Giấy, Hà Nội</div>
+                        </div>
+                        <div class="contact-item">
+                            <i class="fas fa-phone-volume"></i>
+                            <div><strong>Hotline tư vấn:</strong> 028.73008182 - 1900 6401</div>
+                        </div>
+                        <div class="contact-item">
+                            <i class="fas fa-envelope"></i>
+                            <div><strong>Email:</strong> hotro@bookora.com / lienhe@bookora.com</div>
+                        </div>
+                        <div class="contact-item">
+                            <i class="fas fa-clock"></i>
+                            <div><strong>Giờ mở cửa:</strong> 8:00 - 22:00 (Tất cả các ngày trong tuần)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="contact-form-col">
+                    <h5>💬 Gửi Yêu Cầu / Góp Ý</h5>
+                    <form onsubmit="return handleSendContact(event)">
+                        <input type="text" id="contactName" class="contact-input-field" placeholder="Họ và tên của bạn *" required>
+                        <input type="email" id="contactEmail" class="contact-input-field" placeholder="Địa chỉ email *">
+                        <textarea id="contactMessage" class="contact-input-field" style="height: 70px; resize: none;" placeholder="Nội dung cần tư vấn hoặc góp ý..."></textarea>
+                        <button type="submit" class="btn-send-contact">
+                            <i class="fas fa-paper-plane"></i> Gửi Tin Nhắn
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="${pageContext.request.contextPath}/js/app.js?v=20260926_10"></script>
 </body>
 </html>

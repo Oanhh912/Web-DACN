@@ -46,6 +46,13 @@ public class BookstoreApp {
         server.createContext("/login", new LoginHandler());
         server.createContext("/register", new RegisterHandler());
         server.createContext("/home", new HomeHandler());
+        server.createContext("/category", new CategoryHandler());
+        server.createContext("/category.html", new CategoryHandler());
+        server.createContext("/book", new BookDetailHandler());
+        server.createContext("/cart", new CartHandler());
+        server.createContext("/about", new AboutHandler());
+        server.createContext("/contact", new ContactHandler());
+        server.createContext("/promotions", new PromotionsHandler());
         server.createContext("/profile", new ProfileHandler());
         server.createContext("/logout", new LogoutHandler());
         server.createContext("/api/books", new ApiBooksHandler());
@@ -81,6 +88,8 @@ public class BookstoreApp {
             String path = exchange.getRequestURI().getPath();
             if (path.equals("/")) {
                 redirect(exchange, "/home");
+            } else if (path.equals("/category") || path.equals("/category.html")) {
+                new CategoryHandler().handle(exchange);
             } else {
                 new StaticFileHandler().handle(exchange);
             }
@@ -501,6 +510,116 @@ public class BookstoreApp {
     }
 
     /**
+     * Xử lý điều hướng và hiển thị trang Giỏ hàng (/cart)
+     */
+    static class CartHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            User user = getAuthenticatedUser(exchange);
+            String html = renderCartPage(user);
+            sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
+        }
+    }
+
+    /**
+     * Xử lý hiển thị trang Giới thiệu (/about)
+     */
+    static class AboutHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            User user = getAuthenticatedUser(exchange);
+            String html = renderContentPage("about.html", user);
+            sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
+        }
+    }
+
+    /**
+     * Xử lý hiển thị trang Liên hệ (/contact)
+     */
+    static class ContactHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            User user = getAuthenticatedUser(exchange);
+            String html = renderContentPage("contact.html", user);
+            sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
+        }
+    }
+
+    /**
+     * Xử lý hiển thị trang Khuyến mãi (/promotions)
+     */
+    static class PromotionsHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            User user = getAuthenticatedUser(exchange);
+            String html = renderContentPage("promotions.html", user);
+            sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
+        }
+    }
+
+    /**
+     * Xử lý hiển thị trang Danh Mục Sách riêng biệt (/category) theo layout ảnh mẫu 2
+     */
+    static class CategoryHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            String path = exchange.getRequestURI().getPath();
+            if (path.startsWith("/category/css/") || path.startsWith("/category/js/") || path.startsWith("/category/images/")) {
+                new StaticFileHandler().handle(exchange);
+                return;
+            }
+
+            String query = exchange.getRequestURI().getQuery();
+            String category = "Tất cả";
+            String sort = "newest";
+            if (query != null) {
+                Map<String, String> qp = parseQueryString(query);
+                if (qp.containsKey("name") && !qp.get("name").trim().isEmpty()) {
+                    category = qp.get("name").trim();
+                } else if (qp.containsKey("category") && !qp.get("category").trim().isEmpty()) {
+                    category = qp.get("category").trim();
+                }
+                if (qp.containsKey("sort") && !qp.get("sort").trim().isEmpty()) {
+                    sort = qp.get("sort").trim();
+                }
+            }
+
+            User user = getAuthenticatedUser(exchange);
+            String html = renderCategoryPage(user, category, sort);
+            sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
+        }
+    }
+
+    /**
+     * Xử lý hiển thị trang Chi tiết sách (/book)
+     */
+    static class BookDetailHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            String path = exchange.getRequestURI().getPath();
+            if (path.startsWith("/book/css/") || path.startsWith("/book/js/") || path.startsWith("/book/images/")) {
+                new StaticFileHandler().handle(exchange);
+                return;
+            }
+
+            int bookId = 25; // Mặc định hiển thị sách Tháo Dây Oan Trái
+            String query = exchange.getRequestURI().getQuery();
+            if (query != null) {
+                Map<String, String> qp = parseQueryString(query);
+                if (qp.containsKey("id")) {
+                    try {
+                        bookId = Integer.parseInt(qp.get("id").trim());
+                    } catch (NumberFormatException ignored) {}
+                }
+            }
+
+            User user = getAuthenticatedUser(exchange);
+            String html = renderBookDetailPage(user, bookId);
+            sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
+        }
+    }
+
+    /**
      * API trả về danh sách sách dưới dạng JSON (hỗ trợ tìm kiếm & bộ lọc đa tiêu chí)
      */
     static class ApiBooksHandler implements HttpHandler {
@@ -581,13 +700,14 @@ public class BookstoreApp {
             DataStore.SearchSuggestionResult res = DataStore.getSearchSuggestions(keyword);
 
             StringBuilder sb = new StringBuilder("{");
+            sb.append("\"totalMatches\":").append(res.getTotalMatches()).append(",");
             // 1. Books
             sb.append("\"books\":[");
             for (int i = 0; i < res.getBooks().size(); i++) {
                 Book b = res.getBooks().get(i);
                 if (i > 0) sb.append(",");
                 sb.append(String.format(
-                        "{\"id\":%d,\"code\":%s,\"title\":%s,\"author\":%s,\"publisher\":%s,\"price\":%.0f,\"formattedPrice\":%s,\"category\":%s,\"stock\":%d,\"stockStatus\":%s,\"isOutOfStock\":%b,\"image\":%s,\"promotion\":%s}",
+                        "{\"id\":%d,\"code\":%s,\"title\":%s,\"author\":%s,\"publisher\":%s,\"price\":%.0f,\"formattedPrice\":%s,\"originalPrice\":%.0f,\"formattedOriginalPrice\":%s,\"category\":%s,\"stock\":%d,\"stockStatus\":%s,\"isOutOfStock\":%b,\"image\":%s,\"promotion\":%s}",
                         b.getId(),
                         escapeJson(b.getCode()),
                         escapeJson(b.getTitle()),
@@ -595,6 +715,8 @@ public class BookstoreApp {
                         escapeJson(b.getPublisher()),
                         b.getPrice(),
                         escapeJson(b.getFormattedPrice()),
+                        b.getOriginalPrice(),
+                        escapeJson(b.getFormattedOriginalPrice()),
                         escapeJson(b.getCategory()),
                         b.getStock(),
                         escapeJson(b.getStockStatusText()),
@@ -800,6 +922,9 @@ public class BookstoreApp {
             String path = exchange.getRequestURI().getPath();
             if (path.startsWith("/")) path = path.substring(1);
             if (path.startsWith("home/")) path = path.substring(5);
+            if (path.startsWith("category/")) path = path.substring(9);
+            if (path.startsWith("book/")) path = path.substring(5);
+            if (path.startsWith("cart/")) path = path.substring(5);
             if (path.startsWith("login/")) path = path.substring(6);
             if (path.startsWith("register/")) path = path.substring(9);
             if (path.startsWith("profile/")) path = path.substring(8);
@@ -917,6 +1042,624 @@ public class BookstoreApp {
         content = content.replace("${user.role}", escapeAttr(user.getRole()));
         content = content.replace("${user.avatar}", escapeAttr(user.getAvatar() != null ? user.getAvatar() : "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150"));
         content = content.replace("${activeTab}", (activeTab != null && !activeTab.isEmpty()) ? activeTab : "profile");
+
+        return content;
+    }
+
+    private static String renderCartPage(User user) {
+        Path templatePath = WEBAPP_DIR.resolve("cart.html");
+        String content = "";
+        try {
+            content = Files.readString(templatePath, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            content = "<h1>Cart Template Missing</h1>";
+        }
+
+        if (user != null) {
+            String topbarAuth = String.format(
+                    "<div class=\"topbar-auth-links\">" +
+                    "    <span class=\"topbar-welcome\"><i class=\"fas fa-circle-user\"></i> Xin chào, <strong>%s</strong></span>" +
+                    "    <span class=\"topbar-divider\">|</span>" +
+                    "    <a href=\"logout\" class=\"topbar-auth-btn\"><i class=\"fas fa-arrow-right-from-bracket\"></i> ĐĂNG XUẤT</a>" +
+                    "</div>",
+                    escapeAttr(user.getFullName())
+            );
+
+            String headerAuth = String.format(
+                    "<div class=\"user-dropdown\">\n" +
+                    "    <button type=\"button\" class=\"user-profile-trigger\" id=\"userMenuTrigger\">\n" +
+                    "        <img src=\"%s\" alt=\"Avatar\" class=\"user-avatar-img\" onerror=\"this.src='https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150';\">\n" +
+                    "        <div class=\"user-meta\">\n" +
+                    "            <div class=\"user-greeting\">Xin chào,</div>\n" +
+                    "            <div class=\"user-fullname\">%s</div>\n" +
+                    "        </div>\n" +
+                    "        <span class=\"user-role-tag\">%s</span>\n" +
+                    "        <i class=\"fas fa-chevron-down\" style=\"font-size: 11px; color: var(--text-muted); margin-left: 4px;\"></i>\n" +
+                    "    </button>\n" +
+                    "    <div class=\"user-menu-dropdown\" id=\"userMenuDropdown\">\n" +
+                    "        <div class=\"dropdown-header-info\">\n" +
+                    "            <div style=\"font-weight: 700; font-size: 13px; color: var(--primary);\">%s</div>\n" +
+                    "            <div class=\"dropdown-email\">%s</div>\n" +
+                    "        </div>\n" +
+                    "        <a href=\"profile\" class=\"dropdown-item\">\n" +
+                    "            <i class=\"fas fa-user-circle\"></i> Hồ sơ tài khoản\n" +
+                    "        </a>\n" +
+                    "        <a href=\"cart\" class=\"dropdown-item\">\n" +
+                    "            <i class=\"fas fa-bag-shopping\"></i> Giỏ hàng của tôi\n" +
+                    "        </a>\n" +
+                    "        <a href=\"logout\" class=\"dropdown-item logout\">\n" +
+                    "            <i class=\"fas fa-arrow-right-from-bracket\"></i> Đăng xuất\n" +
+                    "        </a>\n" +
+                    "    </div>\n" +
+                    "</div>",
+                    escapeAttr(user.getAvatar() != null ? user.getAvatar() : ""),
+                    escapeAttr(user.getFullName()),
+                    escapeAttr(user.getRole()),
+                    escapeAttr(user.getFullName()),
+                    escapeAttr(user.getEmail() != null ? user.getEmail() : "")
+            );
+
+            content = content.replace("<!-- ${TOPBAR_AUTH} -->", topbarAuth);
+            content = content.replace("<!-- ${HEADER_AUTH} -->", headerAuth);
+            content = content.replace("${user.fullName}", escapeAttr(user.getFullName()));
+            content = content.replace("${user.username}", escapeAttr(user.getUsername()));
+            content = content.replace("${user.role}", escapeAttr(user.getRole()));
+            content = content.replace("${user.avatar}", escapeAttr(user.getAvatar() != null ? user.getAvatar() : ""));
+            content = content.replace("${user.email}", escapeAttr(user.getEmail() != null ? user.getEmail() : ""));
+        } else {
+            String topbarAuth =
+                    "<div class=\"topbar-auth-links\">" +
+                    "    <span style=\"color: #cbd5e1;\"><i class=\"fas fa-truck-fast\"></i> Miễn phí vận chuyển từ 250.000 đ</span>" +
+                    "</div>";
+
+            String headerAuth =
+                    "<div class=\"guest-auth-buttons\">\n" +
+                    "    <a href=\"login\" class=\"btn-guest btn-guest-login\">\n" +
+                    "        <i class=\"fas fa-arrow-right-to-bracket\"></i>\n" +
+                    "        <span>Đăng Nhập</span>\n" +
+                    "    </a>\n" +
+                    "    <a href=\"register\" class=\"btn-guest btn-guest-register\">\n" +
+                    "        <i class=\"fas fa-user-plus\"></i>\n" +
+                    "        <span>Đăng Ký</span>\n" +
+                    "    </a>\n" +
+                    "</div>";
+
+            content = content.replace("<!-- ${TOPBAR_AUTH} -->", topbarAuth);
+            content = content.replace("<!-- ${HEADER_AUTH} -->", headerAuth);
+            content = content.replace("${user.fullName}", "Khách");
+            content = content.replace("${user.username}", "guest");
+            content = content.replace("${user.role}", "GUEST");
+            content = content.replace("${user.avatar}", "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150");
+            content = content.replace("${user.email}", "");
+        }
+
+        content = content.replace("${searchKeyword}", "");
+        return content;
+    }
+
+    private static String renderContentPage(String templateFileName, User user) {
+        Path templatePath = WEBAPP_DIR.resolve(templateFileName);
+        String content = "";
+        try {
+            content = Files.readString(templatePath, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            content = "<h1>Template Missing: " + templateFileName + "</h1>";
+        }
+
+        if (user != null) {
+            String topbarAuth = String.format(
+                    "<div class=\"topbar-auth-links\">" +
+                    "    <span class=\"topbar-welcome\"><i class=\"fas fa-circle-user\"></i> Xin chào, <strong>%s</strong></span>" +
+                    "    <span class=\"topbar-divider\">|</span>" +
+                    "    <a href=\"logout\" class=\"topbar-auth-btn\"><i class=\"fas fa-arrow-right-from-bracket\"></i> ĐĂNG XUẤT</a>" +
+                    "</div>",
+                    escapeAttr(user.getFullName())
+            );
+
+            String headerAuth = String.format(
+                    "<div class=\"user-dropdown\">\n" +
+                    "    <button type=\"button\" class=\"user-profile-trigger\" id=\"userMenuTrigger\">\n" +
+                    "        <img src=\"%s\" alt=\"Avatar\" class=\"user-avatar-img\" onerror=\"this.src='https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150';\">\n" +
+                    "        <div class=\"user-meta\">\n" +
+                    "            <div class=\"user-greeting\">Xin chào,</div>\n" +
+                    "            <div class=\"user-fullname\">%s</div>\n" +
+                    "        </div>\n" +
+                    "        <span class=\"user-role-tag\">%s</span>\n" +
+                    "        <i class=\"fas fa-chevron-down\" style=\"font-size: 11px; color: var(--text-muted); margin-left: 4px;\"></i>\n" +
+                    "    </button>\n" +
+                    "    <div class=\"user-menu-dropdown\" id=\"userMenuDropdown\">\n" +
+                    "        <div class=\"dropdown-header-info\">\n" +
+                    "            <div style=\"font-weight: 700; font-size: 13px; color: var(--primary);\">%s</div>\n" +
+                    "            <div class=\"dropdown-email\">%s</div>\n" +
+                    "        </div>\n" +
+                    "        <a href=\"profile\" class=\"dropdown-item\">\n" +
+                    "            <i class=\"fas fa-user-circle\"></i> Hồ sơ tài khoản\n" +
+                    "        </a>\n" +
+                    "        <a href=\"cart\" class=\"dropdown-item\">\n" +
+                    "            <i class=\"fas fa-bag-shopping\"></i> Giỏ hàng của tôi\n" +
+                    "        </a>\n" +
+                    "        <a href=\"logout\" class=\"dropdown-item logout\">\n" +
+                    "            <i class=\"fas fa-arrow-right-from-bracket\"></i> Đăng xuất\n" +
+                    "        </a>\n" +
+                    "    </div>\n" +
+                    "</div>",
+                    escapeAttr(user.getAvatar() != null ? user.getAvatar() : ""),
+                    escapeAttr(user.getFullName()),
+                    escapeAttr(user.getRole()),
+                    escapeAttr(user.getFullName()),
+                    escapeAttr(user.getEmail() != null ? user.getEmail() : "")
+            );
+
+            content = content.replace("<!-- ${TOPBAR_AUTH} -->", topbarAuth);
+            content = content.replace("<!-- ${HEADER_AUTH} -->", headerAuth);
+            content = content.replace("${user.fullName}", escapeAttr(user.getFullName()));
+            content = content.replace("${user.username}", escapeAttr(user.getUsername()));
+            content = content.replace("${user.role}", escapeAttr(user.getRole()));
+            content = content.replace("${user.avatar}", escapeAttr(user.getAvatar() != null ? user.getAvatar() : ""));
+            content = content.replace("${user.email}", escapeAttr(user.getEmail() != null ? user.getEmail() : ""));
+        } else {
+            String topbarAuth =
+                    "<div class=\"topbar-auth-links\">" +
+                    "    <span style=\"color: #cbd5e1;\"><i class=\"fas fa-truck-fast\"></i> Miễn phí vận chuyển từ 250.000 đ</span>" +
+                    "</div>";
+
+            String headerAuth =
+                    "<div class=\"guest-auth-buttons\">\n" +
+                    "    <a href=\"login\" class=\"btn-guest btn-guest-login\">\n" +
+                    "        <i class=\"fas fa-arrow-right-to-bracket\"></i>\n" +
+                    "        <span>Đăng Nhập</span>\n" +
+                    "    </a>\n" +
+                    "    <a href=\"register\" class=\"btn-guest btn-guest-register\">\n" +
+                    "        <i class=\"fas fa-user-plus\"></i>\n" +
+                    "        <span>Đăng Ký</span>\n" +
+                    "    </a>\n" +
+                    "</div>";
+
+            content = content.replace("<!-- ${TOPBAR_AUTH} -->", topbarAuth);
+            content = content.replace("<!-- ${HEADER_AUTH} -->", headerAuth);
+            content = content.replace("${user.fullName}", "Khách");
+            content = content.replace("${user.username}", "guest");
+            content = content.replace("${user.role}", "GUEST");
+            content = content.replace("${user.avatar}", "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150");
+            content = content.replace("${user.email}", "");
+        }
+
+        content = content.replace("${searchKeyword}", "");
+        return content;
+    }
+
+    private static String renderBookDetailPage(User user, int bookId) {
+        Path templatePath = WEBAPP_DIR.resolve("book.html");
+        String content = "";
+        try {
+            content = Files.readString(templatePath, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            content = "<h1>Book Detail Template Missing</h1>";
+        }
+
+        Book book = DataStore.getBookById(bookId);
+        if (book == null) {
+            book = DataStore.getBookById(25);
+        }
+        if (book == null) {
+            List<Book> all = DataStore.getAllBooks();
+            if (!all.isEmpty()) book = all.get(0);
+        }
+
+        if (user != null) {
+            String topbarAuth = String.format(
+                    "<div class=\"topbar-auth-links\">" +
+                    "    <span class=\"topbar-welcome\"><i class=\"fas fa-circle-user\"></i> Xin chào, <strong>%s</strong></span>" +
+                    "    <span class=\"topbar-divider\">|</span>" +
+                    "    <a href=\"logout\" class=\"topbar-auth-btn\"><i class=\"fas fa-arrow-right-from-bracket\"></i> ĐĂNG XUẤT</a>" +
+                    "</div>",
+                    escapeAttr(user.getFullName())
+            );
+
+            String headerAuth = String.format(
+                    "<div class=\"user-dropdown\">\n" +
+                    "    <button type=\"button\" class=\"user-profile-trigger\" id=\"userMenuTrigger\">\n" +
+                    "        <img src=\"%s\" alt=\"Avatar\" class=\"user-avatar-img\" onerror=\"this.src='https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150';\">\n" +
+                    "        <div class=\"user-meta\">\n" +
+                    "            <div class=\"user-greeting\">Xin chào,</div>\n" +
+                    "            <div class=\"user-fullname\">%s</div>\n" +
+                    "        </div>\n" +
+                    "        <span class=\"user-role-tag\">%s</span>\n" +
+                    "        <i class=\"fas fa-chevron-down\" style=\"font-size: 11px; color: var(--text-muted); margin-left: 4px;\"></i>\n" +
+                    "    </button>\n" +
+                    "    <div class=\"user-menu-dropdown\" id=\"userMenuDropdown\">\n" +
+                    "        <div class=\"dropdown-header-info\">\n" +
+                    "            <div style=\"font-weight: 700; font-size: 13px; color: var(--primary);\">%s</div>\n" +
+                    "            <div class=\"dropdown-email\">%s</div>\n" +
+                    "        </div>\n" +
+                    "        <a href=\"profile\" class=\"dropdown-item\">\n" +
+                    "            <i class=\"fas fa-user-circle\"></i> Hồ sơ tài khoản\n" +
+                    "        </a>\n" +
+                    "        <a href=\"cart\" class=\"dropdown-item\">\n" +
+                    "            <i class=\"fas fa-bag-shopping\"></i> Giỏ hàng của tôi\n" +
+                    "        </a>\n" +
+                    "        <a href=\"logout\" class=\"dropdown-item logout\">\n" +
+                    "            <i class=\"fas fa-arrow-right-from-bracket\"></i> Đăng xuất\n" +
+                    "        </a>\n" +
+                    "    </div>\n" +
+                    "</div>",
+                    escapeAttr(user.getAvatar() != null ? user.getAvatar() : ""),
+                    escapeAttr(user.getFullName()),
+                    escapeAttr(user.getRole()),
+                    escapeAttr(user.getFullName()),
+                    escapeAttr(user.getEmail() != null ? user.getEmail() : "")
+            );
+
+            content = content.replace("<!-- ${TOPBAR_AUTH} -->", topbarAuth);
+            content = content.replace("<!-- ${HEADER_AUTH} -->", headerAuth);
+            content = content.replace("${user.fullName}", escapeAttr(user.getFullName()));
+            content = content.replace("${user.username}", escapeAttr(user.getUsername()));
+            content = content.replace("${user.role}", escapeAttr(user.getRole()));
+            content = content.replace("${user.avatar}", escapeAttr(user.getAvatar() != null ? user.getAvatar() : ""));
+            content = content.replace("${user.email}", escapeAttr(user.getEmail() != null ? user.getEmail() : ""));
+        } else {
+            String topbarAuth =
+                    "<div class=\"topbar-auth-links\">" +
+                    "    <span style=\"color: #cbd5e1;\"><i class=\"fas fa-truck-fast\"></i> Miễn phí vận chuyển từ 250.000 đ</span>" +
+                    "</div>";
+
+            String headerAuth =
+                    "<div class=\"guest-auth-buttons\">\n" +
+                    "    <a href=\"login\" class=\"btn-guest btn-guest-login\">\n" +
+                    "        <i class=\"fas fa-arrow-right-to-bracket\"></i>\n" +
+                    "        <span>Đăng Nhập</span>\n" +
+                    "    </a>\n" +
+                    "    <a href=\"register\" class=\"btn-guest btn-guest-register\">\n" +
+                    "        <i class=\"fas fa-user-plus\"></i>\n" +
+                    "        <span>Đăng Ký</span>\n" +
+                    "    </a>\n" +
+                    "</div>";
+
+            content = content.replace("<!-- ${TOPBAR_AUTH} -->", topbarAuth);
+            content = content.replace("<!-- ${HEADER_AUTH} -->", headerAuth);
+            content = content.replace("${user.fullName}", "Khách");
+            content = content.replace("${user.username}", "guest");
+            content = content.replace("${user.role}", "GUEST");
+            content = content.replace("${user.avatar}", "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150");
+            content = content.replace("${user.email}", "");
+        }
+
+        if (book != null) {
+            content = content.replace("${book.id}", String.valueOf(book.getId()));
+            content = content.replace("${book.title}", escapeHtml(book.getTitle()));
+            content = content.replace("${book.code}", escapeHtml(book.getCode()));
+            content = content.replace("${book.author}", escapeHtml(book.getAuthor()));
+            content = content.replace("${book.publisher}", escapeHtml(book.getPublisher()));
+            content = content.replace("${book.price}", String.format(Locale.US, "%.0f", book.getPrice()));
+            content = content.replace("${book.originalPrice}", String.format(Locale.US, "%.0f", book.getOriginalPrice()));
+            content = content.replace("${book.formattedPrice}", escapeHtml(book.getFormattedPrice()));
+            content = content.replace("${book.formattedOriginalPrice}", escapeHtml(book.getFormattedOriginalPrice()));
+            content = content.replace("${book.category}", escapeHtml(book.getCategory()));
+            content = content.replace("${book.image}", escapeAttr(book.getImage()));
+            content = content.replace("${book.description}", book.getDescription() != null ? escapeHtml(book.getDescription()) : "");
+            content = content.replace("${book.stock}", String.valueOf(book.getStock()));
+            content = content.replace("${book.stockStatusClass}", book.isOutOfStock() ? "out-of-stock" : "in-stock");
+            content = content.replace("${book.stockStatusText}", escapeHtml(book.getStockStatusText()));
+
+            if (book.getOriginalPrice() > book.getPrice()) {
+                String origPriceHtml = String.format(
+                        "<span class=\"detail-price-original\">%s</span>\n<span class=\"detail-discount-badge\">-%d%%</span>",
+                        escapeHtml(book.getFormattedOriginalPrice()),
+                        book.getDiscountPercent()
+                );
+                content = content.replace("<!-- ${DETAIL_ORIGINAL_PRICE_HTML} -->", origPriceHtml);
+            } else {
+                content = content.replace("<!-- ${DETAIL_ORIGINAL_PRICE_HTML} -->", "");
+            }
+
+            // SẢN PHẨM NỔI BẬT (Ảnh 2)
+            List<Book> featuredBooks = DataStore.getFeaturedBooks(4);
+            StringBuilder fbHtml = new StringBuilder();
+            for (Book fb : featuredBooks) {
+                String badgeHtml = "";
+                if (fb.isOutOfStock()) {
+                    badgeHtml = "<span class=\"featured-badge badge-black\">Hết hàng</span>";
+                } else if (fb.getDiscountPercent() > 0) {
+                    badgeHtml = "<span class=\"featured-badge badge-red\">-" + fb.getDiscountPercent() + "%</span>";
+                }
+                String origPriceHtml = fb.getOriginalPrice() > fb.getPrice()
+                        ? "<span class=\"featured-price-orig\">" + escapeHtml(fb.getFormattedOriginalPrice()) + "</span>"
+                        : "";
+
+                fbHtml.append(String.format(
+                        "<div class=\"featured-book-item\" onclick=\"window.location.href='book?id=%d'\">\n" +
+                        "    <div class=\"featured-thumb-wrap\">\n" +
+                        "        <img src=\"%s\" alt=\"%s\" class=\"featured-thumb\" onerror=\"this.src='https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500';\">\n" +
+                        "        %s\n" +
+                        "    </div>\n" +
+                        "    <div class=\"featured-meta\">\n" +
+                        "        <h4 class=\"featured-book-title\" title=\"%s\">%s</h4>\n" +
+                        "        <div class=\"featured-price-row\">\n" +
+                        "            <span class=\"featured-price-red\">%s</span>\n" +
+                        "            %s\n" +
+                        "        </div>\n" +
+                        "    </div>\n" +
+                        "</div>\n",
+                        fb.getId(),
+                        escapeAttr(fb.getImage()),
+                        escapeAttr(fb.getTitle()),
+                        badgeHtml,
+                        escapeAttr(fb.getTitle()),
+                        escapeHtml(fb.getTitle()),
+                        escapeHtml(fb.getFormattedPrice()),
+                        origPriceHtml
+                ));
+            }
+            content = content.replace("<!-- ${FEATURED_PRODUCTS_HTML} -->", fbHtml.toString());
+
+            // SẢN PHẨM LIÊN QUAN (Ảnh 3)
+            List<Book> relatedBooks = DataStore.getRelatedBooks(book.getId(), book.getCategory(), 4);
+            StringBuilder rbHtml = new StringBuilder();
+            for (Book rb : relatedBooks) {
+                String badgeHtml = "";
+                if (rb.isOutOfStock()) {
+                    badgeHtml = "<span class=\"related-badge badge-black\">Hết hàng</span>";
+                } else if (rb.getDiscountPercent() > 0) {
+                    badgeHtml = "<span class=\"related-badge badge-red\">-" + rb.getDiscountPercent() + "%</span>";
+                }
+                String origPriceHtml = rb.getOriginalPrice() > rb.getPrice()
+                        ? "<span class=\"related-price-orig\">" + escapeHtml(rb.getFormattedOriginalPrice()) + "</span>"
+                        : "";
+
+                rbHtml.append(String.format(
+                        "<div class=\"related-book-card\" onclick=\"window.location.href='book?id=%d'\">\n" +
+                        "    <div class=\"related-cover-box\">\n" +
+                        "        <img src=\"%s\" alt=\"%s\" class=\"related-cover-img\" onerror=\"this.src='https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500';\">\n" +
+                        "        %s\n" +
+                        "    </div>\n" +
+                        "    <h3 class=\"related-book-title\" title=\"%s\">%s</h3>\n" +
+                        "    <div class=\"related-price-box\">\n" +
+                        "        <span class=\"related-price-red\">%s</span>\n" +
+                        "        %s\n" +
+                        "    </div>\n" +
+                        "</div>\n",
+                        rb.getId(),
+                        escapeAttr(rb.getImage()),
+                        escapeAttr(rb.getTitle()),
+                        badgeHtml,
+                        escapeAttr(rb.getTitle()),
+                        escapeHtml(rb.getTitle()),
+                        escapeHtml(rb.getFormattedPrice()),
+                        origPriceHtml
+                ));
+            }
+            content = content.replace("<!-- ${RELATED_PRODUCTS_HTML} -->", rbHtml.toString());
+        }
+
+        content = content.replace("${searchKeyword}", "");
+        return content;
+    }
+
+    private static String renderCategoryPage(User user, String categoryName, String sortOrder) {
+        Path templatePath = WEBAPP_DIR.resolve("category.html");
+        String content = "";
+        try {
+            content = Files.readString(templatePath, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            content = "<h1>Category Template Missing</h1>";
+        }
+
+        if (user != null) {
+            String topbarAuth = String.format(
+                    "<div class=\"topbar-auth-links\">" +
+                    "    <span class=\"topbar-welcome\"><i class=\"fas fa-circle-user\"></i> Xin chào, <strong>%s</strong></span>" +
+                    "    <span class=\"topbar-divider\">|</span>" +
+                    "    <a href=\"logout\" class=\"topbar-auth-btn\"><i class=\"fas fa-arrow-right-from-bracket\"></i> ĐĂNG XUẤT</a>" +
+                    "</div>",
+                    escapeAttr(user.getFullName())
+            );
+
+            String headerAuth = String.format(
+                    "<div class=\"user-dropdown\">\n" +
+                    "    <button type=\"button\" class=\"user-profile-trigger\" id=\"userMenuTrigger\">\n" +
+                    "        <img src=\"%s\" alt=\"Avatar\" class=\"user-avatar-img\" onerror=\"this.src='https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150';\">\n" +
+                    "        <div class=\"user-meta\">\n" +
+                    "            <div class=\"user-greeting\">Xin chào,</div>\n" +
+                    "            <div class=\"user-fullname\">%s</div>\n" +
+                    "        </div>\n" +
+                    "        <span class=\"user-role-tag\">%s</span>\n" +
+                    "        <i class=\"fas fa-chevron-down\" style=\"font-size: 11px; color: var(--text-muted); margin-left: 4px;\"></i>\n" +
+                    "    </button>\n" +
+                    "    <div class=\"user-menu-dropdown\" id=\"userMenuDropdown\">\n" +
+                    "        <div class=\"dropdown-header-info\">\n" +
+                    "            <div style=\"font-weight: 700; font-size: 13px; color: var(--primary);\">%s</div>\n" +
+                    "            <div class=\"dropdown-email\">%s</div>\n" +
+                    "        </div>\n" +
+                    "        <a href=\"profile\" class=\"dropdown-item\">\n" +
+                    "            <i class=\"fas fa-user-circle\"></i> Hồ sơ tài khoản\n" +
+                    "        </a>\n" +
+                    "        <a href=\"cart\" class=\"dropdown-item\">\n" +
+                    "            <i class=\"fas fa-bag-shopping\"></i> Giỏ hàng của tôi\n" +
+                    "        </a>\n" +
+                    "        <a href=\"logout\" class=\"dropdown-item logout\">\n" +
+                    "            <i class=\"fas fa-arrow-right-from-bracket\"></i> Đăng xuất\n" +
+                    "        </a>\n" +
+                    "    </div>\n" +
+                    "</div>",
+                    escapeAttr(user.getAvatar() != null ? user.getAvatar() : ""),
+                    escapeAttr(user.getFullName()),
+                    escapeAttr(user.getRole()),
+                    escapeAttr(user.getFullName()),
+                    escapeAttr(user.getEmail() != null ? user.getEmail() : "")
+            );
+
+            content = content.replace("<!-- ${TOPBAR_AUTH} -->", topbarAuth);
+            content = content.replace("<!-- ${HEADER_AUTH} -->", headerAuth);
+            content = content.replace("${user.fullName}", escapeAttr(user.getFullName()));
+            content = content.replace("${user.username}", escapeAttr(user.getUsername()));
+            content = content.replace("${user.role}", escapeAttr(user.getRole()));
+            content = content.replace("${user.avatar}", escapeAttr(user.getAvatar() != null ? user.getAvatar() : ""));
+            content = content.replace("${user.email}", escapeAttr(user.getEmail() != null ? user.getEmail() : ""));
+        } else {
+            String topbarAuth =
+                    "<div class=\"topbar-auth-links\">" +
+                    "    <span style=\"color: #cbd5e1;\"><i class=\"fas fa-truck-fast\"></i> Miễn phí vận chuyển từ 250.000 đ</span>" +
+                    "</div>";
+
+            String headerAuth =
+                    "<div class=\"guest-auth-buttons\">\n" +
+                    "    <a href=\"login\" class=\"btn-guest btn-guest-login\">\n" +
+                    "        <i class=\"fas fa-arrow-right-to-bracket\"></i>\n" +
+                    "        <span>Đăng Nhập</span>\n" +
+                    "    </a>\n" +
+                    "    <a href=\"register\" class=\"btn-guest btn-guest-register\">\n" +
+                    "        <i class=\"fas fa-user-plus\"></i>\n" +
+                    "        <span>Đăng Ký</span>\n" +
+                    "    </a>\n" +
+                    "</div>";
+
+            content = content.replace("<!-- ${TOPBAR_AUTH} -->", topbarAuth);
+            content = content.replace("<!-- ${HEADER_AUTH} -->", headerAuth);
+            content = content.replace("${user.fullName}", "Khách");
+            content = content.replace("${user.username}", "guest");
+            content = content.replace("${user.role}", "GUEST");
+            content = content.replace("${user.avatar}", "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150");
+            content = content.replace("${user.email}", "");
+        }
+
+        List<Book> books;
+        if ("Tất cả".equalsIgnoreCase(categoryName) || "Tất cả sách".equalsIgnoreCase(categoryName)) {
+            books = new ArrayList<>(DataStore.getAllBooks());
+        } else {
+            books = DataStore.searchBooks("", categoryName, null, null, null, null, "all");
+        }
+
+        // Sorting
+        if ("bestseller".equalsIgnoreCase(sortOrder)) {
+            books.sort((a, b) -> Boolean.compare(b.isBestSeller(), a.isBestSeller()));
+        } else if ("price_asc".equalsIgnoreCase(sortOrder)) {
+            books.sort(Comparator.comparingDouble(Book::getPrice));
+        } else if ("price_desc".equalsIgnoreCase(sortOrder)) {
+            books.sort((a, b) -> Double.compare(b.getPrice(), a.getPrice()));
+        } else if ("rating".equalsIgnoreCase(sortOrder)) {
+            books.sort((a, b) -> Double.compare(b.getRating(), a.getRating()));
+        } else {
+            books.sort((a, b) -> Integer.compare(b.getId(), a.getId()));
+        }
+
+        StringBuilder gridHtml = new StringBuilder();
+        if (books.isEmpty()) {
+            gridHtml.append(
+                    "<div class=\"no-books-found\" style=\"grid-column: 1 / -1;\">\n" +
+                    "    <div class=\"empty-icon-wrap\"><i class=\"fas fa-book-open\"></i></div>\n" +
+                    "    <h3 class=\"empty-title\">Chưa có sách nào trong danh mục này</h3>\n" +
+                    "    <p style=\"color: #64748b; font-size: 14px; margin-top: 6px;\">Hệ thống đang tiếp tục cập nhật các đầu sách mới nhất cho chuyên mục này.</p>\n" +
+                    "    <div class=\"empty-action\" style=\"margin-top: 16px;\">\n" +
+                    "        <a href=\"category?name=Tất cả\" class=\"btn-empty-reset\" style=\"text-decoration:none; display:inline-flex; align-items:center; gap:6px;\">\n" +
+                    "            <i class=\"fas fa-border-all\"></i> Xem tất cả sách\n" +
+                    "        </a>\n" +
+                    "    </div>\n" +
+                    "</div>"
+            );
+        } else {
+            for (Book b : books) {
+                String bestsellerBadge = b.isBestSeller() ? "<span class=\"badge-tag badge-bestseller\">Bán chạy</span>" : "";
+                String discountBadge = (b.getDiscountPercent() > 0) 
+                        ? "<span class=\"badge-tag badge-discount\">-" + b.getDiscountPercent() + "%</span>" 
+                        : "";
+                String originalPriceHtml = (b.getOriginalPrice() > 0 && b.getOriginalPrice() > b.getPrice()) 
+                        ? "<span class=\"price-original\">" + b.getFormattedOriginalPrice() + "</span>" 
+                        : "";
+
+                boolean outOfStock = b.isOutOfStock();
+                String stockBadge = outOfStock
+                        ? "<span class=\"badge-tag badge-stock badge-outofstock\"><i class=\"fas fa-ban\"></i> Hết hàng</span>"
+                        : "<span class=\"badge-tag badge-stock badge-instock\"><i class=\"fas fa-check\"></i> Còn " + b.getStock() + "</span>";
+
+                String cartButtonHtml = outOfStock
+                        ? String.format("<button type=\"button\" class=\"btn-add-cart disabled\" onclick=\"notifyOutOfStock('%s')\" title=\"Sách đã hết hàng trong kho\"><i class=\"fas fa-bell\"></i></button>", escapeAttr(b.getTitle()))
+                        : String.format("<button type=\"button\" class=\"btn-add-cart\" onclick=\"addToCart(%d)\" title=\"Thêm vào giỏ\"><i class=\"fas fa-cart-plus\"></i></button>", b.getId());
+
+                String cardClasses = outOfStock ? "book-card is-out-of-stock" : "book-card";
+
+                gridHtml.append(String.format(
+                        "<div class=\"%s\" data-id=\"%d\" data-code=\"%s\" data-title=\"%s\" data-author=\"%s\" data-publisher=\"%s\" data-price=\"%.0f\" data-original-price=\"%.0f\" data-formatted-price=\"%s\" data-category=\"%s\" data-stock=\"%d\" data-is-out-of-stock=\"%b\" data-promotion=\"%s\" data-image=\"%s\" data-desc=\"%s\" data-rating=\"%.1f\">\n" +
+                        "    <div class=\"book-card-inner\">\n" +
+                        "        <div class=\"book-cover-wrap\">\n" +
+                        "            <img src=\"%s\" alt=\"%s\" class=\"book-cover\" loading=\"lazy\" onclick=\"goToBookDetail(%d)\" style=\"cursor: pointer;\" onerror=\"this.src='https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500';\">\n" +
+                        "            <div class=\"badge-container\">%s%s%s</div>\n" +
+                        "            <div class=\"book-actions-overlay\">\n" +
+                        "                <button type=\"button\" class=\"btn-quickview\" onclick=\"openQuickView(%d)\"><i class=\"fas fa-eye\"></i> Xem chi tiết</button>\n" +
+                        "            </div>\n" +
+                        "        </div>\n" +
+                        "        <div class=\"book-info\">\n" +
+                        "            <div class=\"book-meta-top\">\n" +
+                        "                <span class=\"book-category\">%s</span>\n" +
+                        "                <span class=\"book-code\" title=\"Mã sách: %s\"><i class=\"fas fa-barcode\"></i> %s</span>\n" +
+                        "            </div>\n" +
+                        "            <h3 class=\"book-title\" title=\"%s\" onclick=\"goToBookDetail(%d)\" style=\"cursor: pointer;\">%s</h3>\n" +
+                        "            <p class=\"book-author\" title=\"Tác giả\"><i class=\"fas fa-feather-alt\"></i> %s</p>\n" +
+                        "            <p class=\"book-publisher\" title=\"Nhà xuất bản\"><i class=\"fas fa-building-columns\"></i> %s</p>\n" +
+                        "            <div class=\"book-rating-row\">\n" +
+                        "                <div class=\"stars\"><i class=\"fas fa-star\"></i> <span>%.1f</span></div>\n" +
+                        "                <span class=\"review-count\">(%d đánh giá)</span>\n" +
+                        "                <span class=\"stock-pill %s\">%s</span>\n" +
+                        "            </div>\n" +
+                        "            <div class=\"book-price-row\">\n" +
+                        "                <div class=\"price-box\">\n" +
+                        "                    <span class=\"price-current\">%s</span>\n" +
+                        "                    %s\n" +
+                        "                </div>\n" +
+                        "                %s\n" +
+                        "            </div>\n" +
+                        "        </div>\n" +
+                        "    </div>\n" +
+                        "</div>\n",
+                        cardClasses,
+                        b.getId(),
+                        escapeAttr(b.getCode()),
+                        escapeAttr(b.getTitle()),
+                        escapeAttr(b.getAuthor()),
+                        escapeAttr(b.getPublisher()),
+                        b.getPrice(),
+                        b.getOriginalPrice(),
+                        escapeAttr(b.getFormattedPrice()),
+                        escapeAttr(b.getCategory()),
+                        b.getStock(),
+                        outOfStock,
+                        escapeAttr(b.getPromotion()),
+                        escapeAttr(b.getImage()),
+                        escapeAttr(b.getDescription()),
+                        b.getRating(),
+                        b.getImage(),
+                        escapeAttr(b.getTitle()),
+                        b.getId(),
+                        stockBadge,
+                        bestsellerBadge,
+                        discountBadge,
+                        b.getId(),
+                        escapeHtml(b.getCategory()),
+                        escapeAttr(b.getCode()),
+                        escapeHtml(b.getCode()),
+                        escapeAttr(b.getTitle()),
+                        b.getId(),
+                        escapeHtml(b.getTitle()),
+                        escapeHtml(b.getAuthor()),
+                        escapeHtml(b.getPublisher()),
+                        b.getRating(),
+                        b.getReviewCount(),
+                        outOfStock ? "stock-pill-empty" : "stock-pill-ok",
+                        outOfStock ? "Hết hàng" : "Kho: " + b.getStock(),
+                        b.getFormattedPrice(),
+                        originalPriceHtml,
+                        cartButtonHtml
+                ));
+            }
+        }
+
+        content = content.replace("${CATEGORY_TITLE}", escapeHtml(categoryName));
+        content = content.replace("${bookCount}", String.valueOf(books.size()));
+        content = content.replace("<!-- ${CATEGORY_BOOK_GRID} -->", gridHtml.toString());
+        content = content.replace("${searchKeyword}", "");
+
+        // Set selected in dropdown
+        String selectedSort = (sortOrder != null) ? sortOrder : "newest";
+        content = content.replace("value=\"" + selectedSort + "\"", "value=\"" + selectedSort + "\" selected");
 
         return content;
     }
@@ -1083,16 +1826,21 @@ public class BookstoreApp {
         if (books.isEmpty()) {
             booksHtml.append(
                     "<div class=\"no-books-found\">\n" +
-                    "    <div class=\"empty-state-icon\"><i class=\"fas fa-book-sparkles\"></i></div>\n" +
-                    "    <h3>Không tìm thấy sản phẩm phù hợp</h3>\n" +
-                    "    <p>Rất tiếc chúng tôi không tìm thấy cuốn sách nào khớp với tiêu chí tìm kiếm của bạn. Hãy thử thay đổi từ khóa, điều chỉnh bộ lọc hoặc nhờ Chatbot AI tư vấn!</p>\n" +
-                    "    <div class=\"empty-state-actions\">\n" +
-                    "        <button type=\"button\" class=\"btn-empty-ai\" onclick=\"openChatbot('Gợi ý cho tôi các cuốn sách đang được yêu thích nhất')\">\n" +
-                    "            <i class=\"fas fa-robot\"></i> Hỏi Chatbot AI ngay\n" +
-                    "        </button>\n" +
-                    "        <button type=\"button\" class=\"btn-empty-reset\" onclick=\"resetAllFilters()\">\n" +
-                    "            <i class=\"fas fa-rotate-left\"></i> Đặt lại bộ lọc\n" +
-                    "        </button>\n" +
+                    "    <div class=\"empty-icon-wrap\"><i class=\"fas fa-book-open\"></i></div>\n" +
+                    "    <h3 class=\"empty-title\">Không tìm thấy sản phẩm phù hợp</h3>\n" +
+                    "    <div class=\"empty-ai-suggestion\">\n" +
+                    "        <div class=\"empty-ai-msg\" onclick=\"openChatbot('Gợi ý sách cho tôi')\">\n" +
+                    "            <i class=\"fas fa-robot ai-robot-icon\"></i>\n" +
+                    "            <span>Gợi ý: Bạn có thể tìm kiếm bằng Chatbot AI!</span>\n" +
+                    "        </div>\n" +
+                    "        <div class=\"empty-ai-action\">\n" +
+                    "            <button type=\"button\" class=\"btn-empty-ai\" onclick=\"openChatbot('Gợi ý cho tôi các cuốn sách đang được yêu thích nhất')\">\n" +
+                    "                <i class=\"fas fa-comments\"></i> Hỏi Chatbot AI ngay\n" +
+                    "            </button>\n" +
+                    "            <button type=\"button\" class=\"btn-empty-reset\" onclick=\"resetAllFilters()\">\n" +
+                    "                <i class=\"fas fa-rotate-left\"></i> Đặt lại bộ lọc\n" +
+                    "            </button>\n" +
+                    "        </div>\n" +
                     "    </div>\n" +
                     "</div>"
             );
@@ -1118,10 +1866,10 @@ public class BookstoreApp {
                 String cardClasses = outOfStock ? "book-card is-out-of-stock" : "book-card";
 
                 booksHtml.append(String.format(
-                        "<div class=\"%s\" data-id=\"%d\" data-code=\"%s\" data-title=\"%s\" data-author=\"%s\" data-publisher=\"%s\" data-price=\"%.0f\" data-formatted-price=\"%s\" data-category=\"%s\" data-stock=\"%d\" data-is-out-of-stock=\"%b\" data-promotion=\"%s\" data-image=\"%s\" data-desc=\"%s\" data-rating=\"%.1f\">\n" +
+                        "<div class=\"%s\" data-id=\"%d\" data-code=\"%s\" data-title=\"%s\" data-author=\"%s\" data-publisher=\"%s\" data-price=\"%.0f\" data-original-price=\"%.0f\" data-formatted-price=\"%s\" data-category=\"%s\" data-stock=\"%d\" data-is-out-of-stock=\"%b\" data-promotion=\"%s\" data-image=\"%s\" data-desc=\"%s\" data-rating=\"%.1f\">\n" +
                         "    <div class=\"book-card-inner\">\n" +
                         "        <div class=\"book-cover-wrap\">\n" +
-                        "            <img src=\"%s\" alt=\"%s\" class=\"book-cover\" loading=\"lazy\" onerror=\"this.src='https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500';\">\n" +
+                        "            <img src=\"%s\" alt=\"%s\" class=\"book-cover\" loading=\"lazy\" onclick=\"goToBookDetail(%d)\" style=\"cursor: pointer;\" onerror=\"this.src='https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500';\">\n" +
                         "            <div class=\"badge-container\">%s%s%s</div>\n" +
                         "            <div class=\"book-actions-overlay\">\n" +
                         "                <button type=\"button\" class=\"btn-quickview\" onclick=\"openQuickView(%d)\"><i class=\"fas fa-eye\"></i> Xem chi tiết</button>\n" +
@@ -1132,7 +1880,7 @@ public class BookstoreApp {
                         "                <span class=\"book-category\">%s</span>\n" +
                         "                <span class=\"book-code\" title=\"Mã sách: %s\"><i class=\"fas fa-barcode\"></i> %s</span>\n" +
                         "            </div>\n" +
-                        "            <h3 class=\"book-title\" title=\"%s\" onclick=\"openQuickView(%d)\">%s</h3>\n" +
+                        "            <h3 class=\"book-title\" title=\"%s\" onclick=\"goToBookDetail(%d)\" style=\"cursor: pointer;\">%s</h3>\n" +
                         "            <p class=\"book-author\" title=\"Tác giả\"><i class=\"fas fa-feather-alt\"></i> %s</p>\n" +
                         "            <p class=\"book-publisher\" title=\"Nhà xuất bản\"><i class=\"fas fa-building-columns\"></i> %s</p>\n" +
                         "            <div class=\"book-rating-row\">\n" +
@@ -1157,6 +1905,7 @@ public class BookstoreApp {
                         escapeAttr(b.getAuthor()),
                         escapeAttr(b.getPublisher()),
                         b.getPrice(),
+                        b.getOriginalPrice(),
                         escapeAttr(b.getFormattedPrice()),
                         escapeAttr(b.getCategory()),
                         b.getStock(),
@@ -1167,6 +1916,7 @@ public class BookstoreApp {
                         b.getRating(),
                         b.getImage(),
                         escapeAttr(b.getTitle()),
+                        b.getId(),
                         stockBadge,
                         bestsellerBadge,
                         discountBadge,

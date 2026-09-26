@@ -1,4 +1,4 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+﻿<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%
     String errorMessage = (String) request.getAttribute("errorMessage");
     String fullName = (String) request.getAttribute("fullName");
@@ -160,7 +160,7 @@
         </div>
     </div>
 
-    <script src="${pageContext.request.contextPath}/js/app.js"></script>
+    <script src="${pageContext.request.contextPath}/js/app.js?v=20260926_10"></script>
     <script>
         const regToggle = document.getElementById('toggleRegPassword');
         const regPass = document.getElementById('password');
