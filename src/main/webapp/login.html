@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -92,11 +92,24 @@
                     <a href="javascript:void(0)" onclick="alert('Tính năng khôi phục mật khẩu: Hãy dùng tài khoản có sẵn để trải nghiệm!')" class="forgot-link">Quên mật khẩu?</a>
                 </div>
 
+                <input type="hidden" name="redirect" id="redirectParam" value="">
                 <button type="submit" class="btn-primary" id="btnSubmit">
                     <span>Đăng Nhập Ngay</span>
                     <i class="fas fa-arrow-right"></i>
                 </button>
             </form>
+            <script>
+                (function() {
+                    const p = new URLSearchParams(window.location.search);
+                    const r = p.get('redirect');
+                    if (r) {
+                        const input = document.getElementById('redirectParam');
+                        if (input) input.value = r;
+                        const form = document.getElementById('loginForm');
+                        if (form) form.action = 'login?redirect=' + encodeURIComponent(r);
+                    }
+                })();
+            </script>
 
             <p style="text-align: center; margin-top: 28px; font-size: 13px; color: var(--text-secondary);">
                 Chưa có tài khoản? 

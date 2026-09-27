@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đặt Hàng Thành Công - Bookora | Tiệm Sách Tri Thức</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css?v=20260927_checkout">
+</head>
+<body>
+
+    <!-- 1. HEADER & NAVIGATION -->
+    <header class="main-header">
+        <div class="top-bar">
+            <div class="topbar-contact-info">
+                <span><i class="fas fa-phone"></i> 028.73008182</span>
+                <span><i class="fas fa-envelope"></i> hotro@bookora.com</span>
+                <span><i class="fas fa-location-dot"></i> Số 25, ngõ 68 phố Cầu Giấy, TP. Hà Nội</span>
+            </div>
+            <!-- ${TOPBAR_AUTH} -->
+        </div>
+
+        <div class="navbar-container">
+            <!-- Logo -->
+            <a href="home" class="site-logo">
+                <div class="logo-icon">
+                    <i class="fas fa-book-bookmark"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>Bookora</h1>
+                    <span>Tiệm Sách Tri Thức</span>
+                </div>
+            </a>
+
+            <!-- Hotline tư vấn -->
+            <div class="header-hotline">
+                <div class="hotline-icon">
+                    <i class="fas fa-phone-volume"></i>
+                </div>
+                <div class="hotline-text">
+                    <small>Tư vấn bán hàng</small>
+                    <strong>028.73008182</strong>
+                </div>
+            </div>
+
+            <!-- Khối hành động: Giỏ hàng & User Profile -->
+            <div class="header-actions">
+                <div class="cart-dropdown-wrapper">
+                    <a href="cart" class="btn-cart-toggle" title="Xem giỏ hàng">
+                        <i class="fas fa-bag-shopping"></i>
+                        <span class="cart-badge" id="cartBadge" style="display: none;">0</span>
+                    </a>
+                </div>
+                <!-- ${HEADER_AUTH} -->
+            </div>
+        </div>
+
+        <!-- 2. THANH ĐIỀU HƯỚNG CHÍNH -->
+        <nav class="main-nav-bar">
+            <div class="nav-bar-container">
+                <ul class="nav-menu-list">
+                    <li class="nav-menu-item">
+                        <a href="home" class="nav-menu-link"><i class="fas fa-house"></i> TRANG CHỦ</a>
+                    </li>
+                    <li class="nav-menu-item">
+                        <a href="about" class="nav-menu-link"><i class="fas fa-circle-info"></i> GIỚI THIỆU</a>
+                    </li>
+                    <li class="nav-menu-item">
+                        <a href="category" class="nav-menu-link"><i class="fas fa-layer-group"></i> DANH MỤC SÁCH</a>
+                    </li>
+                    <li class="nav-menu-item">
+                        <a href="promotions" class="nav-menu-link"><i class="fas fa-gift"></i> KHUYẾN MÃI</a>
+                    </li>
+                    <li class="nav-menu-item">
+                        <a href="contact" class="nav-menu-link"><i class="fas fa-envelope"></i> LIÊN HỆ</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <!-- BREADCRUMB -->
+    <div class="breadcrumb-container">
+        <div class="breadcrumb-nav">
+            <a href="home" class="breadcrumb-link"><i class="fas fa-house"></i> TRANG CHỦ</a>
+            <span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+            <span class="breadcrumb-current">HOÀN TẤT ĐẶT HÀNG</span>
+        </div>
+    </div>
+
+    <!-- MAIN SUCCESS CONTAINER -->
+    <main class="order-success-main">
+        <div class="order-success-container">
+            <!-- Khối thông báo thành công rực rỡ -->
+            <div class="success-hero-card">
+                <div class="success-icon-animated">
+                    <i class="fas fa-circle-check"></i>
+                </div>
+                <h2 class="success-title">🎉 ĐẶT HÀNG THÀNH CÔNG!</h2>
+                <p class="success-subtitle">
+                    Cảm ơn bạn đã tin tưởng và ủng hộ <strong>Tiệm Sách Tri Thức Bookora</strong>. Đơn hàng của bạn đã được tiếp nhận và đang được đóng gói cẩn thận!
+                </p>
+
+                <div class="order-code-badge-wrap">
+                    <span>MÃ ĐƠN HÀNG:</span>
+                    <strong id="displayOrderCode" class="display-order-code">BK20260927001</strong>
+                    <button type="button" class="btn-copy-code" onclick="copyOrderCode()" title="Sao chép mã đơn">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Khối tiến trình đơn hàng (Tracking Steps) -->
+            <div class="order-timeline-card">
+                <div class="timeline-step step-done">
+                    <div class="step-circle"><i class="fas fa-file-invoice"></i></div>
+                    <div class="step-label">Đặt hàng</div>
+                </div>
+                <div class="timeline-line line-done"></div>
+                <div class="timeline-step step-done" id="timelinePayStep">
+                    <div class="step-circle"><i class="fas fa-wallet"></i></div>
+                    <div class="step-label" id="timelinePayLabel">Thanh toán</div>
+                </div>
+                <div class="timeline-line"></div>
+                <div class="timeline-step">
+                    <div class="step-circle"><i class="fas fa-boxes-packing"></i></div>
+                    <div class="step-label">Đóng gói</div>
+                </div>
+                <div class="timeline-line"></div>
+                <div class="timeline-step">
+                    <div class="step-circle"><i class="fas fa-truck-fast"></i></div>
+                    <div class="step-label">Đang giao</div>
+                </div>
+                <div class="timeline-line"></div>
+                <div class="timeline-step">
+                    <div class="step-circle"><i class="fas fa-circle-check"></i></div>
+                    <div class="step-label">Hoàn thành</div>
+                </div>
+            </div>
+
+            <!-- Chi tiết đơn hàng và thông tin nhận hàng -->
+            <div class="order-detail-grid">
+                <!-- Cột trái: Thông tin nhận hàng & Thanh toán -->
+                <div class="order-info-card">
+                    <h4><i class="fas fa-truck-ramp-box"></i> Thông Tin Giao Hàng & Thanh Toán</h4>
+                    <div class="info-list">
+                        <div class="info-item">
+                            <span class="info-t">Người nhận hàng:</span>
+                            <strong id="infoRecipientName" class="info-d">--</strong>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-t">Số điện thoại:</span>
+                            <strong id="infoRecipientPhone" class="info-d">--</strong>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-t">Địa chỉ giao hàng:</span>
+                            <span id="infoDeliveryAddress" class="info-d">--</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-t">Phương thức thanh toán:</span>
+                            <strong id="infoPaymentMethod" class="info-d">--</strong>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-t">Trạng thái thanh toán:</span>
+                            <span id="infoPaymentStatusBadge" class="info-d">--</span>
+                        </div>
+                        <div class="info-item" id="infoTransactionRow" style="display: none;">
+                            <span class="info-t">Mã giao dịch:</span>
+                            <code id="infoTransactionId" class="info-d">--</code>
+                        </div>
+                        <div class="info-item" id="infoNoteRow" style="display: none;">
+                            <span class="info-t">Ghi chú đơn hàng:</span>
+                            <span id="infoOrderNote" class="info-d">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cột phải: Danh sách sản phẩm và tổng tiền -->
+                <div class="order-items-card">
+                    <h4><i class="fas fa-book-bookmark"></i> Danh Sách Sách Đã Mua</h4>
+                    <div id="orderItemsContainer" class="order-items-scroll">
+                        <!-- Render bằng JS -->
+                    </div>
+
+                    <div class="order-totals-breakdown">
+                        <div class="tot-row">
+                            <span>Tiền sách:</span>
+                            <span id="totSubtotal">0 đ</span>
+                        </div>
+                        <div class="tot-row tot-discount" id="totDiscountRow" style="display: none;">
+                            <span>Mã giảm giá (<span id="totVoucherCode"></span>):</span>
+                            <span id="totDiscount">-0 đ</span>
+                        </div>
+                        <div class="tot-row">
+                            <span>Phí vận chuyển:</span>
+                            <span id="totShipping">30.000 đ</span>
+                        </div>
+                        <div class="tot-divider"></div>
+                        <div class="tot-row tot-grand">
+                            <span>Tổng tiền đã đặt:</span>
+                            <strong id="totGrandTotal">0 đ</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Các nút hành động tiếp theo -->
+            <div class="success-actions-bar">
+                <a href="home" class="btn-action-home">
+                    <i class="fas fa-reply"></i> Tiếp Tục Mua Sắm Sách
+                </a>
+                <a href="cart" class="btn-action-viewcart">
+                    <i class="fas fa-bag-shopping"></i> Xem Lại Giỏ Hàng
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <div class="footer-col">
+                <div class="site-logo" style="margin-bottom: 12px;">
+                    <div class="logo-icon" style="background: white; color: var(--primary);">
+                        <i class="fas fa-book-bookmark"></i>
+                    </div>
+                    <div class="logo-text">
+                        <h1 style="color: white;">Bookora</h1>
+                        <span style="color: #fde68a;">Tiệm Sách Tri Thức</span>
+                    </div>
+                </div>
+                <p class="footer-desc">
+                    Nơi lan tỏa tình yêu sách và nâng tầm tri thức Việt. Cam kết 100% sách có bản quyền từ các nhà xuất bản uy tín hàng đầu.
+                </p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2026 Bookora - Đồ án chuyên ngành Web Bán Sách Java.</p>
+        </div>
+    </footer>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="/js/app.js?v=20260927_checkout"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            if (!code) {
+                document.getElementById('displayOrderCode').textContent = 'Chưa xác định';
+                return;
+            }
+            document.getElementById('displayOrderCode').textContent = code;
+
+            try {
+                const res = await fetch(`/api/orders/detail?code=${encodeURIComponent(code)}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.success && data.order) {
+                        renderOrderDetails(data.order);
+                    }
+                }
+            } catch (e) {
+                console.error('Error fetching order:', e);
+            }
+        });
+
+        function renderOrderDetails(order) {
+            document.getElementById('infoRecipientName').textContent = order.recipientName || 'Khách hàng';
+            document.getElementById('infoRecipientPhone').textContent = order.recipientPhone || '--';
+            document.getElementById('infoDeliveryAddress').textContent = order.deliveryAddress || '--';
+            document.getElementById('infoPaymentMethod').textContent = order.paymentMethodName || order.paymentMethodCode;
+            
+            // Payment status badge
+            const badgeEl = document.getElementById('infoPaymentStatusBadge');
+            if (order.paymentStatus === 'PAID') {
+                badgeEl.innerHTML = '<span class="badge-status-paid"><i class="fas fa-circle-check"></i> Đã thanh toán trực tuyến</span>';
+                document.getElementById('timelinePayLabel').textContent = 'Đã thanh toán';
+                document.getElementById('timelinePayStep').classList.add('step-done');
+            } else if (order.paymentStatus === 'FAILED') {
+                badgeEl.innerHTML = '<span class="badge-status-failed"><i class="fas fa-circle-xmark"></i> Thanh toán thất bại</span>';
+            } else {
+                badgeEl.innerHTML = '<span class="badge-status-pending"><i class="fas fa-clock"></i> Chưa thanh toán (Thanh toán khi nhận hàng)</span>';
+            }
+
+            if (order.transactionId) {
+                document.getElementById('infoTransactionRow').style.display = 'flex';
+                document.getElementById('infoTransactionId').textContent = order.transactionId;
+            }
+
+            if (order.note) {
+                document.getElementById('infoNoteRow').style.display = 'flex';
+                document.getElementById('infoOrderNote').textContent = order.note;
+            }
+
+            // Render items
+            const itemsContainer = document.getElementById('orderItemsContainer');
+            if (order.items && order.items.length > 0) {
+                itemsContainer.innerHTML = order.items.map(it => `
+                    <div class="success-item-row">
+                        <img src="${it.bookImage || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=100'}" class="success-item-thumb" alt="${it.bookTitle}">
+                        <div class="success-item-info">
+                            <h5>${it.bookTitle}</h5>
+                            <span class="success-item-meta">${it.formattedPrice} × ${it.quantity} cuốn</span>
+                        </div>
+                        <div class="success-item-subtotal">${it.formattedSubtotal}</div>
+                    </div>
+                `).join('');
+            }
+
+            document.getElementById('totSubtotal').textContent = order.formattedSubtotal;
+            if (order.discountAmount > 0) {
+                document.getElementById('totDiscountRow').style.display = 'flex';
+                document.getElementById('totVoucherCode').textContent = order.voucherCode || 'Ưu đãi';
+                document.getElementById('totDiscount').textContent = '-' + order.formattedDiscount;
+            }
+            document.getElementById('totShipping').textContent = order.formattedShipping;
+            document.getElementById('totGrandTotal').textContent = order.formattedTotal;
+        }
+
+        function copyOrderCode() {
+            const code = document.getElementById('displayOrderCode').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                if (typeof showToast === 'function') {
+                    showToast('Đã sao chép mã đơn hàng: ' + code);
+                } else {
+                    alert('Đã sao chép mã đơn hàng: ' + code);
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,15 +1,24 @@
 package com.bookstore.data;
 
+import com.bookstore.model.Address;
 import com.bookstore.model.Book;
+import com.bookstore.model.Order;
+import com.bookstore.model.OrderItem;
+import com.bookstore.model.PaymentMethod;
 import com.bookstore.model.User;
+import com.bookstore.model.Voucher;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -19,6 +28,13 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DataStore {
     private static final ConcurrentHashMap<String, User> memoryUsers = new ConcurrentHashMap<>();
     private static final List<Book> memoryBooks = Collections.synchronizedList(new ArrayList<>());
+    private static final List<Address> memoryAddresses = Collections.synchronizedList(new ArrayList<>());
+    private static final List<Voucher> memoryVouchers = Collections.synchronizedList(new ArrayList<>());
+    private static final List<PaymentMethod> memoryPaymentMethods = Collections.synchronizedList(new ArrayList<>());
+    private static final List<Order> memoryOrders = Collections.synchronizedList(new ArrayList<>());
+    private static final ConcurrentHashMap<String, List<OrderItem>> memoryCarts = new ConcurrentHashMap<>();
+    private static int nextAddressId = 100;
+    private static int nextOrderId = 100;
 
     static {
         initMemoryDefaults();
@@ -72,6 +88,20 @@ public class DataStore {
         memoryBooks.add(new Book(36, "8935278601436", "Bong Bóng Lên Trời (Tái Bản 2019)", "Nguyễn Nhật Ánh", "NXB Trẻ", 49000, 49000, "Văn học", 0, 4.9, 1140, "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500", "Câu chuyện xúc động về tình bạn và nghị lực vượt khó của tuổi hoa niên.", "Tạm hết hàng", false));
         memoryBooks.add(new Book(37, "8935278601437", "Thiên Thần Nhỏ Của Tôi", "Nguyễn Nhật Ánh", "NXB Trẻ", 45000, 45000, "Văn học", 18, 4.8, 850, "https://images.unsplash.com/photo-1532012164546-f432f2e3777a?w=500", "Khúc ca trong trẻo và lắng đọng về tuổi thơ và tình cảm gia đình.", "Sách bán chạy", true));
         memoryBooks.add(new Book(38, "8935278601438", "Phòng Trọ Ba Người", "Nguyễn Nhật Ánh", "NXB Trẻ", 48000, 48000, "Văn học", 24, 4.8, 730, "https://images.unsplash.com/photo-1495640388908-05fa85288e61?w=500", "Cuộc sống sinh viên muôn màu, hài hước và giàu tình người nơi xóm trọ.", "Sách mới", true));
+
+        // Khởi tạo địa chỉ (DIA_CHI): Khách hàng tự nhập khi đặt hàng hoặc thêm vào sổ địa chỉ
+
+        // Khởi tạo mã giảm giá mẫu (MA_GIAM_GIA)
+        memoryVouchers.add(new Voucher(1, "BOOKORA2026", "Giảm 30.000đ cho đơn từ 200.000đ", "Áp dụng cho toàn bộ đầu sách trên hệ thống Bookora", "FIXED", 30000, 200000, 0, "2026-01-01", "2026-12-31", true, 500, 12));
+        memoryVouchers.add(new Voucher(2, "FREESHIP", "Miễn phí vận chuyển toàn quốc", "Freeship (trừ tối đa 30.000đ) cho đơn từ 250.000đ", "FIXED", 30000, 250000, 0, "2026-01-01", "2026-12-31", true, 1000, 45));
+        memoryVouchers.add(new Voucher(3, "TECH30", "Giảm 30% Sách Công Nghệ & AI", "Giảm 30% tối đa 100.000đ cho đơn hàng từ 150.000đ", "PERCENT", 30, 150000, 100000, "2026-01-01", "2026-12-31", true, 200, 8));
+        memoryVouchers.add(new Voucher(4, "TRI_THUC", "Giảm 15% Sách Kỹ Năng & Tâm Lý", "Giảm 15% tối đa 50.000đ cho đơn hàng từ 100.000đ", "PERCENT", 15, 100000, 50000, "2026-01-01", "2026-12-31", true, 300, 15));
+        memoryVouchers.add(new Voucher(5, "HETHAN", "Mã Giảm Giá Đã Hết Hạn (Để kiểm thử luồng 4)", "Mã mẫu kiểm thử lỗi hết hạn", "FIXED", 50000, 100000, 0, "2023-01-01", "2023-12-31", true, 100, 5));
+        memoryVouchers.add(new Voucher(6, "CHUADUNG", "Mã Tạm Khóa (Để kiểm thử luồng 4)", "Mã mẫu kiểm thử lỗi chưa mở", "FIXED", 20000, 50000, 0, "2026-01-01", "2026-12-31", false, 100, 0));
+
+        // Khởi tạo phương thức thanh toán (PHUONG_THUC_TT)
+        memoryPaymentMethods.add(new PaymentMethod(1, "COD", "Thanh toán tiền mặt khi nhận hàng (COD)", "Nhận sách, kiểm tra hàng rồi thanh toán cho shipper", true));
+        memoryPaymentMethods.add(new PaymentMethod(2, "ONLINE", "Thanh toán trực tuyến (Chuyển khoản VietQR / MoMo / Thẻ ATM)", "Quét mã VietQR chuyển khoản nhanh 24/7 không mất phí", true));
     }
 
     /**
@@ -910,4 +940,757 @@ public class DataStore {
                 .replace('Đ', 'd')
                 .toLowerCase();
     }
+
+    // =========================================================================
+    // PHẦN CHỨC NĂNG ĐẶT HÀNG & THANH TOÁN (CHECKOUT & ORDER MANAGEMENT)
+    // =========================================================================
+
+    /**
+     * Lấy danh sách địa chỉ nhận hàng của người dùng (Bảng DIA_CHI)
+     * Chỉ cho phép lấy địa chỉ thuộc tài khoản đang đăng nhập.
+     */
+    public static List<Address> getAddressesByUsername(String username) {
+        if (username == null || username.trim().isEmpty()) return new ArrayList<>();
+        List<Address> list = new ArrayList<>();
+        String sql = "SELECT id, username, recipient_name, phone, address_detail, province, district, ward, is_default, created_at FROM dia_chi WHERE LOWER(username) = ? ORDER BY is_default DESC, id DESC";
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, username.trim().toLowerCase());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Address addr = new Address(
+                            rs.getInt("id"),
+                            0,
+                            rs.getString("username"),
+                            rs.getString("recipient_name"),
+                            rs.getString("phone"),
+                            rs.getString("address_detail"),
+                            rs.getString("province"),
+                            rs.getString("district"),
+                            rs.getString("ward"),
+                            rs.getBoolean("is_default")
+                    );
+                    addr.setCreatedAt(rs.getString("created_at"));
+                    list.add(addr);
+                }
+            }
+            if (!list.isEmpty()) return list;
+        } catch (SQLException e) {
+            // Dùng dự phòng bộ nhớ
+        }
+
+        for (Address a : memoryAddresses) {
+            if (username.trim().equalsIgnoreCase(a.getUsername())) {
+                list.add(a);
+            }
+        }
+        return list;
+    }
+
+    /**
+     * Lấy địa chỉ theo ID và kiểm tra quyền sở hữu (Bắt buộc phải thuộc tài khoản đang đăng nhập)
+     */
+    public static Address getAddressById(int id, String username) {
+        if (username == null) return null;
+        String sql = "SELECT id, username, recipient_name, phone, address_detail, province, district, ward, is_default, created_at FROM dia_chi WHERE id = ? AND LOWER(username) = ?";
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            ps.setString(2, username.trim().toLowerCase());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Address addr = new Address(
+                            rs.getInt("id"),
+                            0,
+                            rs.getString("username"),
+                            rs.getString("recipient_name"),
+                            rs.getString("phone"),
+                            rs.getString("address_detail"),
+                            rs.getString("province"),
+                            rs.getString("district"),
+                            rs.getString("ward"),
+                            rs.getBoolean("is_default")
+                    );
+                    addr.setCreatedAt(rs.getString("created_at"));
+                    return addr;
+                }
+            }
+        } catch (SQLException e) {
+            // Dùng dự phòng bộ nhớ
+        }
+
+        for (Address a : memoryAddresses) {
+            if (a.getId() == id && username.trim().equalsIgnoreCase(a.getUsername())) {
+                return a;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Thêm địa chỉ nhận hàng mới cho người dùng
+     */
+    public static synchronized Address addAddress(String username, String recipientName, String phone,
+                                                  String addressDetail, String province, String district,
+                                                  String ward, boolean isDefault) {
+        if (username == null || recipientName == null || phone == null || addressDetail == null) return null;
+        
+        // Nếu đặt làm mặc định -> hủy mặc định các địa chỉ cũ
+        if (isDefault) {
+            try (Connection conn = DBContext.getConnection();
+                 PreparedStatement ps = conn.prepareStatement("UPDATE dia_chi SET is_default = 0 WHERE LOWER(username) = ?")) {
+                ps.setString(1, username.trim().toLowerCase());
+                ps.executeUpdate();
+            } catch (SQLException ignored) {}
+
+            for (Address a : memoryAddresses) {
+                if (username.trim().equalsIgnoreCase(a.getUsername())) {
+                    a.setDefault(false);
+                }
+            }
+        }
+
+        int newId = ++nextAddressId;
+        String sql = "INSERT INTO dia_chi (username, recipient_name, phone, address_detail, province, district, ward, is_default) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, username.trim().toLowerCase());
+            ps.setString(2, recipientName.trim());
+            ps.setString(3, phone.trim());
+            ps.setString(4, addressDetail.trim());
+            ps.setString(5, province != null ? province.trim() : "");
+            ps.setString(6, district != null ? district.trim() : "");
+            ps.setString(7, ward != null ? ward.trim() : "");
+            ps.setBoolean(8, isDefault);
+            ps.executeUpdate();
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) {
+                    newId = rs.getInt(1);
+                }
+            }
+        } catch (SQLException ignored) {}
+
+        Address addr = new Address(newId, 0, username.trim().toLowerCase(), recipientName.trim(), phone.trim(),
+                addressDetail.trim(), province != null ? province.trim() : "",
+                district != null ? district.trim() : "",
+                ward != null ? ward.trim() : "", isDefault);
+        addr.setCreatedAt(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        memoryAddresses.add(addr);
+        return addr;
+    }
+
+    /**
+     * Tra cứu thông tin mã giảm giá theo Code (Bảng MA_GIAM_GIA)
+     */
+    public static Voucher findVoucher(String code) {
+        if (code == null || code.trim().isEmpty()) return null;
+        String cleanCode = code.trim().toUpperCase();
+
+        String sql = "SELECT id, code, title, description, discount_type, discount_value, min_order_amount, max_discount_amount, start_date, end_date, is_active, usage_limit, used_count FROM ma_giam_gia WHERE UPPER(code) = ?";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, cleanCode);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return new Voucher(
+                            rs.getInt("id"),
+                            rs.getString("code"),
+                            rs.getString("title"),
+                            rs.getString("description"),
+                            rs.getString("discount_type"),
+                            rs.getDouble("discount_value"),
+                            rs.getDouble("min_order_amount"),
+                            rs.getDouble("max_discount_amount"),
+                            rs.getString("start_date"),
+                            rs.getString("end_date"),
+                            rs.getBoolean("is_active"),
+                            rs.getInt("usage_limit"),
+                            rs.getInt("used_count")
+                    );
+                }
+            }
+        } catch (SQLException ignored) {}
+
+        for (Voucher v : memoryVouchers) {
+            if (cleanCode.equalsIgnoreCase(v.getCode())) {
+                return v;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Lấy danh sách các mã giảm giá đang hoạt động
+     */
+    public static List<Voucher> getActiveVouchers() {
+        List<Voucher> list = new ArrayList<>();
+        String sql = "SELECT id, code, title, description, discount_type, discount_value, min_order_amount, max_discount_amount, start_date, end_date, is_active, usage_limit, used_count FROM ma_giam_gia WHERE is_active = 1";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                list.add(new Voucher(
+                        rs.getInt("id"),
+                        rs.getString("code"),
+                        rs.getString("title"),
+                        rs.getString("description"),
+                        rs.getString("discount_type"),
+                        rs.getDouble("discount_value"),
+                        rs.getDouble("min_order_amount"),
+                        rs.getDouble("max_discount_amount"),
+                        rs.getString("start_date"),
+                        rs.getString("end_date"),
+                        rs.getBoolean("is_active"),
+                        rs.getInt("usage_limit"),
+                        rs.getInt("used_count")
+                ));
+            }
+            if (!list.isEmpty()) return list;
+        } catch (SQLException ignored) {}
+
+        for (Voucher v : memoryVouchers) {
+            if (v.isActive()) list.add(v);
+        }
+        return list;
+    }
+
+    /**
+     * Lấy danh sách phương thức thanh toán hỗ trợ (Bảng PHUONG_THUC_TT)
+     */
+    public static List<PaymentMethod> getPaymentMethods() {
+        List<PaymentMethod> list = new ArrayList<>();
+        String sql = "SELECT id, code, name, description, is_active FROM phuong_thuc_tt WHERE is_active = 1";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                list.add(new PaymentMethod(
+                        rs.getInt("id"),
+                        rs.getString("code"),
+                        rs.getString("name"),
+                        rs.getString("description"),
+                        rs.getBoolean("is_active")
+                ));
+            }
+            if (!list.isEmpty()) return list;
+        } catch (SQLException ignored) {}
+
+        return new ArrayList<>(memoryPaymentMethods);
+    }
+
+    /**
+     * Lấy số lượng tồn kho thực tế của một cuốn sách (Bảng KHO & BOOKS)
+     */
+    public static int getBookStock(int bookId) {
+        String sql = "SELECT stock FROM books WHERE id = ?";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, bookId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("stock");
+                }
+            }
+        } catch (SQLException ignored) {}
+
+        for (Book b : memoryBooks) {
+            if (b.getId() == bookId) return b.getStock();
+        }
+        return 0;
+    }
+
+    /**
+     * Kiểm tra số lượng tồn kho từng sản phẩm trong giỏ hàng (Bước 2 trong luồng đặt hàng)
+     * @param items Danh sách sản phẩm muốn đặt
+     * @param outErrorMsg Chuỗi chứa thông báo lỗi chi tiết nếu có sản phẩm không đủ hàng
+     * @return true nếu TẤT CẢ sản phẩm đều đủ hàng, false nếu có bất kỳ sản phẩm nào thiếu
+     */
+    public static synchronized boolean checkStockAvailable(List<OrderItem> items, StringBuilder outErrorMsg) {
+        if (items == null || items.isEmpty()) {
+            if (outErrorMsg != null) outErrorMsg.append("Không có sản phẩm nào trong đơn hàng!");
+            return false;
+        }
+
+        for (OrderItem item : items) {
+            int currentStock = getBookStock(item.getBookId());
+            if (currentStock < item.getQuantity()) {
+                if (outErrorMsg != null) {
+                    if (currentStock <= 0) {
+                        outErrorMsg.append("Sản phẩm '").append(item.getBookTitle())
+                                .append("' hiện đã hết hàng trong kho. Vui lòng bỏ sản phẩm này để tiếp tục.");
+                    } else {
+                        outErrorMsg.append("Sản phẩm '").append(item.getBookTitle())
+                                .append("' chỉ còn ").append(currentStock)
+                                .append(" cuốn trong kho, không đủ số lượng bạn đặt (")
+                                .append(item.getQuantity()).append(" cuốn). Vui lòng điều chỉnh lại số lượng.");
+                    }
+                }
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Cập nhật trừ tồn kho trong KHO và BOOKS khi đặt hàng thành công (Atomic)
+     * Đảm bảo tính nhất quán: Nếu 1 cuốn thất bại -> không trừ cuốn nào.
+     */
+    public static synchronized boolean deductStock(List<OrderItem> items) {
+        // Bước 1: Kiểm tra lại toàn bộ tồn kho trước khi trừ
+        StringBuilder error = new StringBuilder();
+        if (!checkStockAvailable(items, error)) {
+            return false;
+        }
+
+        // Bước 2: Trừ trong MySQL nếu có kết nối
+        try (Connection conn = DBContext.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                String sqlBooks = "UPDATE books SET stock = stock - ? WHERE id = ? AND stock >= ?";
+                String sqlKho = "UPDATE kho SET quantity = quantity - ?, status = IF(quantity <= 0, 'HET_HANG', 'CON_HANG') WHERE book_id = ?";
+
+                try (PreparedStatement psBooks = conn.prepareStatement(sqlBooks);
+                     PreparedStatement psKho = conn.prepareStatement(sqlKho)) {
+                    for (OrderItem item : items) {
+                        psBooks.setInt(1, item.getQuantity());
+                        psBooks.setInt(2, item.getBookId());
+                        psBooks.setInt(3, item.getQuantity());
+                        int updated = psBooks.executeUpdate();
+                        if (updated <= 0) {
+                            conn.rollback();
+                            return false;
+                        }
+
+                        psKho.setInt(1, item.getQuantity());
+                        psKho.setInt(2, item.getBookId());
+                        psKho.executeUpdate();
+                    }
+                }
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        } catch (SQLException ignored) {}
+
+        // Bước 3: Cập nhật trong bộ nhớ
+        for (OrderItem item : items) {
+            for (Book b : memoryBooks) {
+                if (b.getId() == item.getBookId()) {
+                    b.setStock(Math.max(0, b.getStock() - item.getQuantity()));
+                    break;
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Khôi phục lại tồn kho nếu đơn hàng bị hủy hoặc thanh toán trực tuyến bị lỗi
+     */
+    public static synchronized void restoreStock(List<OrderItem> items) {
+        if (items == null) return;
+        try (Connection conn = DBContext.getConnection()) {
+            String sqlBooks = "UPDATE books SET stock = stock + ? WHERE id = ?";
+            String sqlKho = "UPDATE kho SET quantity = quantity + ?, status = 'CON_HANG' WHERE book_id = ?";
+            try (PreparedStatement psBooks = conn.prepareStatement(sqlBooks);
+                 PreparedStatement psKho = conn.prepareStatement(sqlKho)) {
+                for (OrderItem item : items) {
+                    psBooks.setInt(1, item.getQuantity());
+                    psBooks.setInt(2, item.getBookId());
+                    psBooks.executeUpdate();
+
+                    psKho.setInt(1, item.getQuantity());
+                    psKho.setInt(2, item.getBookId());
+                    psKho.executeUpdate();
+                }
+            }
+        } catch (SQLException ignored) {}
+
+        for (OrderItem item : items) {
+            for (Book b : memoryBooks) {
+                if (b.getId() == item.getBookId()) {
+                    b.setStock(b.getStock() + item.getQuantity());
+                    break;
+                }
+            }
+        }
+    }
+
+    /**
+     * Tạo đơn hàng mới (DON_HANG & CT_DON_HANG)
+     */
+    public static synchronized Order createOrder(String username, Address address, List<OrderItem> items,
+                                                 String voucherCode, double subtotal, double discountAmount,
+                                                 double shippingFee, double totalAmount, String paymentMethodCode,
+                                                 String paymentStatus, String orderStatus, String note,
+                                                 String transactionId) {
+        int orderId = ++nextOrderId;
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyMMddHHmmss"));
+        int rand = (int) (Math.random() * 900) + 100;
+        String orderCode = "BK" + timestamp + rand;
+
+        String paymentMethodName = "ONLINE".equalsIgnoreCase(paymentMethodCode)
+                ? "Thanh toán trực tuyến (VietQR / MoMo)"
+                : "Thanh toán khi nhận hàng (COD)";
+
+        String createdAt = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+
+        Order order = new Order(
+                orderId,
+                orderCode,
+                username,
+                address != null ? address.getId() : 0,
+                address != null ? address.getRecipientName() : "",
+                address != null ? address.getPhone() : "",
+                address != null ? address.getFullAddress() : "",
+                voucherCode,
+                subtotal,
+                discountAmount,
+                shippingFee,
+                totalAmount,
+                paymentMethodCode,
+                paymentMethodName,
+                paymentStatus,
+                orderStatus,
+                note,
+                transactionId,
+                createdAt
+        );
+
+        // Sao chép các item vào đơn
+        List<OrderItem> orderItems = new ArrayList<>();
+        for (OrderItem it : items) {
+            OrderItem orderItem = new OrderItem(
+                    it.getId() > 0 ? it.getId() : (int)(Math.random() * 100000),
+                    orderId,
+                    it.getBookId(),
+                    it.getBookCode(),
+                    it.getBookTitle(),
+                    it.getBookImage(),
+                    it.getPrice(),
+                    it.getQuantity(),
+                    it.getSubtotal()
+            );
+            orderItems.add(orderItem);
+        }
+        order.setItems(orderItems);
+
+        // Lưu vào MySQL nếu có kết nối
+        try (Connection conn = DBContext.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                String sqlOrder = "INSERT INTO don_hang (order_code, username, address_id, recipient_name, recipient_phone, delivery_address, voucher_code, subtotal, discount_amount, shipping_fee, total_amount, payment_method_code, payment_method_name, payment_status, order_status, note, transaction_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                try (PreparedStatement psOrder = conn.prepareStatement(sqlOrder, Statement.RETURN_GENERATED_KEYS)) {
+                    psOrder.setString(1, orderCode);
+                    psOrder.setString(2, username);
+                    psOrder.setInt(3, address != null ? address.getId() : 0);
+                    psOrder.setString(4, address != null ? address.getRecipientName() : "");
+                    psOrder.setString(5, address != null ? address.getPhone() : "");
+                    psOrder.setString(6, address != null ? address.getFullAddress() : "");
+                    psOrder.setString(7, voucherCode);
+                    psOrder.setDouble(8, subtotal);
+                    psOrder.setDouble(9, discountAmount);
+                    psOrder.setDouble(10, shippingFee);
+                    psOrder.setDouble(11, totalAmount);
+                    psOrder.setString(12, paymentMethodCode);
+                    psOrder.setString(13, paymentMethodName);
+                    psOrder.setString(14, paymentStatus);
+                    psOrder.setString(15, orderStatus);
+                    psOrder.setString(16, note);
+                    psOrder.setString(17, transactionId);
+                    psOrder.setString(18, createdAt);
+                    psOrder.executeUpdate();
+
+                    try (ResultSet rs = psOrder.getGeneratedKeys()) {
+                        if (rs.next()) {
+                            orderId = rs.getInt(1);
+                            order.setId(orderId);
+                        }
+                    }
+                }
+
+                String sqlItem = "INSERT INTO ct_don_hang (order_id, book_id, book_code, book_title, book_image, price, quantity, subtotal) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                try (PreparedStatement psItem = conn.prepareStatement(sqlItem)) {
+                    for (OrderItem it : orderItems) {
+                        it.setOrderId(orderId);
+                        psItem.setInt(1, orderId);
+                        psItem.setInt(2, it.getBookId());
+                        psItem.setString(3, it.getBookCode());
+                        psItem.setString(4, it.getBookTitle());
+                        psItem.setString(5, it.getBookImage());
+                        psItem.setDouble(6, it.getPrice());
+                        psItem.setInt(7, it.getQuantity());
+                        psItem.setDouble(8, it.getSubtotal());
+                        psItem.executeUpdate();
+                    }
+                }
+
+                // Nếu có áp dụng voucher -> tăng used_count
+                if (voucherCode != null && !voucherCode.trim().isEmpty()) {
+                    try (PreparedStatement psVoucher = conn.prepareStatement("UPDATE ma_giam_gia SET used_count = used_count + 1 WHERE UPPER(code) = ?")) {
+                        psVoucher.setString(1, voucherCode.trim().toUpperCase());
+                        psVoucher.executeUpdate();
+                    }
+                }
+
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        } catch (SQLException ignored) {}
+
+        // Tăng used_count trong memory
+        if (voucherCode != null && !voucherCode.trim().isEmpty()) {
+            Voucher v = findVoucher(voucherCode);
+            if (v != null) v.setUsedCount(v.getUsedCount() + 1);
+        }
+
+        memoryOrders.add(0, order);
+        return order;
+    }
+
+    /**
+     * Tra cứu chi tiết đơn hàng theo mã đơn (order_code)
+     * Đảm bảo tính bảo mật: chỉ cho phép xem đơn thuộc sở hữu của tài khoản đang đăng nhập (trừ admin).
+     */
+    public static Order getOrderByCode(String orderCode, String username) {
+        if (orderCode == null || orderCode.trim().isEmpty()) return null;
+        String cleanCode = orderCode.trim();
+
+        // 1. Tìm trong memory
+        for (Order o : memoryOrders) {
+            if (cleanCode.equalsIgnoreCase(o.getOrderCode())) {
+                if (username == null || "admin".equalsIgnoreCase(username) || o.getUsername().equalsIgnoreCase(username)) {
+                    return o;
+                }
+                return null; // Không thuộc tài khoản
+            }
+        }
+
+        // 2. Tìm trong MySQL
+        String sql = "SELECT id, order_code, username, address_id, recipient_name, recipient_phone, delivery_address, voucher_code, subtotal, discount_amount, shipping_fee, total_amount, payment_method_code, payment_method_name, payment_status, order_status, note, transaction_id, created_at FROM don_hang WHERE order_code = ?";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, cleanCode);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    String owner = rs.getString("username");
+                    if (username != null && !"admin".equalsIgnoreCase(username) && !owner.equalsIgnoreCase(username)) {
+                        return null; // Bảo mật: Không thuộc tài khoản này!
+                    }
+
+                    int oId = rs.getInt("id");
+                    Order o = new Order(
+                            oId,
+                            rs.getString("order_code"),
+                            owner,
+                            rs.getInt("address_id"),
+                            rs.getString("recipient_name"),
+                            rs.getString("recipient_phone"),
+                            rs.getString("delivery_address"),
+                            rs.getString("voucher_code"),
+                            rs.getDouble("subtotal"),
+                            rs.getDouble("discount_amount"),
+                            rs.getDouble("shipping_fee"),
+                            rs.getDouble("total_amount"),
+                            rs.getString("payment_method_code"),
+                            rs.getString("payment_method_name"),
+                            rs.getString("payment_status"),
+                            rs.getString("order_status"),
+                            rs.getString("note"),
+                            rs.getString("transaction_id"),
+                            rs.getString("created_at")
+                    );
+
+                    // Lấy chi tiết items
+                    List<OrderItem> items = new ArrayList<>();
+                    try (PreparedStatement psItems = conn.prepareStatement("SELECT id, order_id, book_id, book_code, book_title, book_image, price, quantity, subtotal FROM ct_don_hang WHERE order_id = ?")) {
+                        psItems.setInt(1, oId);
+                        try (ResultSet rsItems = psItems.executeQuery()) {
+                            while (rsItems.next()) {
+                                items.add(new OrderItem(
+                                        rsItems.getInt("id"),
+                                        rsItems.getInt("order_id"),
+                                        rsItems.getInt("book_id"),
+                                        rsItems.getString("book_code"),
+                                        rsItems.getString("book_title"),
+                                        rsItems.getString("book_image"),
+                                        rsItems.getDouble("price"),
+                                        rsItems.getInt("quantity"),
+                                        rsItems.getDouble("subtotal")
+                                ));
+                            }
+                        }
+                    }
+                    o.setItems(items);
+                    return o;
+                }
+            }
+        } catch (SQLException ignored) {}
+
+        return null;
+    }
+
+    /**
+     * Lấy danh sách toàn bộ đơn hàng của một người dùng
+     */
+    public static List<Order> getOrdersByUsername(String username) {
+        List<Order> list = new ArrayList<>();
+        if (username == null || username.trim().isEmpty()) return list;
+
+        String sql = "SELECT id, order_code, username, address_id, recipient_name, recipient_phone, delivery_address, voucher_code, subtotal, discount_amount, shipping_fee, total_amount, payment_method_code, payment_method_name, payment_status, order_status, note, transaction_id, created_at FROM don_hang WHERE LOWER(username) = ? ORDER BY id DESC";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, username.trim().toLowerCase());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Order o = new Order(
+                            rs.getInt("id"),
+                            rs.getString("order_code"),
+                            rs.getString("username"),
+                            rs.getInt("address_id"),
+                            rs.getString("recipient_name"),
+                            rs.getString("recipient_phone"),
+                            rs.getString("delivery_address"),
+                            rs.getString("voucher_code"),
+                            rs.getDouble("subtotal"),
+                            rs.getDouble("discount_amount"),
+                            rs.getDouble("shipping_fee"),
+                            rs.getDouble("total_amount"),
+                            rs.getString("payment_method_code"),
+                            rs.getString("payment_method_name"),
+                            rs.getString("payment_status"),
+                            rs.getString("order_status"),
+                            rs.getString("note"),
+                            rs.getString("transaction_id"),
+                            rs.getString("created_at")
+                    );
+                    list.add(o);
+                }
+            }
+            if (!list.isEmpty()) {
+                for (Order o : list) {
+                    List<OrderItem> items = new ArrayList<>();
+                    try (PreparedStatement psItems = conn.prepareStatement("SELECT id, order_id, book_id, book_code, book_title, book_image, price, quantity, subtotal FROM ct_don_hang WHERE order_id = ?")) {
+                        psItems.setInt(1, o.getId());
+                        try (ResultSet rsItems = psItems.executeQuery()) {
+                            while (rsItems.next()) {
+                                items.add(new OrderItem(
+                                        rsItems.getInt("id"),
+                                        rsItems.getInt("order_id"),
+                                        rsItems.getInt("book_id"),
+                                        rsItems.getString("book_code"),
+                                        rsItems.getString("book_title"),
+                                        rsItems.getString("book_image"),
+                                        rsItems.getDouble("price"),
+                                        rsItems.getInt("quantity"),
+                                        rsItems.getDouble("subtotal")
+                                ));
+                            }
+                        }
+                    }
+                    o.setItems(items);
+                }
+                return list;
+            }
+        } catch (SQLException ignored) {}
+
+        for (Order o : memoryOrders) {
+            if (username.trim().equalsIgnoreCase(o.getUsername())) {
+                list.add(o);
+            }
+        }
+        return list;
+    }
+
+    /**
+     * Cập nhật trạng thái thanh toán của đơn hàng (sau khi thanh toán trực tuyến thành công)
+     */
+    public static synchronized boolean updatePaymentStatus(String orderCode, String paymentStatus, String transactionId) {
+        if (orderCode == null) return false;
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement("UPDATE don_hang SET payment_status = ?, transaction_id = ?, order_status = IF(? = 'PAID', 'DANG_XU_LY', order_status) WHERE order_code = ?")) {
+            ps.setString(1, paymentStatus);
+            ps.setString(2, transactionId);
+            ps.setString(3, paymentStatus);
+            ps.setString(4, orderCode);
+            ps.executeUpdate();
+        } catch (SQLException ignored) {}
+
+        for (Order o : memoryOrders) {
+            if (orderCode.equalsIgnoreCase(o.getOrderCode())) {
+                o.setPaymentStatus(paymentStatus);
+                if (transactionId != null) o.setTransactionId(transactionId);
+                if ("PAID".equalsIgnoreCase(paymentStatus)) {
+                    o.setOrderStatus("DANG_XU_LY");
+                }
+                return true;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Đồng bộ giỏ hàng của người dùng vào Database (Bảng GIO_HANG & CT_GIO_HANG)
+     */
+    public static synchronized void syncCartToDb(String username, List<OrderItem> items) {
+        if (username == null) return;
+        memoryCarts.put(username.toLowerCase(), new ArrayList<>(items));
+
+        try (Connection conn = DBContext.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                int cartId = 0;
+                try (PreparedStatement ps = conn.prepareStatement("SELECT id FROM gio_hang WHERE LOWER(username) = ?")) {
+                    ps.setString(1, username.toLowerCase());
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            cartId = rs.getInt("id");
+                        }
+                    }
+                }
+
+                if (cartId == 0) {
+                    try (PreparedStatement ps = conn.prepareStatement("INSERT INTO gio_hang (username) VALUES (?)", Statement.RETURN_GENERATED_KEYS)) {
+                        ps.setString(1, username.toLowerCase());
+                        ps.executeUpdate();
+                        try (ResultSet rs = ps.getGeneratedKeys()) {
+                            if (rs.next()) cartId = rs.getInt(1);
+                        }
+                    }
+                }
+
+                if (cartId > 0) {
+                    try (PreparedStatement psDel = conn.prepareStatement("DELETE FROM ct_gio_hang WHERE gio_hang_id = ?")) {
+                        psDel.setInt(1, cartId);
+                        psDel.executeUpdate();
+                    }
+
+                    if (items != null && !items.isEmpty()) {
+                        try (PreparedStatement psIns = conn.prepareStatement("INSERT INTO ct_gio_hang (gio_hang_id, book_id, quantity) VALUES (?, ?, ?)")) {
+                            for (OrderItem item : items) {
+                                psIns.setInt(1, cartId);
+                                psIns.setInt(2, item.getBookId());
+                                psIns.setInt(3, item.getQuantity());
+                                psIns.executeUpdate();
+                            }
+                        }
+                    }
+                }
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        } catch (SQLException ignored) {}
+    }
 }
+

@@ -851,7 +851,7 @@
             const qty = parseInt(document.getElementById('detailQuantityInput').value) || 1;
             if (bookId) {
                 addToCart(bookId, qty);
-                window.location.href = 'cart';
+                window.location.href = 'checkout';
             }
         }
     </script>

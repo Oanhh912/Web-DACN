@@ -124,3 +124,128 @@ INSERT INTO `books` (`id`, `code`, `title`, `author`, `publisher`, `price`, `ori
 INSERT INTO `kho` (`book_id`, `book_code`, `quantity`, `status`)
 SELECT `id`, `code`, `stock`, IF(`stock` > 0, 'CON_HANG', 'HET_HANG') FROM `books`;
 
+-- 5. BẢNG ĐỊA CHỈ NHẬN HÀNG (DIA_CHI - Bước 3 trong luồng đặt hàng)
+DROP TABLE IF EXISTS `dia_chi`;
+CREATE TABLE `dia_chi` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `username` VARCHAR(50) NOT NULL,
+    `recipient_name` VARCHAR(100) NOT NULL,
+    `phone` VARCHAR(20) NOT NULL,
+    `address_detail` VARCHAR(255) NOT NULL,
+    `province` VARCHAR(100) NOT NULL,
+    `district` VARCHAR(100) NOT NULL,
+    `ward` VARCHAR(100) NOT NULL,
+    `is_default` BOOLEAN DEFAULT FALSE,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`username`) REFERENCES `users`(`username`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `dia_chi` (`username`, `recipient_name`, `phone`, `address_detail`, `province`, `district`, `ward`, `is_default`) VALUES
+('oanh', 'Hoàng Oanh', '0912345678', 'Tầng 5, Tòa nhà FPT Cầu Giấy, Số 10 Phạm Văn Bạch', 'Hà Nội', 'Quận Cầu Giấy', 'Phường Dịch Vọng Hậu', 1),
+('oanh', 'Hoàng Oanh (Nhà riêng)', '0912345678', 'Số 15, Ngõ 1194 Đường Láng', 'Hà Nội', 'Quận Đống Đa', 'Phường Láng Thượng', 0),
+('khachhang', 'Khách Hàng Thân Thiết', '0909888999', 'Số 68 Nguyễn Huệ, Phường Bến Nghé', 'TP. Hồ Chí Minh', 'Quận 1', 'Phường Bến Nghé', 1);
+
+-- 6. BẢNG MÃ GIẢM GIÁ (MA_GIAM_GIA - Bước 4 trong luồng đặt hàng)
+DROP TABLE IF EXISTS `ma_giam_gia`;
+CREATE TABLE `ma_giam_gia` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `code` VARCHAR(50) NOT NULL UNIQUE,
+    `title` VARCHAR(255) NOT NULL,
+    `description` VARCHAR(500),
+    `discount_type` VARCHAR(20) NOT NULL DEFAULT 'PERCENT', -- 'PERCENT' hoặc 'FIXED'
+    `discount_value` DOUBLE NOT NULL,                       -- 30000 hoặc 20 (%)
+    `min_order_amount` DOUBLE DEFAULT 0,                    -- Đơn hàng tối thiểu (VD: 200000)
+    `max_discount_amount` DOUBLE DEFAULT 0,                 -- Giảm tối đa nếu là phần trăm
+    `start_date` DATE,
+    `end_date` DATE,
+    `is_active` BOOLEAN DEFAULT TRUE,
+    `usage_limit` INT DEFAULT 100,
+    `used_count` INT DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `ma_giam_gia` (`code`, `title`, `description`, `discount_type`, `discount_value`, `min_order_amount`, `max_discount_amount`, `start_date`, `end_date`, `is_active`, `usage_limit`, `used_count`) VALUES
+('BOOKORA2026', 'Giảm 30.000đ cho đơn từ 200.000đ', 'Áp dụng cho toàn bộ đầu sách trên hệ thống Bookora', 'FIXED', 30000, 200000, 0, '2026-01-01', '2026-12-31', 1, 500, 12),
+('FREESHIP', 'Miễn phí vận chuyển toàn quốc', 'Miễn phí ship (trừ tối đa 30.000đ phí giao hàng) cho đơn từ 250.000đ', 'FIXED', 30000, 250000, 0, '2026-01-01', '2026-12-31', 1, 1000, 45),
+('TECH30', 'Giảm 30% Sách Công Nghệ & AI', 'Giảm 30% tối đa 100.000đ cho đơn hàng từ 150.000đ', 'PERCENT', 30, 150000, 100000, '2026-01-01', '2026-12-31', 1, 200, 8),
+('TRI_THUC', 'Giảm 15% Sách Kỹ Năng & Tâm Lý', 'Giảm 15% tối đa 50.000đ cho đơn hàng từ 100.000đ', 'PERCENT', 15, 100000, 50000, '2026-01-01', '2026-12-31', 1, 300, 15),
+('HETHAN', 'Mã Giảm Giá Đã Hết Hạn (Để kiểm thử luồng 4)', 'Mã mẫu phục vụ kiểm thử trường hợp mã hết hạn sử dụng', 'FIXED', 50000, 100000, 0, '2023-01-01', '2023-12-31', 1, 100, 5),
+('CHUADUNG', 'Mã Tạm Khóa (Để kiểm thử luồng 4)', 'Mã mẫu phục vụ kiểm thử trường hợp mã chưa mở / bị tạm khóa', 'FIXED', 20000, 50000, 0, '2026-01-01', '2026-12-31', 0, 100, 0);
+
+-- 7. BẢNG PHƯƠNG THỨC THANH TOÁN (PHUONG_THUC_TT)
+DROP TABLE IF EXISTS `phuong_thuc_tt`;
+CREATE TABLE `phuong_thuc_tt` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `code` VARCHAR(50) NOT NULL UNIQUE,
+    `name` VARCHAR(100) NOT NULL,
+    `description` VARCHAR(255),
+    `is_active` BOOLEAN DEFAULT TRUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `phuong_thuc_tt` (`code`, `name`, `description`, `is_active`) VALUES
+('COD', 'Thanh toán tiền mặt khi nhận hàng (COD)', 'Nhận sách, kiểm tra hàng rồi thanh toán cho shipper', 1),
+('ONLINE', 'Thanh toán trực tuyến (Chuyển khoản VietQR / MoMo / Thẻ ATM)', 'Quét mã VietQR chuyển khoản nhanh 24/7 không mất phí', 1);
+
+-- 8. BẢNG GIỎ HÀNG (GIO_HANG)
+DROP TABLE IF EXISTS `gio_hang`;
+CREATE TABLE `gio_hang` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `username` VARCHAR(50) NOT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (`username`) REFERENCES `users`(`username`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 9. BẢNG CHI TIẾT GIỎ HÀNG (CT_GIO_HANG)
+DROP TABLE IF EXISTS `ct_gio_hang`;
+CREATE TABLE `ct_gio_hang` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `gio_hang_id` INT NOT NULL,
+    `book_id` INT NOT NULL,
+    `quantity` INT NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`gio_hang_id`) REFERENCES `gio_hang`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`book_id`) REFERENCES `books`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 10. BẢNG ĐƠN HÀNG (DON_HANG - Bước 6 trong luồng đặt hàng)
+DROP TABLE IF EXISTS `don_hang`;
+CREATE TABLE `don_hang` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `order_code` VARCHAR(50) NOT NULL UNIQUE,
+    `username` VARCHAR(50) NOT NULL,
+    `address_id` INT,
+    `recipient_name` VARCHAR(100) NOT NULL,
+    `recipient_phone` VARCHAR(20) NOT NULL,
+    `delivery_address` VARCHAR(500) NOT NULL,
+    `voucher_code` VARCHAR(50),
+    `subtotal` DOUBLE NOT NULL,
+    `discount_amount` DOUBLE DEFAULT 0,
+    `shipping_fee` DOUBLE DEFAULT 0,
+    `total_amount` DOUBLE NOT NULL,
+    `payment_method_code` VARCHAR(50) NOT NULL DEFAULT 'COD',
+    `payment_method_name` VARCHAR(100) DEFAULT 'Thanh toán khi nhận hàng (COD)',
+    `payment_status` VARCHAR(50) NOT NULL DEFAULT 'PENDING',  -- 'PENDING', 'PAID', 'FAILED'
+    `order_status` VARCHAR(50) NOT NULL DEFAULT 'CHO_XAC_NHAN', -- 'CHO_XAC_NHAN', 'DANG_XU_LY', 'DANG_GIAO', 'HOAN_THANH', 'DA_HUY'
+    `note` TEXT,
+    `transaction_id` VARCHAR(100),
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`username`) REFERENCES `users`(`username`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 11. BẢNG CHI TIẾT ĐƠN HÀNG (CT_DON_HANG)
+DROP TABLE IF EXISTS `ct_don_hang`;
+CREATE TABLE `ct_don_hang` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `order_id` INT NOT NULL,
+    `book_id` INT NOT NULL,
+    `book_code` VARCHAR(50) NOT NULL,
+    `book_title` VARCHAR(255) NOT NULL,
+    `book_image` VARCHAR(500),
+    `price` DOUBLE NOT NULL,
+    `quantity` INT NOT NULL,
+    `subtotal` DOUBLE NOT NULL,
+    FOREIGN KEY (`order_id`) REFERENCES `don_hang`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`book_id`) REFERENCES `books`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+

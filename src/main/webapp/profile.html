@@ -77,6 +77,11 @@
                             <span>Đổi mật khẩu</span>
                             <i class="fas fa-chevron-right tab-nav-arrow"></i>
                         </button>
+                        <button type="button" class="tab-nav-btn" id="tabNavOrders" onclick="switchProfileTab('orders')">
+                            <i class="fas fa-box-open"></i>
+                            <span>Đơn hàng của tôi</span>
+                            <i class="fas fa-chevron-right tab-nav-arrow"></i>
+                        </button>
                         <a href="db" class="tab-nav-btn" target="_blank" title="Xem cơ sở dữ liệu MySQL">
                             <i class="fas fa-database"></i>
                             <span>Xem Database MySQL</span>
@@ -193,6 +198,30 @@
                     </div>
                 </div>
 
+
+                <!-- ================= TAB 3: ĐƠN HÀNG CỦA TÔI ================= -->
+                <div class="profile-tab-pane" id="paneOrders">
+                    <div class="profile-card">
+                        <div class="profile-card-header">
+                            <div class="profile-card-header-icon" style="background: #ede9fe; color: #7c3aed;">
+                                <i class="fas fa-box-open"></i>
+                            </div>
+                            <div>
+                                <h3 class="profile-card-title">Đơn Hàng Của Tôi</h3>
+                                <p class="profile-card-desc">Theo dõi trạng thái các đơn hàng bạn đã đặt tại Bookora</p>
+                            </div>
+                        </div>
+
+                        <div id="myOrdersContainer" style="margin-top: 20px;">
+                            <div class="orders-loading" id="ordersLoading" style="text-align:center; padding: 40px; color: var(--text-muted);">
+                                <i class="fas fa-circle-notch fa-spin" style="font-size: 28px; color: var(--primary);"></i>
+                                <p style="margin-top: 12px;">Đang tải danh sách đơn hàng...</p>
+                            </div>
+                            <div id="ordersTableWrap" style="display:none;"></div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- ================= TAB 2: ĐỔI MẬT KHẨU ================= -->
                 <div class="profile-tab-pane" id="panePassword">
                     <div class="profile-card">
@@ -284,22 +313,23 @@
     <script>
         // Chuyển Tab
         function switchProfileTab(tabName) {
-            const tabNavProfile = document.getElementById('tabNavProfile');
-            const tabNavPassword = document.getElementById('tabNavPassword');
-            const paneProfile = document.getElementById('paneProfile');
-            const panePassword = document.getElementById('panePassword');
+            const allBtns = document.querySelectorAll('.tab-nav-btn');
+            const allPanes = document.querySelectorAll('.profile-tab-pane');
+            allBtns.forEach(b => b.classList.remove('active'));
+            allPanes.forEach(p => p.classList.remove('active'));
 
             if (tabName === 'password') {
-                tabNavProfile.classList.remove('active');
-                tabNavPassword.classList.add('active');
-                paneProfile.classList.remove('active');
-                panePassword.classList.add('active');
+                document.getElementById('tabNavPassword').classList.add('active');
+                document.getElementById('panePassword').classList.add('active');
                 history.replaceState(null, null, '#password');
+            } else if (tabName === 'orders') {
+                document.getElementById('tabNavOrders').classList.add('active');
+                document.getElementById('paneOrders').classList.add('active');
+                history.replaceState(null, null, '#orders');
+                loadMyOrders();
             } else {
-                tabNavProfile.classList.add('active');
-                tabNavPassword.classList.remove('active');
-                paneProfile.classList.add('active');
-                panePassword.classList.remove('active');
+                document.getElementById('tabNavProfile').classList.add('active');
+                document.getElementById('paneProfile').classList.add('active');
                 history.replaceState(null, null, '#profile');
             }
         }
@@ -310,10 +340,125 @@
             const hash = window.location.hash;
             if (initialTab === 'password' || hash === '#password') {
                 switchProfileTab('password');
+            } else if (hash === '#orders') {
+                switchProfileTab('orders');
             } else {
                 switchProfileTab('profile');
             }
         });
+
+        // ===== CHỨC NĂNG TẢI ĐƠN HÀNG CỦA TÔI =====
+        let ordersLoaded = false;
+
+        async function loadMyOrders() {
+            if (ordersLoaded) return;
+            const loadingEl = document.getElementById('ordersLoading');
+            const tableWrap = document.getElementById('ordersTableWrap');
+
+            try {
+                const res = await fetch('/api/orders/my-orders');
+                if (!res.ok) {
+                    if (res.status === 401) {
+                        tableWrap.innerHTML = `<div style="text-align:center;padding:40px;color:#ef4444;"><i class="fas fa-lock"></i><p>Vui lòng đăng nhập để xem đơn hàng!</p></div>`;
+                    } else {
+                        tableWrap.innerHTML = `<div style="text-align:center;padding:40px;color:#ef4444;"><i class="fas fa-circle-exclamation"></i><p>Không thể tải đơn hàng. Vui lòng thử lại!</p></div>`;
+                    }
+                    loadingEl.style.display = 'none';
+                    tableWrap.style.display = 'block';
+                    return;
+                }
+
+                const data = await res.json();
+                loadingEl.style.display = 'none';
+                tableWrap.style.display = 'block';
+
+                if (!data.success || !data.orders || data.orders.length === 0) {
+                    tableWrap.innerHTML = `
+                        <div style="text-align:center;padding:50px 20px;">
+                            <div style="font-size:60px;color:#e2e8f0;margin-bottom:16px;"><i class="fas fa-box-open"></i></div>
+                            <h4 style="color:var(--text-muted);font-size:18px;margin-bottom:8px;">Bạn chưa có đơn hàng nào</h4>
+                            <p style="color:var(--text-muted);margin-bottom:24px;">Hãy khám phá bộ sưu tập sách đa dạng tại Bookora và đặt đơn hàng đầu tiên!</p>
+                            <a href="home" style="display:inline-block;padding:10px 24px;background:var(--primary);color:#fff;border-radius:8px;text-decoration:none;font-weight:600;"><i class="fas fa-book"></i> Khám phá sách ngay</a>
+                        </div>`;
+                    return;
+                }
+
+                ordersLoaded = true;
+
+                function getPayStatusBadge(st) {
+                    if (!st) return '<span class="badge-status badge-unpaid">Chưa thanh toán</span>';
+                    const s = st.toUpperCase();
+                    if (s === 'PAID') return '<span class="badge-status badge-paid">Đã thanh toán</span>';
+                    if (s === 'FAILED') return '<span class="badge-status badge-failed">TT thất bại</span>';
+                    return '<span class="badge-status badge-unpaid">Chờ thanh toán</span>';
+                }
+
+                function getOrderStatusBadge(st) {
+                    if (!st) return '<span class="badge-status badge-pending">Chờ xử lý</span>';
+                    const s = st.toUpperCase();
+                    if (s === 'PENDING') return '<span class="badge-status badge-pending">Chờ xử lý</span>';
+                    if (s === 'CONFIRMED') return '<span class="badge-status badge-confirmed">Đã xác nhận</span>';
+                    if (s === 'SHIPPING') return '<span class="badge-status badge-shipping">Đang giao hàng</span>';
+                    if (s === 'DELIVERED') return '<span class="badge-status badge-delivered">Đã giao hàng</span>';
+                    if (s === 'CANCELLED') return '<span class="badge-status badge-cancelled">Đã hủy</span>';
+                    return `<span class="badge-status badge-pending">${st}</span>`;
+                }
+
+                let html = `
+                    <div style="overflow-x:auto;">
+                    <table class="orders-table">
+                        <thead>
+                            <tr>
+                                <th>Mã đơn hàng</th>
+                                <th>Người nhận</th>
+                                <th>Tổng tiền</th>
+                                <th>Thanh toán</th>
+                                <th>Trạng thái</th>
+                                <th>Ngày đặt</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+
+                data.orders.forEach(o => {
+                    html += `
+                        <tr>
+                            <td><span class="order-code-chip">#${escHtml(o.orderCode)}</span></td>
+                            <td>
+                                <div style="font-weight:600;">${escHtml(o.recipientName)}</div>
+                                <div style="font-size:12px;color:var(--text-muted);">${escHtml(o.recipientPhone)}</div>
+                            </td>
+                            <td><strong style="color:var(--primary-dark);">${escHtml(o.formattedTotal)}</strong></td>
+                            <td>${getPayStatusBadge(o.paymentStatus)}</td>
+                            <td>${getOrderStatusBadge(o.orderStatus)}</td>
+                            <td style="font-size:13px;color:var(--text-muted);">${escHtml(o.createdAt ? o.createdAt.substring(0,10) : '')}</td>
+                            <td>
+                                <a href="order-success?code=${encodeURIComponent(o.orderCode)}" class="btn-view-order" target="_blank">
+                                    <i class="fas fa-eye"></i> Xem
+                                </a>
+                            </td>
+                        </tr>`;
+                });
+
+                html += `</tbody></table></div>`;
+                tableWrap.innerHTML = html;
+
+            } catch (e) {
+                console.error('Lỗi tải đơn hàng:', e);
+                document.getElementById('ordersLoading').style.display = 'none';
+                tableWrap.style.display = 'block';
+                tableWrap.innerHTML = `<div style="text-align:center;padding:40px;color:#ef4444;"><i class="fas fa-wifi"></i><p>Lỗi kết nối máy chủ. Vui lòng thử lại!</p></div>`;
+            }
+        }
+
+        function escHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g,'&amp;')
+                .replace(/</g,'&lt;')
+                .replace(/>/g,'&gt;')
+                .replace(/"/g,'&quot;');
+        }
 
         // Hiện/ẩn mật khẩu
         function togglePassVisibility(inputId, btn) {

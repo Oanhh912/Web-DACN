@@ -1,8 +1,13 @@
 package com.bookstore.server;
 
 import com.bookstore.data.DataStore;
+import com.bookstore.model.Address;
 import com.bookstore.model.Book;
+import com.bookstore.model.Order;
+import com.bookstore.model.OrderItem;
+import com.bookstore.model.PaymentMethod;
 import com.bookstore.model.User;
+import com.bookstore.model.Voucher;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -15,6 +20,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Máy chủ Java độc lập (Standalone Java Web Server).
@@ -25,6 +33,9 @@ public class BookstoreApp {
     private static final Path WEBAPP_DIR = Paths.get("src", "main", "webapp");
     // Bộ nhớ quản lý session: Token -> Username
     private static final Map<String, String> activeSessions = new HashMap<>();
+    // Chống đặt trùng đơn khi nhấn nhiều lần (Idempotency / Anti-spam)
+    private static final Set<String> processedRequestIds = Collections.synchronizedSet(new HashSet<>());
+    private static final Map<String, Long> userLastOrderTime = new ConcurrentHashMap<>();
 
     public static void main(String[] args) {
         int port = DEFAULT_PORT;
@@ -50,6 +61,8 @@ public class BookstoreApp {
         server.createContext("/category.html", new CategoryHandler());
         server.createContext("/book", new BookDetailHandler());
         server.createContext("/cart", new CartHandler());
+        server.createContext("/checkout", new CheckoutHandler());
+        server.createContext("/order-success", new OrderSuccessHandler());
         server.createContext("/about", new AboutHandler());
         server.createContext("/contact", new ContactHandler());
         server.createContext("/promotions", new PromotionsHandler());
@@ -61,6 +74,13 @@ public class BookstoreApp {
         server.createContext("/api/me", new ApiMeHandler());
         server.createContext("/api/send-otp", new SendOtpHandler());
         server.createContext("/api/verify-otp", new VerifyOtpHandler());
+        server.createContext("/api/checkout/info", new ApiCheckoutInfoHandler());
+        server.createContext("/api/checkout/address", new ApiCheckoutAddressHandler());
+        server.createContext("/api/checkout/validate-voucher", new ApiValidateVoucherHandler());
+        server.createContext("/api/checkout/place-order", new ApiPlaceOrderHandler());
+        server.createContext("/api/payment/confirm-online", new ApiConfirmOnlinePaymentHandler());
+        server.createContext("/api/orders/detail", new ApiGetOrderDetailHandler());
+        server.createContext("/api/orders/my-orders", new ApiMyOrdersHandler());
         server.createContext("/db", new DatabaseViewerHandler());
         server.createContext("/css/", new StaticFileHandler());
         server.createContext("/js/", new StaticFileHandler());
@@ -129,6 +149,14 @@ public class BookstoreApp {
                 String username = params.getOrDefault("username", "").trim();
                 String password = params.getOrDefault("password", "").trim();
                 String remember = params.getOrDefault("remember", "");
+                String redirectUrl = params.getOrDefault("redirect", "");
+                if (redirectUrl.isEmpty()) {
+                    String query = exchange.getRequestURI().getQuery();
+                    if (query != null) {
+                        Map<String, String> qp = parseQueryString(query);
+                        redirectUrl = qp.getOrDefault("redirect", "");
+                    }
+                }
 
                 if (username.isEmpty() || password.isEmpty()) {
                     String html = renderLoginPage("Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!", "", username);
@@ -146,7 +174,11 @@ public class BookstoreApp {
                         cookieHeader += "; Max-Age=" + (7 * 24 * 3600); // 7 ngày
                     }
                     exchange.getResponseHeaders().add("Set-Cookie", cookieHeader);
-                    redirect(exchange, "/home");
+                    if (redirectUrl != null && !redirectUrl.isEmpty() && redirectUrl.startsWith("/")) {
+                        redirect(exchange, redirectUrl);
+                    } else {
+                        redirect(exchange, "/home");
+                    }
                 } else {
                     String html = renderLoginPage("Tên đăng nhập hoặc mật khẩu không chính xác!", "", username);
                     sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
@@ -512,6 +544,9 @@ public class BookstoreApp {
     /**
      * Xử lý điều hướng và hiển thị trang Giỏ hàng (/cart)
      */
+    /**
+     * Xử lý điều hướng và hiển thị trang Giỏ hàng (/cart)
+     */
     static class CartHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
@@ -519,6 +554,712 @@ public class BookstoreApp {
             String html = renderCartPage(user);
             sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
         }
+    }
+
+    /**
+     * Xử lý hiển thị trang Đặt hàng & Thanh toán (/checkout)
+     * Nghiệp vụ: Kiểm tra đã đăng nhập chưa, nếu chưa yêu cầu đăng nhập.
+     */
+    static class CheckoutHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            User user = getAuthenticatedUser(exchange);
+            if (user == null) {
+                redirect(exchange, "/login?redirect=/checkout&require_login=true");
+                return;
+            }
+            String html = renderContentPage("checkout.html", user);
+            sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
+        }
+    }
+
+    /**
+     * Xử lý hiển thị trang Xác nhận đơn hàng thành công (/order-success)
+     */
+    static class OrderSuccessHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            User user = getAuthenticatedUser(exchange);
+            String html = renderContentPage("order-success.html", user);
+            sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
+        }
+    }
+
+    /**
+     * API lấy thông tin người dùng, danh sách địa chỉ, voucher và phương thức thanh toán
+     */
+    static class ApiCheckoutInfoHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            User user = getAuthenticatedUser(exchange);
+            if (user == null) {
+                sendResponse(exchange, 401, "application/json; charset=UTF-8", "{\"success\":false,\"needLogin\":true,\"message\":\"Vui lòng đăng nhập để tiếp tục đặt hàng!\"}");
+                return;
+            }
+
+            List<Address> addresses = DataStore.getAddressesByUsername(user.getUsername());
+            List<Voucher> vouchers = DataStore.getActiveVouchers();
+            List<PaymentMethod> pms = DataStore.getPaymentMethods();
+
+            StringBuilder sb = new StringBuilder("{");
+            sb.append("\"success\":true,");
+            sb.append("\"user\":{")
+              .append("\"username\":").append(escapeJson(user.getUsername())).append(",")
+              .append("\"fullName\":").append(escapeJson(user.getFullName())).append(",")
+              .append("\"phone\":").append(escapeJson(user.getPhone() != null ? user.getPhone() : "")).append(",")
+              .append("\"email\":").append(escapeJson(user.getEmail() != null ? user.getEmail() : "")).append("},");
+
+            // Danh sách địa chỉ (DIA_CHI)
+            sb.append("\"addresses\":[");
+            for (int i = 0; i < addresses.size(); i++) {
+                Address a = addresses.get(i);
+                if (i > 0) sb.append(",");
+                sb.append(String.format("{\"id\":%d,\"recipientName\":%s,\"phone\":%s,\"addressDetail\":%s,\"province\":%s,\"district\":%s,\"ward\":%s,\"fullAddress\":%s,\"isDefault\":%b}",
+                        a.getId(),
+                        escapeJson(a.getRecipientName()),
+                        escapeJson(a.getPhone()),
+                        escapeJson(a.getAddressDetail()),
+                        escapeJson(a.getProvince()),
+                        escapeJson(a.getDistrict()),
+                        escapeJson(a.getWard()),
+                        escapeJson(a.getFullAddress()),
+                        a.isDefault()
+                ));
+            }
+            sb.append("],");
+
+            // Danh sách mã giảm giá (MA_GIAM_GIA)
+            sb.append("\"vouchers\":[");
+            for (int i = 0; i < vouchers.size(); i++) {
+                Voucher v = vouchers.get(i);
+                if (i > 0) sb.append(",");
+                sb.append(String.format("{\"id\":%d,\"code\":%s,\"title\":%s,\"description\":%s,\"discountType\":%s,\"discountValue\":%.0f,\"minOrderAmount\":%.0f,\"maxDiscountAmount\":%.0f}",
+                        v.getId(),
+                        escapeJson(v.getCode()),
+                        escapeJson(v.getTitle()),
+                        escapeJson(v.getDescription()),
+                        escapeJson(v.getDiscountType()),
+                        v.getDiscountValue(),
+                        v.getMinOrderAmount(),
+                        v.getMaxDiscountAmount()
+                ));
+            }
+            sb.append("],");
+
+            // Danh sách phương thức thanh toán (PHUONG_THUC_TT)
+            sb.append("\"paymentMethods\":[");
+            for (int i = 0; i < pms.size(); i++) {
+                PaymentMethod pm = pms.get(i);
+                if (i > 0) sb.append(",");
+                sb.append(String.format("{\"id\":%d,\"code\":%s,\"name\":%s,\"description\":%s}",
+                        pm.getId(),
+                        escapeJson(pm.getCode()),
+                        escapeJson(pm.getName()),
+                        escapeJson(pm.getDescription())
+                ));
+            }
+            sb.append("]}");
+
+            sendResponse(exchange, 200, "application/json; charset=UTF-8", sb.toString());
+        }
+    }
+
+    /**
+     * API thêm địa chỉ nhận hàng mới cho tài khoản đang đăng nhập (Bảng DIA_CHI)
+     */
+    static class ApiCheckoutAddressHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendResponse(exchange, 405, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Method Not Allowed\"}");
+                return;
+            }
+
+            User user = getAuthenticatedUser(exchange);
+            if (user == null) {
+                sendResponse(exchange, 401, "application/json; charset=UTF-8", "{\"success\":false,\"needLogin\":true,\"message\":\"Vui lòng đăng nhập!\"}");
+                return;
+            }
+
+            String body = readRequestBody(exchange);
+            String recipientName = extractJsonString(body, "recipientName");
+            String phone = extractJsonString(body, "phone");
+            String addressDetail = extractJsonString(body, "addressDetail");
+            String province = extractJsonString(body, "province");
+            String district = extractJsonString(body, "district");
+            String ward = extractJsonString(body, "ward");
+            boolean isDefault = extractJsonBoolean(body, "isDefault", false);
+
+            if (recipientName == null || recipientName.trim().isEmpty() ||
+                phone == null || phone.trim().isEmpty() ||
+                addressDetail == null || addressDetail.trim().isEmpty()) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Vui lòng nhập đầy đủ tên người nhận, số điện thoại và địa chỉ cụ thể!\"}");
+                return;
+            }
+
+            Address addr = DataStore.addAddress(user.getUsername(), recipientName, phone, addressDetail, province, district, ward, isDefault);
+            if (addr == null) {
+                sendResponse(exchange, 500, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Không thể lưu địa chỉ nhận hàng!\"}");
+                return;
+            }
+
+            String json = String.format("{\"success\":true,\"message\":\"Đã thêm địa chỉ nhận hàng thành công!\",\"address\":{\"id\":%d,\"recipientName\":%s,\"phone\":%s,\"addressDetail\":%s,\"province\":%s,\"district\":%s,\"ward\":%s,\"fullAddress\":%s,\"isDefault\":%b}}",
+                    addr.getId(),
+                    escapeJson(addr.getRecipientName()),
+                    escapeJson(addr.getPhone()),
+                    escapeJson(addr.getAddressDetail()),
+                    escapeJson(addr.getProvince()),
+                    escapeJson(addr.getDistrict()),
+                    escapeJson(addr.getWard()),
+                    escapeJson(addr.getFullAddress()),
+                    addr.isDefault()
+            );
+            sendResponse(exchange, 200, "application/json; charset=UTF-8", json);
+        }
+    }
+
+    /**
+     * API kiểm tra mã giảm giá (Bước 4 - Backend tính lại toàn bộ giá)
+     */
+    static class ApiValidateVoucherHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendResponse(exchange, 405, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Method Not Allowed\"}");
+                return;
+            }
+
+            String body = readRequestBody(exchange);
+            String code = extractJsonString(body, "code");
+            if (code == null || code.trim().isEmpty()) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Vui lòng nhập mã giảm giá!\"}");
+                return;
+            }
+
+            List<OrderItemReq> items = extractOrderItems(body);
+            if (items.isEmpty()) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Đơn hàng chưa có sản phẩm nào để tính giảm giá!\"}");
+                return;
+            }
+
+            // Tự tính lại tổng tiền từ DB/DataStore - Không tin giá frontend gửi lên
+            double subtotal = 0;
+            for (OrderItemReq req : items) {
+                Book b = DataStore.getBookById(req.bookId);
+                if (b != null) {
+                    subtotal += b.getPrice() * req.quantity;
+                }
+            }
+
+            Voucher v = DataStore.findVoucher(code);
+            if (v == null) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Mã giảm giá '" + escapeJson(code.trim().toUpperCase()) + "' không tồn tại trên hệ thống!\"}");
+                return;
+            }
+
+            String validationError = v.validate(subtotal);
+            if (validationError != null) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":" + escapeJson(validationError) + "}");
+                return;
+            }
+
+            double discountAmount = v.calculateDiscount(subtotal);
+            double shippingFee = subtotal >= 250000 ? 0 : 30000;
+            double finalTotal = Math.max(0, subtotal - discountAmount + shippingFee);
+
+            String json = String.format("{\"success\":true,\"message\":\"Áp dụng mã giảm giá thành công!\",\"code\":%s,\"title\":%s,\"discountAmount\":%.0f,\"subtotal\":%.0f,\"shippingFee\":%.0f,\"finalTotal\":%.0f}",
+                    escapeJson(v.getCode()),
+                    escapeJson(v.getTitle()),
+                    discountAmount,
+                    subtotal,
+                    shippingFee,
+                    finalTotal
+            );
+            sendResponse(exchange, 200, "application/json; charset=UTF-8", json);
+        }
+    }
+
+    /**
+     * API Đặt hàng chính (Bước 5 & 6 - Kiểm tra tồn kho KHO, tự tính giá, tạo đơn, trừ kho)
+     */
+    static class ApiPlaceOrderHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendResponse(exchange, 405, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Method Not Allowed\"}");
+                return;
+            }
+
+            // Kiểm tra đăng nhập
+            User user = getAuthenticatedUser(exchange);
+            if (user == null) {
+                sendResponse(exchange, 401, "application/json; charset=UTF-8", "{\"success\":false,\"needLogin\":true,\"message\":\"Vui lòng đăng nhập để tiếp tục đặt hàng!\"}");
+                return;
+            }
+
+            String body = readRequestBody(exchange);
+
+            // Kiểm tra chống nhấn Đặt hàng nhiều lần (Anti-duplicate / Debouncing)
+            String clientRequestId = extractJsonString(body, "clientRequestId");
+            if (clientRequestId != null && !clientRequestId.trim().isEmpty()) {
+                if (processedRequestIds.contains(clientRequestId)) {
+                    sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Yêu cầu đặt hàng đang được xử lý, vui lòng không nhấn gửi lại nhiều lần!\"}");
+                    return;
+                }
+                processedRequestIds.add(clientRequestId);
+            }
+
+            Long lastOrderTime = userLastOrderTime.get(user.getUsername().toLowerCase());
+            if (lastOrderTime != null && System.currentTimeMillis() - lastOrderTime < 1500) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Thao tác đặt hàng quá nhanh, vui lòng chờ trong giây lát!\"}");
+                return;
+            }
+            userLastOrderTime.put(user.getUsername().toLowerCase(), System.currentTimeMillis());
+
+            int addressId = extractJsonInt(body, "addressId", 0);
+            String paymentMethod = extractJsonString(body, "paymentMethod");
+            if (paymentMethod == null || paymentMethod.trim().isEmpty()) paymentMethod = "COD";
+            paymentMethod = paymentMethod.trim().toUpperCase();
+
+            String voucherCode = extractJsonString(body, "voucherCode");
+            String note = extractJsonString(body, "note");
+            if (note == null) note = "";
+
+            List<OrderItemReq> reqItems = extractOrderItems(body);
+            if (reqItems.isEmpty()) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Giỏ hàng đang trống! Vui lòng chọn ít nhất một cuốn sách để đặt hàng.\"}");
+                return;
+            }
+
+            // Kiểm tra quyền sở hữu địa chỉ (Chỉ cho phép địa chỉ thuộc tài khoản đang đăng nhập)
+            Address address = DataStore.getAddressById(addressId, user.getUsername());
+            if (address == null) {
+                sendResponse(exchange, 403, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Địa chỉ nhận hàng không hợp lệ hoặc không thuộc tài khoản của bạn!\"}");
+                return;
+            }
+
+            if (address.getPhone() == null || address.getPhone().trim().isEmpty()) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Vui lòng cập nhật số điện thoại người nhận hàng!\"}");
+                return;
+            }
+
+            // Xây dựng danh sách chi tiết đơn hàng và TỰ TÍNH LẠI GIÁ BẰNG BACKEND
+            List<OrderItem> orderItems = new ArrayList<>();
+            double subtotal = 0;
+            for (OrderItemReq req : reqItems) {
+                Book b = DataStore.getBookById(req.bookId);
+                if (b == null) {
+                    sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Sản phẩm có mã ID " + req.bookId + " không tồn tại trên hệ thống!\"}");
+                    return;
+                }
+                OrderItem oi = new OrderItem(b.getId(), b.getCode(), b.getTitle(), b.getImage(), b.getPrice(), req.quantity);
+                orderItems.add(oi);
+                subtotal += b.getPrice() * req.quantity;
+            }
+
+            // Bước 2: KIỂM TRA TỒN KHO (KHO)
+            StringBuilder stockErrorMsg = new StringBuilder();
+            if (!DataStore.checkStockAvailable(orderItems, stockErrorMsg)) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"stockError\":true,\"message\":" + escapeJson(stockErrorMsg.toString()) + "}");
+                return;
+            }
+
+            // Bước 4: Kiểm tra và tính mã giảm giá
+            double discountAmount = 0;
+            if (voucherCode != null && !voucherCode.trim().isEmpty()) {
+                Voucher v = DataStore.findVoucher(voucherCode.trim());
+                if (v == null) {
+                    sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Mã giảm giá '" + escapeJson(voucherCode) + "' không tồn tại!\"}");
+                    return;
+                }
+                String vErr = v.validate(subtotal);
+                if (vErr != null) {
+                    sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":" + escapeJson(vErr) + "}");
+                    return;
+                }
+                discountAmount = v.calculateDiscount(subtotal);
+            }
+
+            // Phí vận chuyển: Miễn phí nếu subtotal >= 250.000đ, ngược lại 30.000đ
+            double shippingFee = subtotal >= 250000 ? 0 : 30000;
+            double totalAmount = Math.max(0, subtotal - discountAmount + shippingFee);
+
+            // BƯỚC 6: XỬ LÝ PHƯƠNG THỨC THANH TOÁN
+            if ("ONLINE".equalsIgnoreCase(paymentMethod)) {
+                // Thanh toán trực tuyến: Trả về thông tin chuyển khoản / cổng thanh toán (CHƯA TRỪ KHO)
+                StringBuilder itemsJson = new StringBuilder("[");
+                for (int i = 0; i < orderItems.size(); i++) {
+                    OrderItem oi = orderItems.get(i);
+                    if (i > 0) itemsJson.append(",");
+                    itemsJson.append(String.format("{\"bookId\":%d,\"bookTitle\":%s,\"quantity\":%d,\"price\":%.0f,\"subtotal\":%.0f}",
+                            oi.getBookId(),
+                            escapeJson(oi.getBookTitle()),
+                            oi.getQuantity(),
+                            oi.getPrice(),
+                            oi.getSubtotal()
+                    ));
+                }
+                itemsJson.append("]");
+
+                String json = String.format("{\"success\":true,\"needsOnlineModal\":true,\"subtotal\":%.0f,\"discountAmount\":%.0f,\"shippingFee\":%.0f,\"totalAmount\":%.0f,\"recipientName\":%s,\"recipientPhone\":%s,\"deliveryAddress\":%s,\"voucherCode\":%s,\"addressId\":%d,\"note\":%s,\"items\":%s}",
+                        subtotal,
+                        discountAmount,
+                        shippingFee,
+                        totalAmount,
+                        escapeJson(address.getRecipientName()),
+                        escapeJson(address.getPhone()),
+                        escapeJson(address.getFullAddress()),
+                        escapeJson(voucherCode != null ? voucherCode : ""),
+                        address.getId(),
+                        escapeJson(note),
+                        itemsJson.toString()
+                );
+                sendResponse(exchange, 200, "application/json; charset=UTF-8", json);
+                return;
+            }
+
+            // Thanh toán COD (Tiền mặt khi nhận hàng):
+            // 1. Trừ kho nguyên tử (Atomic deduction)
+            boolean deducted = DataStore.deductStock(orderItems);
+            if (!deducted) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Số lượng sản phẩm trong kho vừa thay đổi, không đủ để hoàn tất đơn hàng!\"}");
+                return;
+            }
+
+            // 2. Tạo đơn hàng và chi tiết đơn hàng (DON_HANG, CT_DON_HANG)
+            Order order = DataStore.createOrder(
+                    user.getUsername(),
+                    address,
+                    orderItems,
+                    voucherCode,
+                    subtotal,
+                    discountAmount,
+                    shippingFee,
+                    totalAmount,
+                    "COD",
+                    "PENDING",
+                    "CHO_XAC_NHAN",
+                    note,
+                    null
+            );
+
+            // 3. Xóa giỏ hàng trên DB & Client
+            DataStore.syncCartToDb(user.getUsername(), Collections.emptyList());
+
+            String json = String.format("{\"success\":true,\"message\":\"Đặt hàng thành công!\",\"orderCode\":%s,\"totalAmount\":%.0f,\"paymentMethod\":\"COD\",\"redirectUrl\":%s}",
+                    escapeJson(order.getOrderCode()),
+                    totalAmount,
+                    escapeJson("/order-success?code=" + order.getOrderCode())
+            );
+            sendResponse(exchange, 200, "application/json; charset=UTF-8", json);
+        }
+    }
+
+    /**
+     * API xác nhận thanh toán trực tuyến mô phỏng (ONLINE)
+     * - Nếu action = "SUCCESS": Trừ kho, tạo DON_HANG, CT_DON_HANG, cập nhật trạng thái PAID, xóa giỏ hàng
+     * - Nếu action = "FAILED": KHÔNG TRỪ KHO, thông báo "Thanh toán thất bại", cho phép thanh toán lại hoặc chọn COD
+     */
+    static class ApiConfirmOnlinePaymentHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendResponse(exchange, 405, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Method Not Allowed\"}");
+                return;
+            }
+
+            User user = getAuthenticatedUser(exchange);
+            if (user == null) {
+                sendResponse(exchange, 401, "application/json; charset=UTF-8", "{\"success\":false,\"needLogin\":true,\"message\":\"Vui lòng đăng nhập!\"}");
+                return;
+            }
+
+            String body = readRequestBody(exchange);
+            String action = extractJsonString(body, "action"); // "SUCCESS" hoặc "FAILED"
+            int addressId = extractJsonInt(body, "addressId", 0);
+            String voucherCode = extractJsonString(body, "voucherCode");
+            String note = extractJsonString(body, "note");
+            if (note == null) note = "";
+
+            List<OrderItemReq> reqItems = extractOrderItems(body);
+
+            // TRƯỜNG HỢP: THANH TOÁN THẤT BẠI (Bắt buộc theo Nghiệp vụ mục 3 & 4)
+            if ("FAILED".equalsIgnoreCase(action)) {
+                // Tuyệt đối KHÔNG trừ kho, giữ nguyên giỏ hàng, cho phép thử lại hoặc đổi COD
+                sendResponse(exchange, 200, "application/json; charset=UTF-8",
+                        "{\"success\":false,\"paymentFailed\":true,\"message\":\"Thanh toán thất bại! Giao dịch trực tuyến đã bị từ chối hoặc do quý khách hủy bỏ. Kho hàng không bị trừ. Bạn có thể thử thanh toán lại hoặc chọn phương thức Thanh toán khi nhận hàng (COD).\",\"canRetry\":true,\"allowCodSwitch\":true}");
+                return;
+            }
+
+            // TRƯỜNG HỢP: THANH TOÁN THÀNH CÔNG
+            Address address = DataStore.getAddressById(addressId, user.getUsername());
+            if (address == null) {
+                sendResponse(exchange, 403, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Địa chỉ nhận hàng không hợp lệ!\"}");
+                return;
+            }
+
+            List<OrderItem> orderItems = new ArrayList<>();
+            double subtotal = 0;
+            for (OrderItemReq req : reqItems) {
+                Book b = DataStore.getBookById(req.bookId);
+                if (b == null) {
+                    sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Sách không tồn tại!\"}");
+                    return;
+                }
+                OrderItem oi = new OrderItem(b.getId(), b.getCode(), b.getTitle(), b.getImage(), b.getPrice(), req.quantity);
+                orderItems.add(oi);
+                subtotal += b.getPrice() * req.quantity;
+            }
+
+            // Kiểm tra tồn kho
+            StringBuilder stockErr = new StringBuilder();
+            if (!DataStore.checkStockAvailable(orderItems, stockErr)) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"stockError\":true,\"message\":" + escapeJson(stockErr.toString()) + "}");
+                return;
+            }
+
+            // Trừ tồn kho
+            boolean deducted = DataStore.deductStock(orderItems);
+            if (!deducted) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Tồn kho không đủ để hoàn tất thanh toán!\"}");
+                return;
+            }
+
+            double discountAmount = 0;
+            if (voucherCode != null && !voucherCode.trim().isEmpty()) {
+                Voucher v = DataStore.findVoucher(voucherCode.trim());
+                if (v != null && v.validate(subtotal) == null) {
+                    discountAmount = v.calculateDiscount(subtotal);
+                }
+            }
+            double shippingFee = subtotal >= 250000 ? 0 : 30000;
+            double totalAmount = Math.max(0, subtotal - discountAmount + shippingFee);
+
+            String transactionId = "VNQR" + System.currentTimeMillis();
+            Order order = DataStore.createOrder(
+                    user.getUsername(),
+                    address,
+                    orderItems,
+                    voucherCode,
+                    subtotal,
+                    discountAmount,
+                    shippingFee,
+                    totalAmount,
+                    "ONLINE",
+                    "PAID",
+                    "DANG_XU_LY",
+                    note,
+                    transactionId
+            );
+
+            // Xóa giỏ hàng
+            DataStore.syncCartToDb(user.getUsername(), Collections.emptyList());
+
+            String json = String.format("{\"success\":true,\"message\":\"Thanh toán trực tuyến thành công!\",\"orderCode\":%s,\"totalAmount\":%.0f,\"paymentMethod\":\"ONLINE\",\"transactionId\":%s,\"redirectUrl\":%s}",
+                    escapeJson(order.getOrderCode()),
+                    totalAmount,
+                    escapeJson(transactionId),
+                    escapeJson("/order-success?code=" + order.getOrderCode())
+            );
+            sendResponse(exchange, 200, "application/json; charset=UTF-8", json);
+        }
+    }
+
+    /**
+     * API tra cứu chi tiết đơn hàng (Dành cho trang /order-success và tra cứu)
+     */
+    static class ApiGetOrderDetailHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            User user = getAuthenticatedUser(exchange);
+            String query = exchange.getRequestURI().getQuery();
+            String code = "";
+            if (query != null) {
+                Map<String, String> qp = parseQueryString(query);
+                if (qp.containsKey("code")) code = qp.get("code");
+            }
+
+            if (code.isEmpty()) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Thiếu mã đơn hàng!\"}");
+                return;
+            }
+
+            Order order = DataStore.getOrderByCode(code, user != null ? user.getUsername() : null);
+            if (order == null) {
+                sendResponse(exchange, 404, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Không tìm thấy đơn hàng hoặc đơn hàng không thuộc quyền xem của bạn!\"}");
+                return;
+            }
+
+            StringBuilder itemsJson = new StringBuilder("[");
+            for (int i = 0; i < order.getItems().size(); i++) {
+                OrderItem it = order.getItems().get(i);
+                if (i > 0) itemsJson.append(",");
+                itemsJson.append(String.format("{\"bookId\":%d,\"bookCode\":%s,\"bookTitle\":%s,\"bookImage\":%s,\"price\":%.0f,\"quantity\":%d,\"subtotal\":%.0f,\"formattedPrice\":%s,\"formattedSubtotal\":%s}",
+                        it.getBookId(),
+                        escapeJson(it.getBookCode()),
+                        escapeJson(it.getBookTitle()),
+                        escapeJson(it.getBookImage()),
+                        it.getPrice(),
+                        it.getQuantity(),
+                        it.getSubtotal(),
+                        escapeJson(it.getFormattedPrice()),
+                        escapeJson(it.getFormattedSubtotal())
+                ));
+            }
+            itemsJson.append("]");
+
+            String json = String.format("{\"success\":true,\"order\":{\"id\":%d,\"orderCode\":%s,\"recipientName\":%s,\"recipientPhone\":%s,\"deliveryAddress\":%s,\"voucherCode\":%s,\"subtotal\":%.0f,\"discountAmount\":%.0f,\"shippingFee\":%.0f,\"totalAmount\":%.0f,\"formattedSubtotal\":%s,\"formattedDiscount\":%s,\"formattedShipping\":%s,\"formattedTotal\":%s,\"paymentMethodCode\":%s,\"paymentMethodName\":%s,\"paymentStatus\":%s,\"orderStatus\":%s,\"note\":%s,\"transactionId\":%s,\"createdAt\":%s,\"items\":%s}}",
+                    order.getId(),
+                    escapeJson(order.getOrderCode()),
+                    escapeJson(order.getRecipientName()),
+                    escapeJson(order.getRecipientPhone()),
+                    escapeJson(order.getDeliveryAddress()),
+                    escapeJson(order.getVoucherCode() != null ? order.getVoucherCode() : ""),
+                    order.getSubtotal(),
+                    order.getDiscountAmount(),
+                    order.getShippingFee(),
+                    order.getTotalAmount(),
+                    escapeJson(order.getFormattedSubtotal()),
+                    escapeJson(order.getFormattedDiscount()),
+                    escapeJson(order.getFormattedShipping()),
+                    escapeJson(order.getFormattedTotal()),
+                    escapeJson(order.getPaymentMethodCode()),
+                    escapeJson(order.getPaymentMethodName()),
+                    escapeJson(order.getPaymentStatus()),
+                    escapeJson(order.getOrderStatus()),
+                    escapeJson(order.getNote() != null ? order.getNote() : ""),
+                    escapeJson(order.getTransactionId() != null ? order.getTransactionId() : ""),
+                    escapeJson(order.getCreatedAt()),
+                    itemsJson.toString()
+            );
+            sendResponse(exchange, 200, "application/json; charset=UTF-8", json);
+        }
+    }
+
+    /**
+     * API: GET /api/orders/my-orders
+     * Trả về danh sách đơn hàng của người dùng đang đăng nhập (DON_HANG)
+     */
+    static class ApiMyOrdersHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            User user = getAuthenticatedUser(exchange);
+            if (user == null) {
+                sendResponse(exchange, 401, "application/json; charset=UTF-8",
+                        "{\"success\":false,\"message\":\"Vui lòng đăng nhập!\",\"needLogin\":true}");
+                return;
+            }
+
+            List<Order> orders = DataStore.getOrdersByUsername(user.getUsername());
+
+            StringBuilder sb = new StringBuilder("{\"success\":true,\"orders\":[");
+            for (int i = 0; i < orders.size(); i++) {
+                Order o = orders.get(i);
+                if (i > 0) sb.append(",");
+                sb.append(String.format(
+                    "{\"id\":%d,\"orderCode\":%s,\"recipientName\":%s,\"recipientPhone\":%s," +
+                    "\"deliveryAddress\":%s,\"totalAmount\":%.0f,\"formattedTotal\":%s," +
+                    "\"paymentMethodName\":%s,\"paymentStatus\":%s,\"orderStatus\":%s,\"createdAt\":%s}",
+                    o.getId(),
+                    escapeJson(o.getOrderCode()),
+                    escapeJson(o.getRecipientName()),
+                    escapeJson(o.getRecipientPhone()),
+                    escapeJson(o.getDeliveryAddress()),
+                    o.getTotalAmount(),
+                    escapeJson(o.getFormattedTotal()),
+                    escapeJson(o.getPaymentMethodName()),
+                    escapeJson(o.getPaymentStatus()),
+                    escapeJson(o.getOrderStatus()),
+                    escapeJson(o.getCreatedAt())
+                ));
+            }
+            sb.append("]}");
+
+            sendResponse(exchange, 200, "application/json; charset=UTF-8", sb.toString());
+        }
+    }
+
+    // =========================================================================
+    // HELPER METHODS CHO PARSE JSON VÀ ORDER REQUEST
+    // =========================================================================
+
+    static class OrderItemReq {
+        int bookId;
+        int quantity;
+        OrderItemReq(int bookId, int quantity) {
+            this.bookId = bookId;
+            this.quantity = quantity;
+        }
+    }
+
+    private static String readRequestBody(HttpExchange exchange) throws IOException {
+        InputStream is = exchange.getRequestBody();
+        return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+    }
+
+    private static String extractJsonString(String json, String key) {
+        if (json == null) return null;
+        Pattern p = Pattern.compile("\"" + Pattern.quote(key) + "\"\\s*:\\s*\"([^\"]*)\"");
+        Matcher m = p.matcher(json);
+        if (m.find()) return m.group(1);
+        // Fallback for form-data style
+        if (json.contains(key + "=")) {
+            Map<String, String> qp = parseQueryString(json);
+            return qp.get(key);
+        }
+        return null;
+    }
+
+    private static int extractJsonInt(String json, String key, int def) {
+        if (json == null) return def;
+        Pattern p = Pattern.compile("\"" + Pattern.quote(key) + "\"\\s*:\\s*(\\d+)");
+        Matcher m = p.matcher(json);
+        if (m.find()) {
+            try { return Integer.parseInt(m.group(1)); } catch (Exception ignored) {}
+        }
+        if (json.contains(key + "=")) {
+            Map<String, String> qp = parseQueryString(json);
+            if (qp.containsKey(key)) {
+                try { return Integer.parseInt(qp.get(key)); } catch (Exception ignored) {}
+            }
+        }
+        return def;
+    }
+
+    private static boolean extractJsonBoolean(String json, String key, boolean def) {
+        if (json == null) return def;
+        Pattern p = Pattern.compile("\"" + Pattern.quote(key) + "\"\\s*:\\s*(true|false)");
+        Matcher m = p.matcher(json);
+        if (m.find()) return Boolean.parseBoolean(m.group(1));
+        return def;
+    }
+
+    private static List<OrderItemReq> extractOrderItems(String json) {
+        List<OrderItemReq> list = new ArrayList<>();
+        if (json == null || json.isEmpty()) return list;
+
+        Pattern p1 = Pattern.compile("\\{[^{}]*?\"(?:bookId|id)\"\\s*:\\s*(\\d+)[^{}]*?\"quantity\"\\s*:\\s*(\\d+)[^{}]*?\\}");
+        Matcher m1 = p1.matcher(json);
+        while (m1.find()) {
+            try {
+                int bookId = Integer.parseInt(m1.group(1));
+                int qty = Integer.parseInt(m1.group(2));
+                if (qty > 0) list.add(new OrderItemReq(bookId, qty));
+            } catch (Exception ignored) {}
+        }
+
+        if (list.isEmpty()) {
+            Pattern p2 = Pattern.compile("\\{[^{}]*?\"quantity\"\\s*:\\s*(\\d+)[^{}]*?\"(?:bookId|id)\"\\s*:\\s*(\\d+)[^{}]*?\\}");
+            Matcher m2 = p2.matcher(json);
+            while (m2.find()) {
+                try {
+                    int qty = Integer.parseInt(m2.group(1));
+                    int bookId = Integer.parseInt(m2.group(2));
+                    if (qty > 0) list.add(new OrderItemReq(bookId, qty));
+                } catch (Exception ignored) {}
+            }
+        }
+        return list;
     }
 
     /**
@@ -1087,6 +1828,9 @@ public class BookstoreApp {
                     "        <a href=\"cart\" class=\"dropdown-item\">\n" +
                     "            <i class=\"fas fa-bag-shopping\"></i> Giỏ hàng của tôi\n" +
                     "        </a>\n" +
+                    "        <a href=\"profile#orders\" class=\"dropdown-item\">\n" +
+                    "            <i class=\"fas fa-box-open\"></i> Đơn hàng của tôi\n" +
+                    "        </a>\n" +
                     "        <a href=\"logout\" class=\"dropdown-item logout\">\n" +
                     "            <i class=\"fas fa-arrow-right-from-bracket\"></i> Đăng xuất\n" +
                     "        </a>\n" +
@@ -1177,6 +1921,9 @@ public class BookstoreApp {
                     "        </a>\n" +
                     "        <a href=\"cart\" class=\"dropdown-item\">\n" +
                     "            <i class=\"fas fa-bag-shopping\"></i> Giỏ hàng của tôi\n" +
+                    "        </a>\n" +
+                    "        <a href=\"profile#orders\" class=\"dropdown-item\">\n" +
+                    "            <i class=\"fas fa-box-open\"></i> Đơn hàng của tôi\n" +
                     "        </a>\n" +
                     "        <a href=\"logout\" class=\"dropdown-item logout\">\n" +
                     "            <i class=\"fas fa-arrow-right-from-bracket\"></i> Đăng xuất\n" +
@@ -1277,6 +2024,9 @@ public class BookstoreApp {
                     "        </a>\n" +
                     "        <a href=\"cart\" class=\"dropdown-item\">\n" +
                     "            <i class=\"fas fa-bag-shopping\"></i> Giỏ hàng của tôi\n" +
+                    "        </a>\n" +
+                    "        <a href=\"profile#orders\" class=\"dropdown-item\">\n" +
+                    "            <i class=\"fas fa-box-open\"></i> Đơn hàng của tôi\n" +
                     "        </a>\n" +
                     "        <a href=\"logout\" class=\"dropdown-item logout\">\n" +
                     "            <i class=\"fas fa-arrow-right-from-bracket\"></i> Đăng xuất\n" +
@@ -1545,6 +2295,9 @@ public class BookstoreApp {
                     "        </a>\n" +
                     "        <a href=\"cart\" class=\"dropdown-item\">\n" +
                     "            <i class=\"fas fa-bag-shopping\"></i> Giỏ hàng của tôi\n" +
+                    "        </a>\n" +
+                    "        <a href=\"profile#orders\" class=\"dropdown-item\">\n" +
+                    "            <i class=\"fas fa-box-open\"></i> Đơn hàng của tôi\n" +
                     "        </a>\n" +
                     "        <a href=\"logout\" class=\"dropdown-item logout\">\n" +
                     "            <i class=\"fas fa-arrow-right-from-bracket\"></i> Đăng xuất\n" +

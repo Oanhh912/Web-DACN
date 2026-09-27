@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đặt Hàng & Thanh Toán - Bookora | Tiệm Sách Tri Thức</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css?v=20260927_checkout">
+</head>
+<body>
+
+    <!-- 1. HEADER & NAVIGATION -->
+    <header class="main-header">
+        <div class="top-bar">
+            <div class="topbar-contact-info">
+                <span><i class="fas fa-phone"></i> 028.73008182</span>
+                <span><i class="fas fa-envelope"></i> hotro@bookora.com</span>
+                <span><i class="fas fa-location-dot"></i> Số 25, ngõ 68 phố Cầu Giấy, TP. Hà Nội</span>
+            </div>
+            <!-- ${TOPBAR_AUTH} -->
+        </div>
+
+        <div class="navbar-container">
+            <!-- Logo -->
+            <a href="home" class="site-logo">
+                <div class="logo-icon">
+                    <i class="fas fa-book-bookmark"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>Bookora</h1>
+                    <span>Tiệm Sách Tri Thức</span>
+                </div>
+            </a>
+
+            <!-- Thanh tìm kiếm sách -->
+            <form action="home" method="GET" class="search-form" id="searchForm">
+                <div class="search-input-wrap">
+                    <input type="text" id="searchInput" name="q" class="search-input" 
+                           placeholder="Tìm kiếm theo tựa sách, tác giả, NXB..." 
+                           autocomplete="off">
+                    <button type="submit" class="btn-search" id="btnSearchSubmit" title="Tìm kiếm">
+                        Tìm kiếm
+                    </button>
+                </div>
+            </form>
+
+            <!-- Hotline tư vấn -->
+            <div class="header-hotline">
+                <div class="hotline-icon">
+                    <i class="fas fa-phone-volume"></i>
+                </div>
+                <div class="hotline-text">
+                    <small>Tư vấn bán hàng</small>
+                    <strong>028.73008182</strong>
+                </div>
+            </div>
+
+            <!-- Khối hành động: Giỏ hàng & User Profile -->
+            <div class="header-actions">
+                <div class="cart-dropdown-wrapper">
+                    <a href="cart" class="btn-cart-toggle" title="Xem giỏ hàng">
+                        <i class="fas fa-bag-shopping"></i>
+                        <span class="cart-badge" id="cartBadge" style="display: none;">0</span>
+                    </a>
+                </div>
+                <!-- ${HEADER_AUTH} -->
+            </div>
+        </div>
+
+        <!-- 2. THANH ĐIỀU HƯỚNG CHÍNH -->
+        <nav class="main-nav-bar">
+            <div class="nav-bar-container">
+                <ul class="nav-menu-list">
+                    <li class="nav-menu-item">
+                        <a href="home" class="nav-menu-link">
+                            <i class="fas fa-house"></i> TRANG CHỦ
+                        </a>
+                    </li>
+                    <li class="nav-menu-item">
+                        <a href="about" class="nav-menu-link">
+                            <i class="fas fa-circle-info"></i> GIỚI THIỆU
+                        </a>
+                    </li>
+                    <li class="nav-menu-item">
+                        <a href="category" class="nav-menu-link">
+                            <i class="fas fa-layer-group"></i> DANH MỤC SÁCH
+                        </a>
+                    </li>
+                    <li class="nav-menu-item">
+                        <a href="promotions" class="nav-menu-link">
+                            <i class="fas fa-gift"></i> KHUYẾN MÃI
+                        </a>
+                    </li>
+                    <li class="nav-menu-item">
+                        <a href="contact" class="nav-menu-link">
+                            <i class="fas fa-envelope"></i> LIÊN HỆ
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <!-- BREADCRUMB (ĐỒNG NHẤT VỚI HỆ THỐNG BOOKORA) -->
+    <div class="breadcrumb-container">
+        <div class="breadcrumb-nav">
+            <a href="home" class="breadcrumb-link"><i class="fas fa-house"></i> TRANG CHỦ</a>
+            <span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+            <a href="cart" class="breadcrumb-link">GIỎ HÀNG</a>
+            <span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+            <span class="breadcrumb-current">ĐẶT HÀNG VÀ THANH TOÁN</span>
+        </div>
+    </div>
+
+    <!-- MAIN CHECKOUT CONTENT -->
+    <main class="checkout-main-wrap">
+        <div class="checkout-container">
+            <div class="checkout-header-title">
+                <h2><i class="fas fa-shield-halved"></i> Đặt Hàng & Thanh Toán An Toàn</h2>
+                <p>Vui lòng kiểm tra lại thông tin nhận hàng, đơn hàng và chọn phương thức thanh toán phù hợp.</p>
+            </div>
+
+            <!-- THÔNG BÁO LỖI NẾU CÓ (Thanh toán thất bại / Không đủ tồn kho / Thiếu thông tin) -->
+            <div id="checkoutAlertBanner" class="checkout-alert-box" style="display: none;"></div>
+
+            <div class="checkout-layout-grid">
+                <!-- CỘT TRÁI: ĐỊA CHỈ NHẬN HÀNG & PHƯƠNG THỨC THANH TOÁN -->
+                <div class="checkout-left-col">
+                    
+                    <!-- BƯỚC 3: ĐỊA CHỈ NHẬN HÀNG (DIA_CHI) -->
+                    <div class="checkout-card">
+                        <div class="checkout-card-header">
+                            <div class="card-step-title">
+                                <span class="step-num">1</span>
+                                <h3><i class="fas fa-location-dot"></i> Địa Chỉ Nhận Hàng</h3>
+                            </div>
+                            <button type="button" class="btn-action-outline" onclick="openAddAddressModal()">
+                                <i class="fas fa-plus"></i> Thêm địa chỉ mới
+                            </button>
+                        </div>
+                        <div class="checkout-card-body">
+                            <!-- Danh sách địa chỉ từ Bảng DIA_CHI của tài khoản đang đăng nhập -->
+                            <div id="addressListContainer" class="address-radio-list">
+                                <div class="address-loading-spinner">
+                                    <i class="fas fa-circle-notch fa-spin"></i> Đang tải danh sách địa chỉ nhận hàng...
+                                </div>
+                            </div>
+
+                            <!-- Ghi chú giao hàng -->
+                            <div class="order-note-wrap" style="margin-top: 18px;">
+                                <label for="orderNoteInput" class="form-label-bold">
+                                    <i class="fas fa-pen-to-square"></i> Ghi chú cho đơn hàng (Tùy chọn):
+                                </label>
+                                <textarea id="orderNoteInput" class="checkout-textarea" rows="2" 
+                                          placeholder="Ví dụ: Giao hàng vào giờ hành chính, gọi điện trước khi giao hàng..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BƯỚC 6: PHƯƠNG THỨC THANH TOÁN (PHUONG_THUC_TT) -->
+                    <div class="checkout-card" style="margin-top: 24px;">
+                        <div class="checkout-card-header">
+                            <div class="card-step-title">
+                                <span class="step-num">2</span>
+                                <h3><i class="fas fa-credit-card"></i> Phương Thức Thanh Toán</h3>
+                            </div>
+                        </div>
+                        <div class="checkout-card-body">
+                            <div class="payment-methods-grid">
+                                <!-- Lựa chọn 1: COD -->
+                                <label class="payment-method-card active" id="pmCardCod">
+                                    <input type="radio" name="paymentMethod" value="COD" checked onchange="onPaymentMethodChange('COD')">
+                                    <div class="pm-icon-wrap pm-icon-cod">
+                                        <i class="fas fa-hand-holding-dollar"></i>
+                                    </div>
+                                    <div class="pm-info">
+                                        <div class="pm-name">Thanh toán khi nhận hàng (COD)</div>
+                                        <div class="pm-desc">Nhận sách tại nhà, kiểm tra chất lượng rồi mới thanh toán tiền mặt cho nhân viên giao hàng.</div>
+                                    </div>
+                                    <div class="pm-check-indicator"><i class="fas fa-circle-check"></i></div>
+                                </label>
+
+                                <!-- Lựa chọn 2: THANH TOÁN ONLINE -->
+                                <label class="payment-method-card" id="pmCardOnline">
+                                    <input type="radio" name="paymentMethod" value="ONLINE" onchange="onPaymentMethodChange('ONLINE')">
+                                    <div class="pm-icon-wrap pm-icon-online">
+                                        <i class="fas fa-qrcode"></i>
+                                    </div>
+                                    <div class="pm-info">
+                                        <div class="pm-name">Thanh toán trực tuyến (VietQR 24/7 / MoMo / Thẻ ATM)</div>
+                                        <div class="pm-desc">Quét mã QR chuyển khoản nhanh qua mọi ứng dụng ngân hàng hoặc ví điện tử. Không mất phí giao dịch.</div>
+                                    </div>
+                                    <div class="pm-check-indicator"><i class="fas fa-circle-check"></i></div>
+                                </label>
+                            </div>
+
+                            <div class="payment-security-notice">
+                                <i class="fas fa-shield-check"></i>
+                                <span>Giao dịch được mã hóa và bảo mật tuyệt đối theo tiêu chuẩn PCI DSS & SSL 256-bit.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- CỘT PHẢI: XÁC NHẬN ĐƠN HÀNG, MÃ GIẢM GIÁ & TỔNG TIỀN -->
+                <div class="checkout-right-col">
+                    
+                    <!-- BƯỚC 5: TÓM TẮT ĐƠN HÀNG (CT_DON_HANG & KIỂM TRA TỒN KHO) -->
+                    <div class="checkout-summary-card">
+                        <div class="summary-card-header">
+                            <h3><i class="fas fa-receipt"></i> Đơn Hàng Của Bạn (<span id="summaryItemCount">0</span> cuốn)</h3>
+                            <a href="cart" class="link-edit-cart"><i class="fas fa-pen"></i> Sửa giỏ</a>
+                        </div>
+                        
+                        <!-- Danh sách sản phẩm trong giỏ hàng -->
+                        <div class="summary-items-list" id="summaryItemsList">
+                            <!-- Render bằng JS từ cart -->
+                        </div>
+
+                        <!-- BƯỚC 4: MÃ GIẢM GIÁ (MA_GIAM_GIA) -->
+                        <div class="voucher-box-section">
+                            <label class="form-label-bold"><i class="fas fa-ticket"></i> Mã giảm giá / Khuyến mãi:</label>
+                            <div class="voucher-input-group">
+                                <input type="text" id="voucherInput" class="voucher-input" 
+                                       placeholder="Nhập mã (VD: BOOKORA2026, TECH30...)" 
+                                       autocomplete="off" style="text-transform: uppercase;">
+                                <button type="button" class="btn-apply-voucher" id="btnApplyVoucher" onclick="applyVoucherCode()">
+                                    Áp dụng
+                                </button>
+                            </div>
+
+                            <!-- Gợi ý các mã giảm giá có thể dùng -->
+                            <div class="voucher-chips-wrap" id="voucherChipsWrap">
+                                <span class="voucher-chip" onclick="quickFillVoucher('BOOKORA2026')">BOOKORA2026 (-30K)</span>
+                                <span class="voucher-chip" onclick="quickFillVoucher('FREESHIP')">FREESHIP</span>
+                                <span class="voucher-chip" onclick="quickFillVoucher('TECH30')">TECH30 (-30%)</span>
+                                <span class="voucher-chip" onclick="quickFillVoucher('TRI_THUC')">TRI_THUC (-15%)</span>
+                            </div>
+
+                            <!-- Banner voucher đã áp dụng -->
+                            <div id="appliedVoucherBanner" class="applied-voucher-banner" style="display: none;">
+                                <div class="av-info">
+                                    <i class="fas fa-circle-check"></i>
+                                    <div>
+                                        <strong id="avCode">BOOKORA2026</strong>
+                                        <span id="avTitle">Đã giảm 30.000 đ</span>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-remove-voucher" onclick="removeVoucherCode()" title="Bỏ mã">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+
+                            <!-- Thông báo lỗi voucher nếu có -->
+                            <div id="voucherErrorMsg" class="voucher-error-msg" style="display: none;"></div>
+                        </div>
+
+                        <!-- BƯỚC 5: TÍNH TIỀN CHI TIẾT (Backend tự tính lại) -->
+                        <div class="summary-pricing-table">
+                            <div class="price-row">
+                                <span class="price-label">Tổng tiền hàng:</span>
+                                <span class="price-value" id="priceSubtotal">0 đ</span>
+                            </div>
+                            <div class="price-row price-row-discount" id="priceDiscountRow" style="display: none;">
+                                <span class="price-label">Giảm giá voucher:</span>
+                                <span class="price-value" id="priceDiscount">-0 đ</span>
+                            </div>
+                            <div class="price-row">
+                                <span class="price-label">
+                                    Phí vận chuyển:
+                                    <i class="fas fa-circle-question" title="Miễn phí vận chuyển cho đơn hàng từ 250.000đ" style="color: #94a3b8; font-size: 12px; margin-left: 4px;"></i>
+                                </span>
+                                <span class="price-value" id="priceShipping">30.000 đ</span>
+                            </div>
+                            <div class="price-divider"></div>
+                            <div class="price-row price-row-total">
+                                <span class="price-label-total">TỔNG THANH TOÁN:</span>
+                                <span class="price-value-total" id="priceGrandTotal">0 đ</span>
+                            </div>
+                            <div class="price-vat-note">(Đã bao gồm thuế VAT và phí đóng gói sách cẩn thận)</div>
+                        </div>
+
+                        <!-- NÚT ĐẶT HÀNG (KÈM BẢO VỆ CHỐNG CLICK NHIỀU LẦN / DEBOUNCING) -->
+                        <button type="button" class="btn-confirm-place-order" id="btnPlaceOrder" onclick="handlePlaceOrder()">
+                            <span class="btn-text"><i class="fas fa-lock"></i> ĐẶT HÀNG NGAY</span>
+                            <span class="btn-spinner" style="display: none;"><i class="fas fa-circle-notch fa-spin"></i> Đang xử lý đơn hàng...</span>
+                        </button>
+                        
+                        <div class="checkout-policy-terms">
+                            Bằng việc nhấn <strong>Đặt hàng ngay</strong>, bạn đồng ý với các 
+                            <a href="about" target="_blank">Điều khoản dịch vụ</a> và <a href="contact" target="_blank">Chính sách bảo mật</a> của Bookora.
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ==================== MODAL THÊM ĐỊA CHỈ MỚI ==================== -->
+    <div class="modal-backdrop-custom" id="addAddressModalBackdrop" style="display: none;" onclick="closeAddAddressModal()"></div>
+    <div class="address-modal-dialog" id="addAddressModal" style="display: none;">
+        <div class="modal-header-custom">
+            <h4><i class="fas fa-map-location-dot"></i> Thêm Địa Chỉ Nhận Hàng Mới</h4>
+            <button type="button" class="btn-close-modal" onclick="closeAddAddressModal()">&times;</button>
+        </div>
+        <form onsubmit="handleSaveNewAddress(event)">
+            <div class="modal-body-custom">
+                <div class="form-row-2">
+                    <div class="form-group-custom">
+                        <label class="form-label-bold">Họ và tên người nhận <span class="required-star">*</span></label>
+                        <input type="text" id="newAddrName" class="form-input-custom" placeholder="Ví dụ: Hoàng Oanh" required>
+                    </div>
+                    <div class="form-group-custom">
+                        <label class="form-label-bold">Số điện thoại <span class="required-star">*</span></label>
+                        <input type="tel" id="newAddrPhone" class="form-input-custom" placeholder="Ví dụ: 0912345678" required pattern="[0-9]{10,11}">
+                    </div>
+                </div>
+
+                <div class="form-row-3">
+                    <div class="form-group-custom">
+                        <label class="form-label-bold">Tỉnh / Thành phố <span class="required-star">*</span></label>
+                        <input type="text" id="newAddrProvince" class="form-input-custom" placeholder="Ví dụ: Hà Nội" required>
+                    </div>
+                    <div class="form-group-custom">
+                        <label class="form-label-bold">Quận / Huyện <span class="required-star">*</span></label>
+                        <input type="text" id="newAddrDistrict" class="form-input-custom" placeholder="Ví dụ: Cầu Giấy" required>
+                    </div>
+                    <div class="form-group-custom">
+                        <label class="form-label-bold">Phường / Xã <span class="required-star">*</span></label>
+                        <input type="text" id="newAddrWard" class="form-input-custom" placeholder="Ví dụ: Dịch Vọng Hậu" required>
+                    </div>
+                </div>
+
+                <div class="form-group-custom">
+                    <label class="form-label-bold">Địa chỉ chi tiết (Số nhà, tên đường, tòa nhà...) <span class="required-star">*</span></label>
+                    <input type="text" id="newAddrDetail" class="form-input-custom" placeholder="Ví dụ: Tầng 5, Tòa FPT, Số 10 Phạm Văn Bạch" required>
+                </div>
+
+                <div class="form-checkbox-custom">
+                    <input type="checkbox" id="newAddrIsDefault" checked>
+                    <label for="newAddrIsDefault">Đặt địa chỉ này làm mặc định cho các đơn hàng tiếp theo</label>
+                </div>
+            </div>
+            <div class="modal-footer-custom">
+                <button type="button" class="btn-modal-cancel" onclick="closeAddAddressModal()">Hủy bỏ</button>
+                <button type="submit" class="btn-modal-save" id="btnSaveAddress">
+                    <i class="fas fa-check"></i> Lưu Địa Chỉ
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ==================== MODAL THANH TOÁN TRỰC TUYẾN MÔ PHỎNG ==================== -->
+    <div class="modal-backdrop-custom" id="onlineModalBackdrop" style="display: none;"></div>
+    <div class="online-payment-modal" id="onlinePaymentModal" style="display: none;">
+        <div class="online-modal-header">
+            <div class="online-modal-title">
+                <i class="fas fa-qrcode"></i> Cổng Thanh Toán Trực Tuyến Bookora Pay
+            </div>
+            <button type="button" class="btn-close-modal" onclick="closeOnlinePaymentModal()">&times;</button>
+        </div>
+        <div class="online-modal-body">
+            <div class="online-countdown-box">
+                <span><i class="fas fa-clock"></i> Giao dịch hết hạn trong: </span>
+                <strong id="onlineCountdownTimer">15:00</strong>
+            </div>
+
+            <div class="online-qr-grid">
+                <!-- Cột mã QR -->
+                <div class="online-qr-col">
+                    <div class="qr-image-frame">
+                        <img id="onlineQrImage" src="" alt="Mã VietQR" class="qr-img">
+                        <div class="qr-scan-hint"><i class="fas fa-camera"></i> Quét bằng app ngân hàng bất kỳ</div>
+                    </div>
+                </div>
+
+                <!-- Cột thông tin tài khoản -->
+                <div class="online-info-col">
+                    <div class="transfer-info-card">
+                        <div class="info-row">
+                            <span class="info-lbl">Ngân hàng thụ hưởng:</span>
+                            <strong class="info-val">MBBank (Ngân Hàng Quân Đội)</strong>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-lbl">Số tài khoản:</span>
+                            <div class="info-val-copy">
+                                <strong id="onlineAccNum">0912345678</strong>
+                                <button type="button" class="btn-copy-chip" onclick="copyToClipboard('0912345678')"><i class="fas fa-copy"></i> Sao chép</button>
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-lbl">Chủ tài khoản:</span>
+                            <strong class="info-val">TIỆM SÁCH TRI THỨC BOOKORA</strong>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-lbl">Số tiền thanh toán:</span>
+                            <strong class="info-val val-amount" id="onlineModalAmount">0 đ</strong>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-lbl">Nội dung chuyển khoản:</span>
+                            <div class="info-val-copy">
+                                <strong id="onlineTransferMemo">BK2026</strong>
+                                <button type="button" class="btn-copy-chip" onclick="copyToClipboard(document.getElementById('onlineTransferMemo').textContent)"><i class="fas fa-copy"></i> Sao chép</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="online-instruction-box">
+                        <i class="fas fa-circle-info"></i>
+                        <span>Sau khi chuyển khoản, hệ thống sẽ tự động đối soát và kích hoạt đơn hàng trong vòng 1-3 giây.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Khối nút mô phỏng giao dịch theo Nghiệp vụ mục 3 & 4 -->
+            <div class="online-simulation-actions">
+                <p class="sim-note">⚡ <strong>Mô Phỏng Trạng Thái Giao Dịch Cổng Thanh Toán:</strong></p>
+                <div class="sim-btn-group">
+                    <button type="button" class="btn-sim-success" id="btnSimSuccess" onclick="simulatePaymentResult('SUCCESS')">
+                        <i class="fas fa-circle-check"></i> Đã Chuyển Khoản Thành Công
+                    </button>
+                    <button type="button" class="btn-sim-failure" id="btnSimFailure" onclick="simulatePaymentResult('FAILED')">
+                        <i class="fas fa-circle-xmark"></i> Mô Phỏng Thanh Toán Thất Bại
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Scripts -->
+    <script src="/js/app.js?v=20260927_checkout"></script>
+    <script src="/js/checkout.js?v=20260927_01"></script>
+</body>
+</html>

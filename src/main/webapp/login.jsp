@@ -1,4 +1,4 @@
-﻿<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%
     String errorMessage = (String) request.getAttribute("errorMessage");
     String urlMsg = request.getParameter("message");
@@ -110,6 +110,7 @@
                     <a href="javascript:void(0)" onclick="alert('Hãy sử dụng một trong các tài khoản thử nghiệm bên dưới!')" class="forgot-link">Quên mật khẩu?</a>
                 </div>
 
+                <input type="hidden" name="redirect" id="redirectParam" value="<%= request.getParameter("redirect") != null ? request.getParameter("redirect") : "" %>">
                 <button type="submit" class="btn-primary" id="btnSubmit">
                     <span>Đăng Nhập Ngay</span>
                     <i class="fas fa-arrow-right"></i>

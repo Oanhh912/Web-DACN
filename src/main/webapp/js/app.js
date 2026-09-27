@@ -979,7 +979,7 @@ function buyNowFromModal() {
     const qty = input ? (parseInt(input.value) || 1) : 1;
     addToCart(currentModalBook.id, qty);
     closeQuickView();
-    window.location.href = 'cart';
+    window.location.href = 'checkout';
 }
 
 function notifyOutOfStockFromModal() {
@@ -1486,19 +1486,11 @@ function removeFromCart(bookId) {
 }
 
 function proceedToCheckout() {
-    if (cart.length === 0) {
-        showToast('Giỏ hàng trống! Hãy chọn ít nhất một cuốn sách.');
+    if (!cart || cart.length === 0) {
+        showToast('Giỏ hàng trống! Hãy chọn ít nhất một cuốn sách để đặt hàng.');
         return;
     }
-    const total = cart.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
-    const confirmed = confirm(`Xác nhận tiến hành thanh toán đơn hàng với tổng số tiền: ${formatVNCurrency(total)}?`);
-    if (confirmed) {
-        alert(`🎉 Chúc mừng bạn! Đơn hàng trị giá ${formatVNCurrency(total)} đã được đặt thành công. Bookora sẽ liên hệ giao hàng sớm nhất!`);
-        cart = [];
-        saveCart();
-        updateCartUI();
-        hideCartPopover();
-    }
+    window.location.href = 'checkout';
 }
 
 function checkoutCart() {
@@ -1666,7 +1658,7 @@ function onDetailBuyNow() {
     const qty = parseInt(document.getElementById('detailQuantityInput') ? document.getElementById('detailQuantityInput').value : 1) || 1;
     if (bookId) {
         addToCart(bookId, qty);
-        window.location.href = 'cart';
+        window.location.href = 'checkout';
     }
 }
 
