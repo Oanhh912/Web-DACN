@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="/css/style.css?v=20260925_05">
+    <link rel="stylesheet" href="/css/style.css?v=20260927_07">
 </head>
 <body>
     <!-- 1. HEADER & NAVIGATION -->
@@ -148,180 +148,296 @@
     <!-- BREADCRUMBS -->
     <nav class="breadcrumb-bar" aria-label="Breadcrumb">
         <div class="container breadcrumb-inner">
-            <a href="home" class="bc-link">Trang chủ</a>
-            <span class="bc-sep">/</span>
+            <a href="home" class="bc-link"><i class="fas fa-house"></i> Trang chủ</a>
+            <span class="bc-sep"><i class="fas fa-chevron-right"></i></span>
             <span class="bc-current">Khuyến mãi</span>
         </div>
     </nav>
 
-    <!-- MAIN PROMOTIONS CONTENT LAYOUT -->
-    <main class="content-page-main">
-        <div class="content-page-container">
-            <div class="content-page-layout">
-                
-                <!-- CỘT TRÁI: DANH SÁCH MÃ GIẢM GIÁ & CHƯƠNG TRÌNH KHUYẾN MÃI -->
-                <article class="content-article-body">
-                    <h1 class="content-page-title">Khuyến mãi & Mã giảm giá Bookora</h1>
-                    
-                    <div class="content-prose">
-                        <p>Chào mừng bạn đến với chuyên trang ưu đãi độc quyền tại <strong>Bookora.com</strong>! Hãy lưu ngay các mã voucher dưới đây để áp dụng giảm giá trực tiếp khi thanh toán đơn hàng sách của bạn:</p>
 
-                        <div class="promo-page-grid">
-                            
-                            <!-- Voucher 1 -->
-                            <div class="promo-page-card">
-                                <div class="promo-card-badge-col">
-                                    <i class="fas fa-tag"></i>
-                                    <strong>GIẢM 30K</strong>
-                                </div>
-                                <div class="promo-card-main-col">
-                                    <div class="promo-card-details">
-                                        <h4>Giảm 30.000đ cho đơn hàng từ 200.000đ</h4>
-                                        <p>Áp dụng cho toàn bộ danh mục sách kinh điển, văn học, công nghệ và phát triển bản thân trên hệ thống.</p>
-                                        <div class="promo-card-meta">
-                                            <span>Mã: <strong class="promo-code-box-page">BOOKORA2026</strong></span>
-                                            <span>• HSD: 31/12/2026</span>
-                                        </div>
-                                    </div>
-                                    <button type="button" class="btn-promo-copy-page" onclick="copyPromoCode('BOOKORA2026')">
-                                        <i class="fas fa-copy"></i> Sao chép
-                                    </button>
-                                </div>
-                            </div>
+    <!-- 2. KHỐI HERO VOUCHER XỊN 3D & DANH SÁCH VOUCHER (THEO ẢNH MẪU) -->
+    <div class="promo-hero-wrapper">
+        
+        <!-- Banner VOUCHER XỊN 3D Bo Góc Kèm 4 Bông Hoa % Xung Quanh -->
+        <div class="voucher-xin-banner">
+            
+            <!-- Bông hoa 3D % góc trên trái (Xanh ngọc / Trắng) -->
+            <svg class="badge-3d-flower top-left" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="28" r="18" fill="url(#grad-blue-petal)"/>
+                <circle cx="72" cy="50" r="18" fill="url(#grad-blue-petal)"/>
+                <circle cx="50" cy="72" r="18" fill="url(#grad-blue-petal)"/>
+                <circle cx="28" cy="50" r="18" fill="url(#grad-blue-petal)"/>
+                <circle cx="34" cy="34" r="17" fill="url(#grad-blue-petal)"/>
+                <circle cx="66" cy="34" r="17" fill="url(#grad-blue-petal)"/>
+                <circle cx="66" cy="66" r="17" fill="url(#grad-blue-petal)"/>
+                <circle cx="34" cy="66" r="17" fill="url(#grad-blue-petal)"/>
+                <circle cx="50" cy="50" r="23" fill="#ffffff" stroke="#e0f2fe" stroke-width="3"/>
+                <text x="50" y="59" text-anchor="middle" font-size="28" font-weight="900" fill="#0284c7" font-family="'Plus Jakarta Sans', sans-serif">%</text>
+                <defs>
+                    <linearGradient id="grad-blue-petal" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#ffffff"/>
+                        <stop offset="1" stop-color="#bae6fd"/>
+                    </linearGradient>
+                </defs>
+            </svg>
 
-                            <!-- Voucher 2 -->
-                            <div class="promo-page-card">
-                                <div class="promo-card-badge-col" style="background: linear-gradient(135deg, #10b981, #047857);">
-                                    <i class="fas fa-truck-fast"></i>
-                                    <strong>FREESHIP</strong>
-                                </div>
-                                <div class="promo-card-main-col">
-                                    <div class="promo-card-details">
-                                        <h4>Miễn phí vận chuyển toàn quốc cho đơn từ 250.000đ</h4>
-                                        <p>Áp dụng tự động hoặc nhập mã khi đặt hàng, giao hàng siêu tốc và bọc sách cẩn thận chống sốc 3 lớp.</p>
-                                        <div class="promo-card-meta">
-                                            <span>Mã: <strong class="promo-code-box-page">FREESHIP</strong></span>
-                                            <span>• Toàn quốc</span>
-                                        </div>
-                                    </div>
-                                    <button type="button" class="btn-promo-copy-page" onclick="copyPromoCode('FREESHIP')">
-                                        <i class="fas fa-copy"></i> Sao chép
-                                    </button>
-                                </div>
-                            </div>
+            <!-- Bông hoa 3D % góc dưới trái (Hồng Pastel) -->
+            <svg class="badge-3d-flower bottom-left" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="28" r="18" fill="url(#grad-pink-petal)"/>
+                <circle cx="72" cy="50" r="18" fill="url(#grad-pink-petal)"/>
+                <circle cx="50" cy="72" r="18" fill="url(#grad-pink-petal)"/>
+                <circle cx="28" cy="50" r="18" fill="url(#grad-pink-petal)"/>
+                <circle cx="34" cy="34" r="17" fill="url(#grad-pink-petal)"/>
+                <circle cx="66" cy="34" r="17" fill="url(#grad-pink-petal)"/>
+                <circle cx="66" cy="66" r="17" fill="url(#grad-pink-petal)"/>
+                <circle cx="34" cy="66" r="17" fill="url(#grad-pink-petal)"/>
+                <circle cx="50" cy="50" r="23" fill="#ffffff" stroke="#fce7f3" stroke-width="3"/>
+                <text x="50" y="59" text-anchor="middle" font-size="28" font-weight="900" fill="#ec4899" font-family="'Plus Jakarta Sans', sans-serif">%</text>
+                <defs>
+                    <linearGradient id="grad-pink-petal" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#fdf2f8"/>
+                        <stop offset="1" stop-color="#fbcfe8"/>
+                    </linearGradient>
+                </defs>
+            </svg>
 
-                            <!-- Voucher 3 -->
-                            <div class="promo-page-card">
-                                <div class="promo-card-badge-col" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">
-                                    <i class="fas fa-laptop-code"></i>
-                                    <strong>GIẢM 30%</strong>
-                                </div>
-                                <div class="promo-card-main-col">
-                                    <div class="promo-card-details">
-                                        <h4>Giảm 30% Tủ Sách Công Nghệ Thông Tin & AI</h4>
-                                        <p>Dành riêng cho lập trình viên, kỹ sư phần mềm & sinh viên công nghệ (Clean Code, Pragmatic Programmer, Cấu trúc dữ liệu).</p>
-                                        <div class="promo-card-meta">
-                                            <span>Mã: <strong class="promo-code-box-page">TECH30</strong></span>
-                                            <span>• Danh mục IT</span>
-                                        </div>
-                                    </div>
-                                    <button type="button" class="btn-promo-copy-page" onclick="copyPromoCode('TECH30')">
-                                        <i class="fas fa-copy"></i> Sao chép
-                                    </button>
-                                </div>
-                            </div>
+            <!-- Bông hoa 3D % góc trên phải (Xanh ngọc / Trắng) -->
+            <svg class="badge-3d-flower top-right" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="28" r="18" fill="url(#grad-blue-petal)"/>
+                <circle cx="72" cy="50" r="18" fill="url(#grad-blue-petal)"/>
+                <circle cx="50" cy="72" r="18" fill="url(#grad-blue-petal)"/>
+                <circle cx="28" cy="50" r="18" fill="url(#grad-blue-petal)"/>
+                <circle cx="34" cy="34" r="17" fill="url(#grad-blue-petal)"/>
+                <circle cx="66" cy="34" r="17" fill="url(#grad-blue-petal)"/>
+                <circle cx="66" cy="66" r="17" fill="url(#grad-blue-petal)"/>
+                <circle cx="34" cy="66" r="17" fill="url(#grad-blue-petal)"/>
+                <circle cx="50" cy="50" r="23" fill="#ffffff" stroke="#e0f2fe" stroke-width="3"/>
+                <text x="50" y="59" text-anchor="middle" font-size="28" font-weight="900" fill="#0284c7" font-family="'Plus Jakarta Sans', sans-serif">%</text>
+            </svg>
 
-                            <!-- Voucher 4 -->
-                            <div class="promo-page-card">
-                                <div class="promo-card-badge-col" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9);">
-                                    <i class="fas fa-brain"></i>
-                                    <strong>GIẢM 15%</strong>
-                                </div>
-                                <div class="promo-card-main-col">
-                                    <div class="promo-card-details">
-                                        <h4>Giảm 15% Tủ Sách Tâm Lý - Kỹ Năng Sống</h4>
-                                        <p>Tuyển tập tác phẩm nuôi dưỡng tâm hồn, phát triển năng lực tư duy (Đắc Nhân Tâm, Thói Quen Nguyên Tử, Tư Duy Nhanh Và Chậm).</p>
-                                        <div class="promo-card-meta">
-                                            <span>Mã: <strong class="promo-code-box-page">TRI_THUC</strong></span>
-                                            <span>• Sách Kỹ năng</span>
-                                        </div>
-                                    </div>
-                                    <button type="button" class="btn-promo-copy-page" onclick="copyPromoCode('TRI_THUC')">
-                                        <i class="fas fa-copy"></i> Sao chép
-                                    </button>
-                                </div>
-                            </div>
+            <!-- Bông hoa 3D % góc dưới phải (Hồng Pastel) -->
+            <svg class="badge-3d-flower bottom-right" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="28" r="18" fill="url(#grad-pink-petal)"/>
+                <circle cx="72" cy="50" r="18" fill="url(#grad-pink-petal)"/>
+                <circle cx="50" cy="72" r="18" fill="url(#grad-pink-petal)"/>
+                <circle cx="28" cy="50" r="18" fill="url(#grad-pink-petal)"/>
+                <circle cx="34" cy="34" r="17" fill="url(#grad-pink-petal)"/>
+                <circle cx="66" cy="34" r="17" fill="url(#grad-pink-petal)"/>
+                <circle cx="66" cy="66" r="17" fill="url(#grad-pink-petal)"/>
+                <circle cx="34" cy="66" r="17" fill="url(#grad-pink-petal)"/>
+                <circle cx="50" cy="50" r="23" fill="#ffffff" stroke="#fce7f3" stroke-width="3"/>
+                <text x="50" y="59" text-anchor="middle" font-size="28" font-weight="900" fill="#ec4899" font-family="'Plus Jakarta Sans', sans-serif">%</text>
+            </svg>
 
-                        </div>
-
-                        <h3 style="margin-top: 30px;">📌 Quy định sử dụng mã khuyến mãi:</h3>
-                        <ul>
-                            <li>Mỗi đơn hàng chỉ áp dụng 01 mã voucher giảm giá tiền mặt hoặc theo % cùng với voucher miễn phí vận chuyển.</li>
-                            <li>Mã giảm giá không có giá trị quy đổi thành tiền mặt hay chuyển nhượng dưới mọi hình thức.</li>
-                            <li>Bookora có quyền thay đổi hoặc kết thúc sớm chương trình khuyến mãi nếu số lượng quà tặng hoặc lượt dùng mã đạt giới hạn tối đa.</li>
-                        </ul>
-                    </div>
-                </article>
-
-                <!-- CỘT PHẢI: BÀI VIẾT MỚI NHẤT (CHUẨN ẢNH THIẾT KẾ MẪU) -->
-                <aside class="content-sidebar-wrap">
-                    <div class="sidebar-widget-card">
-                        <h3 class="sidebar-widget-title">BÀI VIẾT MỚI NHẤT</h3>
-                        <div class="sidebar-articles-list">
-                            <a href="javascript:void(0)" class="sidebar-article-item" onclick="alert('Đang mở bài viết: Minh Ám - Natsume Soseki')">
-                                <img src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=150" alt="Minh Ám" class="sidebar-art-thumb">
-                                <div class="sidebar-art-info">
-                                    <h4 class="sidebar-art-title">Minh Ám - Cuốn Tiểu Thuyết Dang Dở Đầy Ám Ảnh Của Natsume Soseki</h4>
-                                    <span class="sidebar-art-date">25.12.2024</span>
-                                </div>
-                            </a>
-
-                            <a href="javascript:void(0)" class="sidebar-article-item" onclick="alert('Đang mở bài viết: Review Sách Stop Overthinking')">
-                                <img src="https://images.unsplash.com/photo-1512820790803-83ca734da794?w=150" alt="Stop Overthinking" class="sidebar-art-thumb">
-                                <div class="sidebar-art-info">
-                                    <h4 class="sidebar-art-title">Review Sách: "Stop Overthinking - Sống Tự Do, Không Âu Lo"</h4>
-                                    <span class="sidebar-art-date">23.12.2024</span>
-                                </div>
-                            </a>
-
-                            <a href="javascript:void(0)" class="sidebar-article-item" onclick="alert('Đang mở bài viết: Phân tích tác phẩm Sống - Dư Hoa')">
-                                <img src="https://images.unsplash.com/photo-1495640388908-05fa85288e61?w=150" alt="Sống - Dư Hoa" class="sidebar-art-thumb">
-                                <div class="sidebar-art-info">
-                                    <h4 class="sidebar-art-title">"Sống" - Dư Hoa: Tóm Tắt Chi Tiết, Phân Tích Sâu Sắc và Lý Do Bạn Nên Đọc</h4>
-                                    <span class="sidebar-art-date">23.12.2024</span>
-                                </div>
-                            </a>
-
-                            <a href="javascript:void(0)" class="sidebar-article-item" onclick="alert('Đang mở bài viết: Đám Trẻ Ở Đại Dương Đen')">
-                                <img src="https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=150" alt="Đám Trẻ Ở Đại Dương Đen" class="sidebar-art-thumb">
-                                <div class="sidebar-art-info">
-                                    <h4 class="sidebar-art-title">Đám Trẻ Ở Đại Dương Đen</h4>
-                                    <span class="sidebar-art-date">23.12.2024</span>
-                                </div>
-                            </a>
-
-                            <a href="javascript:void(0)" class="sidebar-article-item" onclick="alert('Đang mở bài viết: Cây Cam Ngọt Của Tôi')">
-                                <img src="https://images.unsplash.com/photo-1532012164546-f432f2e3777a?w=150" alt="Cây Cam Ngọt Của Tôi" class="sidebar-art-thumb">
-                                <div class="sidebar-art-info">
-                                    <h4 class="sidebar-art-title">Cây Cam Ngọt Của Tôi: Khúc Ca Về Tình Yêu Thương Và Sự Trưởng Thành</h4>
-                                    <span class="sidebar-art-date">20.12.2024</span>
-                                </div>
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- Hotline Box -->
-                    <div class="sidebar-widget-card" style="background: linear-gradient(135deg, #1e293b, #0f172a); color: white;">
-                        <h4 style="color: #fde68a; margin: 0 0 10px; font-size: 15px;"><i class="fas fa-headset"></i> TỔNG ĐÀI HỖ TRỢ</h4>
-                        <p style="font-size: 13px; color: #cbd5e1; margin: 0 0 12px; line-height: 1.5;">Bạn cần tư vấn đặt sách theo số lượng lớn hoặc cần hợp tác xuất bản?</p>
-                        <div style="font-size: 18px; font-weight: 800; color: #38bdf8; margin-bottom: 6px;">1900 6401</div>
-                        <div style="font-size: 13px; color: #94a3b8;">Email: lienhe@bookora.com</div>
-                    </div>
-                </aside>
-
+            <!-- Thân Capsule 3D VOUCHER XỊN -->
+            <div class="voucher-xin-capsule">
+                <div class="voucher-xin-inner-rim">
+                    <h1 class="voucher-xin-title">VOUCHER XỊN</h1>
+                </div>
             </div>
         </div>
-    </main>
+
+        <!-- Khối chứa các thẻ Voucher chuẩn như ảnh mẫu -->
+        <div class="vouchers-showcase-grid">
+            
+            <!-- HÀNG TRÊN: 1 VOUCHER ĐỎ NẰM CHÍNH GIỮA -->
+            <div class="voucher-row-top">
+                <div class="voucher-item-card voucher-top-card">
+                    <!-- Icon Tròn Vàng Đỏ: HOT DEAL -->
+                    <div class="voucher-icon-circle yellow-deal">
+                        <span class="mini-hot">HOT</span>
+                        <span class="mini-deal">DEAL</span>
+                    </div>
+                    <!-- Thông tin chi tiết voucher -->
+                    <div class="voucher-center-info">
+                        <div class="voucher-val-text text-red">Giảm 29.000đ</div>
+                        <div class="voucher-min-order">Đơn hàng từ 400.000đ</div>
+                        <div class="voucher-code-line code-red">Mã: FREESHIP29K</div>
+                        <div class="voucher-expiry-date">31/12/2026</div>
+                    </div>
+                    <!-- Hành động -->
+                    <div class="voucher-right-actions">
+                        <button type="button" class="btn-voucher-condition red-condition" onclick="showVoucherTerms('FREESHIP29K', 'Đơn hàng từ 400.000đ', 'Giảm 29.000đ phí vận chuyển', '31/12/2026')">Điều kiện</button>
+                        <button type="button" class="btn-voucher-copy btn-red" onclick="copyPromoCode('FREESHIP29K')">Sao chép mã</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HÀNG DƯỚI: 3 VOUCHER ĐEN NẰM NGANG -->
+            <div class="voucher-row-three">
+                
+                <!-- Card 1: Giảm 35.000đ (BTSPN35) -->
+                <div class="voucher-item-card">
+                    <div class="voucher-icon-circle dark-circle">
+                        <i class="fas fa-ticket"></i>
+                    </div>
+                    <div class="voucher-center-info">
+                        <div class="voucher-val-text text-dark">Giảm 35.000đ</div>
+                        <div class="voucher-min-order">Đơn hàng từ 400.000đ</div>
+                        <div class="voucher-code-line code-dark">Mã: BTSPN35</div>
+                        <div class="voucher-expiry-date">05/09/2026</div>
+                    </div>
+                    <div class="voucher-right-actions">
+                        <button type="button" class="btn-voucher-condition" onclick="showVoucherTerms('BTSPN35', 'Đơn hàng từ 400.000đ', 'Giảm trực tiếp 35.000đ', '05/09/2026')">Điều kiện</button>
+                        <button type="button" class="btn-voucher-copy btn-dark" onclick="copyPromoCode('BTSPN35')">Sao chép mã</button>
+                    </div>
+                </div>
+
+                <!-- Card 2: Giảm 25.000đ (BTSPN25) -->
+                <div class="voucher-item-card">
+                    <div class="voucher-icon-circle dark-circle">
+                        <i class="fas fa-percent"></i>
+                    </div>
+                    <div class="voucher-center-info">
+                        <div class="voucher-val-text text-dark">Giảm 25.000đ</div>
+                        <div class="voucher-min-order">Đơn hàng từ 300.000đ</div>
+                        <div class="voucher-code-line code-dark">Mã: BTSPN25</div>
+                        <div class="voucher-expiry-date">05/09/2026</div>
+                    </div>
+                    <div class="voucher-right-actions">
+                        <button type="button" class="btn-voucher-condition" onclick="showVoucherTerms('BTSPN25', 'Đơn hàng từ 300.000đ', 'Giảm trực tiếp 25.000đ', '05/09/2026')">Điều kiện</button>
+                        <button type="button" class="btn-voucher-copy btn-dark" onclick="copyPromoCode('BTSPN25')">Sao chép mã</button>
+                    </div>
+                </div>
+
+                <!-- Card 3: Giảm 50.000đ (BTSPN50) -->
+                <div class="voucher-item-card">
+                    <div class="voucher-icon-circle dark-circle">
+                        <i class="fas fa-gift"></i>
+                    </div>
+                    <div class="voucher-center-info">
+                        <div class="voucher-val-text text-dark">Giảm 50.000đ</div>
+                        <div class="voucher-min-order">Đơn hàng từ 500.000đ</div>
+                        <div class="voucher-code-line code-dark">Mã: BTSPN50</div>
+                        <div class="voucher-expiry-date">05/09/2026</div>
+                    </div>
+                    <div class="voucher-right-actions">
+                        <button type="button" class="btn-voucher-condition" onclick="showVoucherTerms('BTSPN50', 'Đơn hàng từ 500.000đ', 'Giảm trực tiếp 50.000đ', '05/09/2026')">Điều kiện</button>
+                        <button type="button" class="btn-voucher-copy btn-dark" onclick="copyPromoCode('BTSPN50')">Sao chép mã</button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- HÀNG MỞ RỘNG KHI CLICK "XEM THÊM" -->
+            <div class="voucher-row-three" id="extraVouchersRow" style="display: none;">
+                <!-- Extra 1: BOOKORA2026 -->
+                <div class="voucher-item-card">
+                    <div class="voucher-icon-circle" style="background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white;">
+                        <i class="fas fa-book-bookmark" style="color: #fde68a;"></i>
+                    </div>
+                    <div class="voucher-center-info">
+                        <div class="voucher-val-text text-dark">Giảm 30.000đ</div>
+                        <div class="voucher-min-order">Đơn hàng từ 200.000đ</div>
+                        <div class="voucher-code-line code-dark">Mã: BOOKORA2026</div>
+                        <div class="voucher-expiry-date">31/12/2026</div>
+                    </div>
+                    <div class="voucher-right-actions">
+                        <button type="button" class="btn-voucher-condition" onclick="showVoucherTerms('BOOKORA2026', 'Đơn hàng từ 200.000đ', 'Giảm ngay 30.000đ cho đơn sách', '31/12/2026')">Điều kiện</button>
+                        <button type="button" class="btn-voucher-copy btn-dark" onclick="copyPromoCode('BOOKORA2026')">Sao chép mã</button>
+                    </div>
+                </div>
+
+                <!-- Extra 2: TECH30 -->
+                <div class="voucher-item-card">
+                    <div class="voucher-icon-circle" style="background: linear-gradient(135deg, #0284c7, #2563eb); color: white;">
+                        <i class="fas fa-laptop-code" style="color: #67e8f9;"></i>
+                    </div>
+                    <div class="voucher-center-info">
+                        <div class="voucher-val-text text-dark">Giảm 30% Sách IT</div>
+                        <div class="voucher-min-order">Tủ sách Công Nghệ & AI</div>
+                        <div class="voucher-code-line code-dark">Mã: TECH30</div>
+                        <div class="voucher-expiry-date">31/12/2026</div>
+                    </div>
+                    <div class="voucher-right-actions">
+                        <button type="button" class="btn-voucher-condition" onclick="showVoucherTerms('TECH30', 'Mua sách CNTT', 'Giảm 30% tối đa 100.000đ', '31/12/2026')">Điều kiện</button>
+                        <button type="button" class="btn-voucher-copy btn-dark" onclick="copyPromoCode('TECH30')">Sao chép mã</button>
+                    </div>
+                </div>
+
+                <!-- Extra 3: TRI_THUC -->
+                <div class="voucher-item-card">
+                    <div class="voucher-icon-circle" style="background: linear-gradient(135deg, #059669, #10b981); color: white;">
+                        <i class="fas fa-brain" style="color: #a7f3d0;"></i>
+                    </div>
+                    <div class="voucher-center-info">
+                        <div class="voucher-val-text text-dark">Giảm 15% Tâm Lý</div>
+                        <div class="voucher-min-order">Tủ sách Kỹ Năng - Đời Sống</div>
+                        <div class="voucher-code-line code-dark">Mã: TRI_THUC</div>
+                        <div class="voucher-expiry-date">31/12/2026</div>
+                    </div>
+                    <div class="voucher-right-actions">
+                        <button type="button" class="btn-voucher-condition" onclick="showVoucherTerms('TRI_THUC', 'Mua sách Kỹ năng & Tâm lý', 'Giảm 15% trực tiếp', '31/12/2026')">Điều kiện</button>
+                        <button type="button" class="btn-voucher-copy btn-dark" onclick="copyPromoCode('TRI_THUC')">Sao chép mã</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- 3. DẢI HOA VĂN KẺ Ô TÍM THEO ĐÚNG ẢNH MẪU -->
+    <div class="promo-purple-grid-bar"></div>
+
+    <!-- 4. DANH SÁCH NHỮNG SÁCH ĐANG NẰM TRONG DANH SÁCH KHUYẾN MÃI (NẰM DƯỚI PHẦN TRÊN ẢNH) -->
+    <section class="promo-books-section" id="promoBooksSection">
+        
+        <div class="promo-books-header">
+            <h2 class="promo-books-title">
+                <i class="fas fa-fire" style="color: #ef4444;"></i> SÁCH ĐANG ÁP DỤNG KHUYẾN MÃI
+            </h2>
+            <p class="promo-books-subtitle">
+                Tuyển chọn những cuốn sách bán chạy & kinh điển đang được giảm giá từ 15% - 40% tại Bookora
+            </p>
+        </div>
+
+        <!-- Thanh lọc thể loại sách khuyến mãi nhanh -->
+        <div class="promo-filter-chips">
+            <button type="button" class="promo-filter-chip active" onclick="filterPromoCategory('all', this)">
+                <i class="fas fa-border-all"></i> Tất Cả Khuyến Mãi (<span id="promoTotalCount">0</span>)
+            </button>
+            <button type="button" class="promo-filter-chip" onclick="filterPromoCategory('Văn học', this)">
+                <i class="fas fa-book-open"></i> Văn Học
+            </button>
+            <button type="button" class="promo-filter-chip" onclick="filterPromoCategory('Kỹ năng sống', this)">
+                <i class="fas fa-seedling"></i> Kỹ Năng Sống
+            </button>
+            <button type="button" class="promo-filter-chip" onclick="filterPromoCategory('Kinh tế', this)">
+                <i class="fas fa-chart-line"></i> Kinh Tế
+            </button>
+            <button type="button" class="promo-filter-chip" onclick="filterPromoCategory('Công nghệ thông tin', this)">
+                <i class="fas fa-laptop-code"></i> Công Nghệ
+            </button>
+            <button type="button" class="promo-filter-chip" onclick="filterPromoCategory('Tâm lý học', this)">
+                <i class="fas fa-brain"></i> Tâm Lý Học
+            </button>
+        </div>
+
+        <!-- Lưới sách khuyến mãi (Dùng chuẩn book-card đồng bộ toàn bộ website) -->
+        <div class="promo-books-grid" id="promoBooksGrid">
+            <!-- Sẽ được fill động qua JavaScript hoặc hiển thị danh sách sách ưu đãi -->
+            <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #64748b;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 28px; color: var(--accent);"></i>
+                <p style="margin-top: 10px;">Đang tải danh sách sách khuyến mãi...</p>
+            </div>
+        </div>
+
+    </section>
+
+    <!-- 5. MODAL XEM CHI TIẾT ĐIỀU KIỆN SỬ DỤNG VOUCHER -->
+    <div class="voucher-modal-backdrop" id="voucherModalBackdrop" onclick="closeVoucherModal()" style="display: none;"></div>
+    <div class="voucher-modal" id="voucherModal" style="display: none;">
+        <div class="voucher-modal-header">
+            <h4><i class="fas fa-ticket" style="color: #ef4444;"></i> Điều Kiện Sử Dụng Voucher</h4>
+            <button type="button" class="btn-close-voucher-modal" onclick="closeVoucherModal()">&times;</button>
+        </div>
+        <div class="voucher-modal-body" id="voucherModalBody"></div>
+        <div class="voucher-modal-footer">
+            <button type="button" class="btn-modal-cancel" onclick="closeVoucherModal()">Đóng</button>
+            <button type="button" class="btn-modal-copy" id="btnModalCopyCode" onclick="copyFromModal()">Sao chép mã ngay</button>
+        </div>
+    </div>
 
     <!-- FOOTER -->
     <footer class="site-footer">
@@ -433,5 +549,214 @@
     </div>
 
     <script src="/js/app.js?v=20260926_10"></script>
+    <script>
+        let currentModalVoucherCode = '';
+        let allPromotionalBooks = [];
+
+        // Hàm sao chép mã voucher kèm Toast thông báo
+        function copyPromoCode(code) {
+            if (!code) return;
+            navigator.clipboard.writeText(code).then(() => {
+                showToast(`Đã sao chép mã voucher <strong>${code}</strong> vào bộ nhớ tạm!`, 'success');
+            }).catch(() => {
+                // Fallback nếu browser chặn clipboard API
+                const tempInput = document.createElement('input');
+                tempInput.value = code;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+                showToast(`Đã sao chép mã voucher <strong>${code}</strong> vào bộ nhớ tạm!`, 'success');
+            });
+        }
+
+        // Mở popup điều kiện voucher
+        function showVoucherTerms(code, minOrder, discountDesc, expiry) {
+            currentModalVoucherCode = code;
+            const modal = document.getElementById('voucherModal');
+            const backdrop = document.getElementById('voucherModalBackdrop');
+            const body = document.getElementById('voucherModalBody');
+            const copyBtn = document.getElementById('btnModalCopyCode');
+
+            if (!modal || !backdrop || !body) return;
+
+            body.innerHTML = `
+                <div style="background: #f1f5f9; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <div style="font-size: 11.5px; color: #64748b; font-weight: 600;">MÃ VOUCHER</div>
+                        <div style="font-size: 18px; font-weight: 800; color: #ef4444; font-family: monospace;">${code}</div>
+                    </div>
+                    <span style="background: #fee2e2; color: #dc2626; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 20px;">HSD: ${expiry}</span>
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <strong style="color: #0f172a;"><i class="fas fa-circle-check" style="color: #10b981; margin-right: 6px;"></i> Quyền lợi ưu đãi:</strong>
+                    <p style="margin: 4px 0 0 22px; color: #475569;">${discountDesc}</p>
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <strong style="color: #0f172a;"><i class="fas fa-cart-shopping" style="color: #3b82f6; margin-right: 6px;"></i> Giá trị đơn hàng tối thiểu:</strong>
+                    <p style="margin: 4px 0 0 22px; color: #475569;">${minOrder}</p>
+                </div>
+                <div>
+                    <strong style="color: #0f172a;"><i class="fas fa-shield" style="color: #8b5cf6; margin-right: 6px;"></i> Phạm vi áp dụng:</strong>
+                    <p style="margin: 4px 0 0 22px; color: #475569;">Áp dụng cho tất cả khách hàng đặt mua sách trực tuyến trên toàn quốc tại hệ thống Bookora.</p>
+                </div>
+            `;
+
+            if (copyBtn) {
+                copyBtn.innerHTML = `<i class="fas fa-copy"></i> Sao chép mã ${code}`;
+            }
+
+            modal.style.display = 'block';
+            backdrop.style.display = 'block';
+        }
+
+        function closeVoucherModal() {
+            const modal = document.getElementById('voucherModal');
+            const backdrop = document.getElementById('voucherModalBackdrop');
+            if (modal) modal.style.display = 'none';
+            if (backdrop) backdrop.style.display = 'none';
+        }
+
+        function copyFromModal() {
+            if (currentModalVoucherCode) {
+                copyPromoCode(currentModalVoucherCode);
+                closeVoucherModal();
+            }
+        }
+
+        // Bấm nút "Xem thêm" trên dải màu vàng
+        function toggleMoreVouchers() {
+            const extraRow = document.getElementById('extraVouchersRow');
+            const btn = document.querySelector('.btn-promo-more-top');
+            if (!extraRow) return;
+
+            if (extraRow.style.display === 'none' || extraRow.style.display === '') {
+                extraRow.style.display = 'grid';
+                if (btn) btn.textContent = 'Thu gọn';
+                extraRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else {
+                extraRow.style.display = 'none';
+                if (btn) btn.textContent = 'Xem thêm';
+            }
+        }
+
+        // Tải và hiển thị danh sách sách đang khuyến mãi
+        async function loadPromotionalBooks() {
+            const grid = document.getElementById('promoBooksGrid');
+            const totalCountEl = document.getElementById('promoTotalCount');
+            if (!grid) return;
+
+            try {
+                const res = await fetch('/api/books');
+                const books = await res.json();
+                
+                // Lọc những cuốn sách đang có khuyến mãi hoặc giảm giá so với giá gốc
+                allPromotionalBooks = books.filter(b => (b.originalPrice > b.price) || (b.discountPercent > 0) || (b.promotion && b.promotion.trim().length > 0));
+                
+                // Nếu chưa có sách nào thì lấy toàn bộ
+                if (allPromotionalBooks.length === 0) {
+                    allPromotionalBooks = books;
+                }
+
+                if (totalCountEl) {
+                    totalCountEl.textContent = allPromotionalBooks.length;
+                }
+
+                renderPromoBooks(allPromotionalBooks);
+            } catch (err) {
+                console.error("Lỗi khi tải sách khuyến mãi:", err);
+                grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #ef4444; padding: 30px;">Không thể tải danh sách sách khuyến mãi lúc này. Vui lòng thử lại sau!</div>';
+            }
+        }
+
+        // Render danh sách sách chuẩn form book-card
+        function renderPromoBooks(books) {
+            const grid = document.getElementById('promoBooksGrid');
+            if (!grid) return;
+
+            if (!books || books.length === 0) {
+                grid.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px;">
+                        <i class="fas fa-tag" style="font-size: 40px; color: #cbd5e1; margin-bottom: 12px;"></i>
+                        <h4 style="color: #475569; margin-bottom: 6px;">Không tìm thấy sách khuyến mãi trong danh mục này</h4>
+                        <p style="color: #94a3b8; font-size: 13.5px;">Vui lòng chọn danh mục khác để xem thêm ưu đãi.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            books.forEach(b => {
+                const discount = b.discountPercent > 0 ? b.discountPercent : (b.originalPrice > b.price ? Math.round((1 - b.price / b.originalPrice) * 100) : 0);
+                const discountBadge = discount > 0 ? `<span class="badge-tag badge-discount">-${discount}%</span>` : '';
+                const bestSellerBadge = b.isBestSeller ? '<span class="badge-tag badge-bestseller">Bán chạy</span>' : '';
+                const stockBadge = b.isOutOfStock 
+                    ? '<span class="badge-tag badge-stock badge-outofstock"><i class="fas fa-ban"></i> Hết hàng</span>'
+                    : `<span class="badge-tag badge-stock badge-instock"><i class="fas fa-check"></i> Còn ${b.stock}</span>`;
+
+                html += `
+                    <div class="book-card ${b.isOutOfStock ? 'is-out-of-stock' : ''}" data-id="${b.id}">
+                        <div class="book-card-inner">
+                            <div class="book-cover-wrap">
+                                <img src="${b.image}" alt="${b.title}" class="book-cover" loading="lazy" onclick="goToBookDetail(${b.id})" style="cursor: pointer;" onerror="this.src='https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500';">
+                                <div class="badge-container">
+                                    ${stockBadge}
+                                    ${bestSellerBadge}
+                                    ${discountBadge}
+                                </div>
+                                <div class="book-actions-overlay">
+                                    <button type="button" class="btn-quickview" onclick="goToBookDetail(${b.id})"><i class="fas fa-eye"></i> Xem chi tiết</button>
+                                </div>
+                            </div>
+                            <div class="book-info">
+                                <div class="book-meta-top">
+                                    <span class="book-category">${b.category || 'Sách'}</span>
+                                    <span class="book-code" title="Mã sách: ${b.code || 'MS' + b.id}"><i class="fas fa-barcode"></i> ${b.code || 'MS' + b.id}</span>
+                                </div>
+                                <h3 class="book-title" title="${b.title}" onclick="goToBookDetail(${b.id})" style="cursor: pointer;">${b.title}</h3>
+                                <p class="book-author" title="Tác giả"><i class="fas fa-feather-alt"></i> ${b.author || 'Tác giả'}</p>
+                                <p class="book-publisher" title="Nhà xuất bản"><i class="fas fa-building-columns"></i> ${b.publisher || 'NXB Tri Thức'}</p>
+                                <div class="book-rating-row">
+                                    <div class="stars"><i class="fas fa-star"></i> <span>${b.rating || 5.0}</span></div>
+                                    <span class="review-count">(${b.reviewCount || 100} đánh giá)</span>
+                                    <span class="stock-pill ${b.isOutOfStock ? 'stock-out' : 'stock-in'}">${b.stockStatus || (b.isOutOfStock ? 'Hết hàng' : 'Còn hàng')}</span>
+                                </div>
+                                <div class="book-price-row">
+                                    <div class="price-box">
+                                        <span class="price-current">${b.formattedPrice || (b.price ? b.price.toLocaleString('vi-VN') + ' đ' : '0 đ')}</span>
+                                        ${(b.originalPrice && b.originalPrice > b.price) ? `<span class="price-original">${b.formattedOriginalPrice || b.originalPrice.toLocaleString('vi-VN') + ' đ'}</span>` : ''}
+                                    </div>
+                                    ${b.isOutOfStock 
+                                        ? `<button type="button" class="btn-add-cart disabled" onclick="notifyOutOfStock('${b.title.replace(/'/g, "\\'")}')" title="Sách đã hết hàng trong kho"><i class="fas fa-bell"></i></button>`
+                                        : `<button type="button" class="btn-add-cart" onclick="addToCart(${b.id}, event)" title="Thêm vào giỏ"><i class="fas fa-cart-plus"></i></button>`
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            grid.innerHTML = html;
+        }
+
+        // Lọc thể loại sách khuyến mãi
+        function filterPromoCategory(categoryName, chipEl) {
+            document.querySelectorAll('.promo-filter-chip').forEach(c => c.classList.remove('active'));
+            if (chipEl) chipEl.classList.add('active');
+
+            if (categoryName === 'all') {
+                renderPromoBooks(allPromotionalBooks);
+            } else {
+                const filtered = allPromotionalBooks.filter(b => b.category && b.category.toLowerCase().includes(categoryName.toLowerCase()));
+                renderPromoBooks(filtered);
+            }
+        }
+
+        // Khởi động khi tải xong trang
+        window.addEventListener('DOMContentLoaded', () => {
+            loadPromotionalBooks();
+        });
+    </script>
 </body>
 </html>

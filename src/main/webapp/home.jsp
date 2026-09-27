@@ -393,7 +393,7 @@
                                 <% } %>
                             </div>
                             <div class="book-actions-overlay">
-                                <button type="button" class="btn-quickview" onclick="openQuickView(<%= b.getId() %>)"><i class="fas fa-eye"></i> Xem chi tiết</button>
+                                <button type="button" class="btn-quickview" onclick="goToBookDetail(<%= b.getId() %>)"><i class="fas fa-eye"></i> Xem chi tiết</button>
                             </div>
                         </div>
                         <div class="book-info">

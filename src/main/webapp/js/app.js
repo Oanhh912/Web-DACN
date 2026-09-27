@@ -603,11 +603,13 @@ function goToBookDetail(bookId) {
 }
 
 function quickViewBook(bookId) {
-    openQuickView(bookId);
+    goToBookDetail(bookId);
 }
 
 async function openQuickView(bookId) {
     if (!bookId) return;
+    goToBookDetail(bookId);
+    return;
     bookId = Number(bookId);
     let card = document.querySelector(`.book-card[data-id="${bookId}"]`);
     

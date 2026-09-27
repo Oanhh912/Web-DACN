@@ -1,4 +1,4 @@
-﻿<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="java.util.List, java.util.ArrayList" %>
 <%@ page import="com.bookstore.model.Book" %>
 <%@ page import="com.bookstore.model.User" %>
@@ -32,7 +32,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= book != null ? book.getTitle() : "Chi Tiết Sách" %> - Bookora | Tiệm Sách Tri Thức</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/css/style.css?v=20260925_03">
+    <link rel="stylesheet" href="/css/style.css?v=20260927_07">
 </head>
 <body class="book-detail-page">
 
@@ -211,10 +211,10 @@
     <!-- 2. BREADCRUMBS NAVIGATION -->
     <nav class="breadcrumb-bar" aria-label="Breadcrumb">
         <div class="container breadcrumb-inner">
-            <a href="home" class="bc-link">Trang chủ</a>
-            <span class="bc-sep">/</span>
+            <a href="home" class="bc-link"><i class="fas fa-house"></i> Trang chủ</a>
+            <span class="bc-sep"><i class="fas fa-chevron-right"></i></span>
             <a href="home?category=<%= book.getCategory() %>" class="bc-link"><%= book.getCategory() %></a>
-            <span class="bc-sep">/</span>
+            <span class="bc-sep"><i class="fas fa-chevron-right"></i></span>
             <span class="bc-current" title="<%= book.getTitle() %>"><%= book.getTitle() %></span>
         </div>
     </nav>
@@ -334,8 +334,57 @@
                         <h2 class="section-title-text">GIỚI THIỆU SÁCH</h2>
                         <div class="title-underline"></div>
                     </div>
+                    <h3 class="detail-book-intro-title" style="font-size: 16px; font-weight: 700; color: #1e293b; margin: 15px 0 12px 0; line-height: 1.4;"><%= book.getTitle() %></h3>
                     <div class="book-description-text" id="bookDescriptionParagraph">
                         <%= book.getDescription() != null ? book.getDescription() : "Nội dung giới thiệu cuốn sách đang được cập nhật..." %>
+                    </div>
+
+                    <!-- Bảng thông số kỹ thuật chi tiết của sách (Ảnh 2) -->
+                    <div class="book-spec-table-wrap">
+                        <table class="book-spec-table">
+                            <tbody>
+                                <tr>
+                                    <td class="spec-label">Mã hàng</td>
+                                    <td class="spec-val"><%= book.getCode() %></td>
+                                </tr>
+                                <tr>
+                                    <td class="spec-label">Tên Nhà Cung Cấp</td>
+                                    <td class="spec-val"><%= book.getPublisher() %></td>
+                                </tr>
+                                <tr>
+                                    <td class="spec-label">Tác giả</td>
+                                    <td class="spec-val"><%= book.getAuthor() %></td>
+                                </tr>
+                                <tr>
+                                    <td class="spec-label">Người Dịch</td>
+                                    <td class="spec-val"><%= book.getId() == 25 ? "Nguyễn Văn Tuấn" : "Nhiều dịch giả" %></td>
+                                </tr>
+                                <tr>
+                                    <td class="spec-label">NXB</td>
+                                    <td class="spec-val"><%= book.getPublisher() %></td>
+                                </tr>
+                                <tr>
+                                    <td class="spec-label">Năm XB</td>
+                                    <td class="spec-val">2024</td>
+                                </tr>
+                                <tr>
+                                    <td class="spec-label">Số trang</td>
+                                    <td class="spec-val"><%= 180 + (book.getId() * 19) % 260 %></td>
+                                </tr>
+                                <tr>
+                                    <td class="spec-label">Trọng lượng (gr)</td>
+                                    <td class="spec-val">350</td>
+                                </tr>
+                                <tr>
+                                    <td class="spec-label">Kích Thước Bao Bì</td>
+                                    <td class="spec-val">21 x 13.5 x 1.2 cm</td>
+                                </tr>
+                                <tr>
+                                    <td class="spec-label">Hình thức</td>
+                                    <td class="spec-val">Bìa Mềm</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </section>
 
@@ -381,18 +430,73 @@
                 </div>
                 <div class="related-products-grid">
                     <% for (Book rb : relatedBooks) { %>
-                        <div class="related-book-card" onclick="window.location.href='book?id=<%= rb.getId() %>'">
-                            <div class="related-cover-box">
-                                <img src="<%= rb.getImage() %>" alt="<%= rb.getTitle() %>" class="related-cover-img" onerror="this.src='https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500';">
-                                <div class="related-hover-actions" onclick="event.stopPropagation();">
-                                    <button type="button" class="btn-hover-action" title="Xem nhanh" onclick="window.location.href='book?id=<%= rb.getId() %>'"><i class="fas fa-magnifying-glass-plus"></i></button>
-                                    <button type="button" class="btn-hover-action" title="Thêm vào giỏ" onclick="addToCart(<%= rb.getId() %>, 1)"><i class="fas fa-cart-shopping"></i></button>
-                                    <button type="button" class="btn-hover-action" title="Xem chi tiết" onclick="window.location.href='book?id=<%= rb.getId() %>'"><i class="fas fa-eye"></i></button>
+                        <div class="book-card <%= rb.isOutOfStock() ? "is-out-of-stock" : "" %>"
+                             data-id="<%= rb.getId() %>"
+                             data-code="<%= rb.getCode() %>"
+                             data-title="<%= rb.getTitle() %>"
+                             data-author="<%= rb.getAuthor() %>"
+                             data-publisher="<%= rb.getPublisher() %>"
+                             data-price="<%= rb.getPrice() %>"
+                             data-original-price="<%= rb.getOriginalPrice() %>"
+                             data-formatted-price="<%= rb.getFormattedPrice() %>"
+                             data-category="<%= rb.getCategory() %>"
+                             data-stock="<%= rb.getStock() %>"
+                             data-is-out-of-stock="<%= rb.isOutOfStock() %>"
+                             data-promotion="<%= rb.getPromotion() %>"
+                             data-image="<%= rb.getImage() %>"
+                             data-desc="<%= rb.getDescription() %>"
+                             data-rating="<%= rb.getRating() %>">
+                            <div class="book-card-inner">
+                                <div class="book-cover-wrap">
+                                    <img src="<%= rb.getImage() %>" alt="<%= rb.getTitle() %>" class="book-cover" loading="lazy" onclick="goToBookDetail(<%= rb.getId() %>)" style="cursor: pointer;" onerror="this.src='https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500';">
+                                    <div class="badge-container">
+                                        <% if (rb.isOutOfStock()) { %>
+                                            <span class="badge-tag badge-stock badge-outofstock"><i class="fas fa-ban"></i> Hết hàng</span>
+                                        <% } else { %>
+                                            <span class="badge-tag badge-stock badge-instock"><i class="fas fa-check"></i> Còn <%= rb.getStock() %></span>
+                                        <% } %>
+                                        <% if (rb.isBestSeller()) { %>
+                                            <span class="badge-tag badge-bestseller">Bán chạy</span>
+                                        <% } %>
+                                        <% if (rb.getDiscountPercent() > 0) { %>
+                                            <span class="badge-tag badge-discount">-<%= rb.getDiscountPercent() %>%</span>
+                                        <% } %>
+                                    </div>
+                                    <div class="book-actions-overlay">
+                                        <button type="button" class="btn-quickview" onclick="goToBookDetail(<%= rb.getId() %>)"><i class="fas fa-eye"></i> Xem chi tiết</button>
+                                    </div>
                                 </div>
-                            </div>
-                            <h3 class="related-book-title" title="<%= rb.getTitle() %>"><%= rb.getTitle() %></h3>
-                            <div class="related-price-box">
-                                <span class="related-price-red"><%= rb.getFormattedPrice() %></span>
+                                <div class="book-info">
+                                    <div class="book-meta-top">
+                                        <span class="book-category"><%= rb.getCategory() %></span>
+                                        <span class="book-code" title="Mã sách: <%= rb.getCode() %>"><i class="fas fa-barcode"></i> <%= rb.getCode() %></span>
+                                    </div>
+                                    <h3 class="book-title" title="<%= rb.getTitle() %>" onclick="goToBookDetail(<%= rb.getId() %>)" style="cursor: pointer;"><%= rb.getTitle() %></h3>
+                                    <p class="book-author" title="Tác giả"><i class="fas fa-feather-alt"></i> <%= rb.getAuthor() %></p>
+                                    <p class="book-publisher" title="Nhà xuất bản"><i class="fas fa-building-columns"></i> <%= rb.getPublisher() != null ? rb.getPublisher() : "NXB Tri Thức" %></p>
+                                    <div class="book-rating-row">
+                                        <div class="stars"><i class="fas fa-star"></i> <span><%= rb.getRating() %></span></div>
+                                        <span class="review-count">(<%= rb.getReviewCount() %> đánh giá)</span>
+                                        <span class="stock-pill <%= rb.isOutOfStock() ? "stock-out" : "stock-in" %>"><%= rb.getStockStatusText() %></span>
+                                    </div>
+                                    <div class="book-price-row">
+                                        <div class="price-box">
+                                            <span class="price-current"><%= rb.getFormattedPrice() %></span>
+                                            <% if (rb.getOriginalPrice() > 0 && rb.getOriginalPrice() > rb.getPrice()) { %>
+                                                <span class="price-original"><%= rb.getFormattedOriginalPrice() %></span>
+                                            <% } %>
+                                        </div>
+                                        <% if (rb.isOutOfStock()) { %>
+                                            <button type="button" class="btn-add-cart disabled" onclick="notifyOutOfStock('<%= rb.getTitle().replace("'", "\\'") %>')" title="Sách đã hết hàng trong kho">
+                                                <i class="fas fa-bell"></i>
+                                            </button>
+                                        <% } else { %>
+                                            <button type="button" class="btn-add-cart" onclick="addToCart(<%= rb.getId() %>)" title="Thêm vào giỏ">
+                                                <i class="fas fa-cart-plus"></i>
+                                            </button>
+                                        <% } %>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     <% } %>

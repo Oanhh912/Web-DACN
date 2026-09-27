@@ -36,7 +36,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="/css/style.css?v=20260926_02">
+    <link rel="stylesheet" href="/css/style.css?v=20260927_07">
 </head>
 <body>
     <!-- 1. HEADER & NAVIGATION (ĐỒNG NHẤT VỚI TRANG CHỦ) -->
@@ -299,7 +299,7 @@
                                         <%= discountBadge %>
                                     </div>
                                     <div class="book-actions-overlay">
-                                        <button type="button" class="btn-quickview" onclick="openQuickView(<%= b.getId() %>)"><i class="fas fa-eye"></i> Xem chi tiết</button>
+                                        <button type="button" class="btn-quickview" onclick="goToBookDetail(<%= b.getId() %>)"><i class="fas fa-eye"></i> Xem chi tiết</button>
                                     </div>
                                 </div>
                                 <div class="book-info">

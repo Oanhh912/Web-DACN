@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="/css/style.css?v=20260925_05">
+    <link rel="stylesheet" href="/css/style.css?v=20260927_07">
 </head>
 <body>
     <!-- 1. HEADER & NAVIGATION -->
@@ -148,8 +148,8 @@
     <!-- BREADCRUMBS -->
     <nav class="breadcrumb-bar" aria-label="Breadcrumb">
         <div class="container breadcrumb-inner">
-            <a href="home" class="bc-link">Trang chủ</a>
-            <span class="bc-sep">/</span>
+            <a href="home" class="bc-link"><i class="fas fa-house"></i> Trang chủ</a>
+            <span class="bc-sep"><i class="fas fa-chevron-right"></i></span>
             <span class="bc-current">Giới thiệu</span>
         </div>
     </nav>
@@ -159,86 +159,108 @@
         <div class="content-page-container">
             <div class="content-page-layout">
                 
-                <!-- CỘT TRÁI: BÀI VIẾT GIỚI THIỆU CHÍNH (CHUẨN FORM MẪU NHÀ SÁCH) -->
-                <article class="content-article-body">
-                    <h1 class="content-page-title">Giới thiệu</h1>
+                <!-- CỘT TRÁI: KHỐI NỘI DUNG CHÍNH (GIỚI THIỆU HOẶC CHI TIẾT BÀI VIẾT) -->
+                <article class="content-article-body" id="mainContentArticle">
                     
-                    <div class="content-prose">
-                        <p><strong>CTY Cổ phần Thương Mại và Dịch vụ BOOKORA (Bookora JSC)</strong> là một trong số các doanh nghiệp Thương mại điện tử chuyên ngành sách tiên phong tại Việt Nam, bắt đầu với nền tảng Website <strong>www.bookora.com</strong>.</p>
+                    <!-- 1. MÀN HÌNH GIỚI THIỆU CÔNG TY -->
+                    <div id="companyAboutView">
+                        <h1 class="content-page-title">Giới thiệu</h1>
+                        
+                        <div class="content-prose">
+                            <p><strong>CTY Cổ phần Thương Mại và Dịch vụ BOOKORA (Bookora JSC)</strong> là một trong số các doanh nghiệp Thương mại điện tử chuyên ngành sách tiên phong tại Việt Nam, bắt đầu với nền tảng Website <strong>www.bookora.com</strong>.</p>
 
-                        <p>Từ khi thành lập đến nay, <strong>Bookora.com</strong> luôn là <strong>Nhà sách trên mạng hàng đầu tại Việt Nam</strong> và được ghi nhận từ nhiều cơ quan, tổ chức xuất bản uy tín trong và ngoài nước. Quan trọng hơn hết, <strong>Bookora.com</strong> được <strong>hàng triệu khách hàng thường xuyên mua sắm trực tuyến</strong> đặt sự tin tưởng và tín nhiệm của mình trong suốt quá trình phát triển để <strong>Bookora.com</strong> luôn được phục vụ và hoàn thiện.</p>
+                            <!-- Ảnh không gian công ty Bookora chân thực, sống động và liên quan mật thiết đến sách -->
+                            <figure class="company-showcase-figure">
+                                <img src="/images/bookora-company.jpg" alt="Không gian Nhà sách Flagship Bookora" class="company-showcase-img">
+                                <figcaption>
+                                    <i class="fas fa-camera"></i> Không gian Nhà sách Flagship & Trung tâm phân phối tri thức Bookora (Hà Nội)
+                                </figcaption>
+                            </figure>
 
-                        <p>Với sứ mệnh xóa bỏ mọi giới hạn về không gian trong việc phân phối <em>"tri thức"</em> đến mọi miền đất nước bằng <strong>mô hình mua sắm trực tuyến hiện đại</strong>, từ miền núi đến hải đảo xa xôi, từ thành phố đến vùng quê và từ Việt Nam đến kiều bào ta ở trên toàn thế giới.</p>
+                            <p>Từ khi thành lập đến nay, <strong>Bookora.com</strong> luôn là <strong>Nhà sách trên mạng hàng đầu tại Việt Nam</strong> và được ghi nhận từ nhiều cơ quan, tổ chức xuất bản uy tín trong và ngoài nước. Quan trọng hơn hết, <strong>Bookora.com</strong> được <strong>hàng triệu khách hàng thường xuyên mua sắm trực tuyến</strong> đặt sự tin tưởng và tín nhiệm của mình trong suốt quá trình phát triển để <strong>Bookora.com</strong> luôn được phục vụ và hoàn thiện.</p>
 
-                        <p>Mục tiêu của chúng tôi là luôn mở rộng thị trường sách trực tuyến cùng với đà phát triển của công nghệ thông tin. Để thực hiện mục tiêu đó, chúng tôi đã có những nhận thức đúng đắn về vai trò của nguồn nhân lực trong xây dựng và phát triển kinh doanh. Chúng tôi đã và đang không ngừng hoàn thiện hơn nữa môi trường làm việc với các trang thiết bị hiện đại, cung cách làm việc hiệu quả để ngày càng hoàn thiện việc phục vụ khách hàng.</p>
+                            <p>Với sứ mệnh xóa bỏ mọi giới hạn về không gian trong việc phân phối <em>"tri thức"</em> đến mọi miền đất nước bằng <strong>mô hình mua sắm trực tuyến hiện đại</strong>, từ miền núi đến hải đảo xa xôi, từ thành phố đến vùng quê và từ Việt Nam đến kiều bào ta ở trên toàn thế giới.</p>
 
-                        <!-- Thống kê số liệu -->
-                        <div class="brand-stats-row">
-                            <div class="brand-stat-card">
-                                <strong>50.000+</strong>
-                                <span>Đầu sách bản quyền chọn lọc</span>
+                            <p>Mục tiêu của chúng tôi là luôn mở rộng thị trường sách trực tuyến cùng với đà phát triển của công nghệ thông tin. Để thực hiện mục tiêu đó, chúng tôi đã có những nhận thức đúng đắn về vai trò của nguồn nhân lực trong xây dựng và phát triển kinh doanh. Chúng tôi đã và đang không ngừng hoàn thiện hơn nữa môi trường làm việc với các trang thiết bị hiện đại, cung cách làm việc hiệu quả để ngày càng hoàn thiện việc phục vụ khách hàng.</p>
+
+                            <!-- Thống kê số liệu -->
+                            <div class="brand-stats-row">
+                                <div class="brand-stat-card">
+                                    <strong>50.000+</strong>
+                                    <span>Đầu sách bản quyền chọn lọc</span>
+                                </div>
+                                <div class="brand-stat-card">
+                                    <strong>200+</strong>
+                                    <span>Nhà xuất bản & Tác giả đối tác</span>
+                                </div>
+                                <div class="brand-stat-card">
+                                    <strong>1.000.000+</strong>
+                                    <span>Khách hàng tin yêu trên toàn quốc</span>
+                                </div>
                             </div>
-                            <div class="brand-stat-card">
-                                <strong>200+</strong>
-                                <span>Nhà xuất bản & Tác giả đối tác</span>
+
+                            <h3>Đội ngũ Bookora.com</h3>
+                            <ul>
+                                <li>Với đội ngũ trẻ trung, yêu mến sách và với mong muốn thúc đẩy văn hóa đọc của người Việt, các nhân viên Bookora sẵn sàng đáp ứng mọi nhu cầu quý khách về sách với chất lượng phục vụ tốt nhất.</li>
+                                <li>Hệ thống quản lý kho vận thông minh kết hợp với Trợ lý AI Bookora giúp hỗ trợ độc giả 24/7 tìm kiếm cuốn sách tâm đắc một cách dễ dàng và chính xác nhất.</li>
+                            </ul>
+
+                            <h3>⭐ 4 Cam Kết Vàng Về Dịch Vụ Tại Bookora</h3>
+                            <div class="commit-cards-grid">
+                                <div class="commit-card-item">
+                                    <div class="commit-card-icon"><i class="fas fa-shield-check"></i></div>
+                                    <div class="commit-card-text">
+                                        <strong>100% Sách Thật & Bản Quyền</strong>
+                                        <p>Nói không tuyệt đối với sách lậu, sách photocopy kém chất lượng. Tất cả đều có tem chống hàng giả và hợp đồng bản quyền.</p>
+                                    </div>
+                                </div>
+                                <div class="commit-card-item">
+                                    <div class="commit-card-icon"><i class="fas fa-truck-fast"></i></div>
+                                    <div class="commit-card-text">
+                                        <strong>Giao Hàng Nhanh & Đóng Gói Kỹ</strong>
+                                        <p>Đóng gói chống sốc 3 lớp cẩn thận, miễn phí vận chuyển cho đơn hàng từ 250.000đ trên phạm vi toàn quốc.</p>
+                                    </div>
+                                </div>
+                                <div class="commit-card-item">
+                                    <div class="commit-card-icon"><i class="fas fa-rotate-left"></i></div>
+                                    <div class="commit-card-text">
+                                        <strong>Đổi Trả Linh Hoạt 30 Ngày</strong>
+                                        <p>Hỗ trợ đổi mới miễn phí nếu sách có bất kỳ lỗi in ấn, rách trang hoặc va đập trong quá trình giao nhận.</p>
+                                    </div>
+                                </div>
+                                <div class="commit-card-item">
+                                    <div class="commit-card-icon"><i class="fas fa-headset"></i></div>
+                                    <div class="commit-card-text">
+                                        <strong>Tư Vấn Tận Tâm 24/7</strong>
+                                        <p>Đội ngũ chuyên viên yêu sách cùng Trợ lý AI sẵn sàng giải đáp thắc mắc, gợi ý tựa sách phù hợp với mọi độ tuổi.</p>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="brand-stat-card">
-                                <strong>1.000.000+</strong>
-                                <span>Khách hàng tin yêu trên toàn quốc</span>
+
+                            <div class="content-highlight-box">
+                                <i class="fas fa-quote-left" style="color: var(--accent); margin-right: 8px;"></i>
+                                <em>"Đọc một cuốn sách hay giống như được trò chuyện với những bộ óc vĩ đại nhất của những thế kỷ đã qua."</em> — <strong>René Descartes</strong>
                             </div>
                         </div>
+                    </div>
 
-                        <h3>Đội ngũ Bookora.com</h3>
-                        <ul>
-                            <li>Với đội ngũ trẻ trung, yêu mến sách và với mong muốn thúc đẩy văn hóa đọc của người Việt, các nhân viên Bookora sẵn sàng đáp ứng mọi nhu cầu quý khách về sách với chất lượng phục vụ tốt nhất.</li>
-                            <li>Hệ thống quản lý kho vận thông minh kết hợp với Trợ lý AI Bookora giúp hỗ trợ độc giả 24/7 tìm kiếm cuốn sách tâm đắc một cách dễ dàng và chính xác nhất.</li>
-                        </ul>
-
-                        <h3>⭐ 4 Cam Kết Vàng Về Dịch Vụ Tại Bookora</h3>
-                        <div class="commit-cards-grid">
-                            <div class="commit-card-item">
-                                <div class="commit-card-icon"><i class="fas fa-shield-check"></i></div>
-                                <div class="commit-card-text">
-                                    <strong>100% Sách Thật & Bản Quyền</strong>
-                                    <p>Nói không tuyệt đối với sách lậu, sách photocopy kém chất lượng. Tất cả đều có tem chống hàng giả và hợp đồng bản quyền.</p>
-                                </div>
-                            </div>
-                            <div class="commit-card-item">
-                                <div class="commit-card-icon"><i class="fas fa-truck-fast"></i></div>
-                                <div class="commit-card-text">
-                                    <strong>Giao Hàng Nhanh & Đóng Gói Kỹ</strong>
-                                    <p>Đóng gói chống sốc 3 lớp cẩn thận, miễn phí vận chuyển cho đơn hàng từ 250.000đ trên phạm vi toàn quốc.</p>
-                                </div>
-                            </div>
-                            <div class="commit-card-item">
-                                <div class="commit-card-icon"><i class="fas fa-rotate-left"></i></div>
-                                <div class="commit-card-text">
-                                    <strong>Đổi Trả Linh Hoạt 30 Ngày</strong>
-                                    <p>Hỗ trợ đổi mới miễn phí nếu sách có bất kỳ lỗi in ấn, rách trang hoặc va đập trong quá trình giao nhận.</p>
-                                </div>
-                            </div>
-                            <div class="commit-card-item">
-                                <div class="commit-card-icon"><i class="fas fa-headset"></i></div>
-                                <div class="commit-card-text">
-                                    <strong>Tư Vấn Tận Tâm 24/7</strong>
-                                    <p>Đội ngũ chuyên viên yêu sách cùng Trợ lý AI sẵn sàng giải đáp thắc mắc, gợi ý tựa sách phù hợp với mọi độ tuổi.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="content-highlight-box">
-                            <i class="fas fa-quote-left" style="color: var(--accent); margin-right: 8px;"></i>
-                            <em>"Đọc một cuốn sách hay giống như được trò chuyện với những bộ óc vĩ đại nhất của những thế kỷ đã qua."</em> — <strong>René Descartes</strong>
+                    <!-- 2. MÀN HÌNH CHIẾU BÀI VIẾT ĐƯỢC CHỌN (KHI BẤM VÀO MỤC BÀI VIẾT MỚI) -->
+                    <div id="articleDetailView" style="display: none;">
+                        <button type="button" class="btn-back-about" onclick="showCompanyAbout()">
+                            <i class="fas fa-arrow-left"></i> Quay lại trang Giới thiệu Bookora
+                        </button>
+                        <div id="articleDetailContent">
+                            <!-- Nội dung bài viết được chiếu trực tiếp tại đây -->
                         </div>
                     </div>
                 </article>
 
-                <!-- CỘT PHẢI: BÀI VIẾT MỚI NHẤT (CHUẨN ẢNH THIẾT KẾ MẪU) -->
+                <!-- CỘT PHẢI: BÀI VIẾT MỚI NHẤT (CLICK SẼ NHẢY SANG MÀN HÌNH CHIẾU BÀI VIẾT) -->
                 <aside class="content-sidebar-wrap">
                     <div class="sidebar-widget-card">
                         <h3 class="sidebar-widget-title">BÀI VIẾT MỚI NHẤT</h3>
                         <div class="sidebar-articles-list">
-                            <a href="javascript:void(0)" class="sidebar-article-item" onclick="alert('Đang mở bài viết: Minh Ám - Natsume Soseki')">
+                            <a href="javascript:void(0)" class="sidebar-article-item" data-article-id="minh-am" onclick="showArticleDetail('minh-am')">
                                 <img src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=150" alt="Minh Ám" class="sidebar-art-thumb">
                                 <div class="sidebar-art-info">
                                     <h4 class="sidebar-art-title">Minh Ám - Cuốn Tiểu Thuyết Dang Dở Đầy Ám Ảnh Của Natsume Soseki</h4>
@@ -246,7 +268,7 @@
                                 </div>
                             </a>
 
-                            <a href="javascript:void(0)" class="sidebar-article-item" onclick="alert('Đang mở bài viết: Review Sách Stop Overthinking')">
+                            <a href="javascript:void(0)" class="sidebar-article-item" data-article-id="stop-overthinking" onclick="showArticleDetail('stop-overthinking')">
                                 <img src="https://images.unsplash.com/photo-1512820790803-83ca734da794?w=150" alt="Stop Overthinking" class="sidebar-art-thumb">
                                 <div class="sidebar-art-info">
                                     <h4 class="sidebar-art-title">Review Sách: "Stop Overthinking - Sống Tự Do, Không Âu Lo"</h4>
@@ -254,7 +276,7 @@
                                 </div>
                             </a>
 
-                            <a href="javascript:void(0)" class="sidebar-article-item" onclick="alert('Đang mở bài viết: Phân tích tác phẩm Sống - Dư Hoa')">
+                            <a href="javascript:void(0)" class="sidebar-article-item" data-article-id="song-du-hoa" onclick="showArticleDetail('song-du-hoa')">
                                 <img src="https://images.unsplash.com/photo-1495640388908-05fa85288e61?w=150" alt="Sống - Dư Hoa" class="sidebar-art-thumb">
                                 <div class="sidebar-art-info">
                                     <h4 class="sidebar-art-title">"Sống" - Dư Hoa: Tóm Tắt Chi Tiết, Phân Tích Sâu Sắc và Lý Do Bạn Nên Đọc</h4>
@@ -262,7 +284,7 @@
                                 </div>
                             </a>
 
-                            <a href="javascript:void(0)" class="sidebar-article-item" onclick="alert('Đang mở bài viết: Đám Trẻ Ở Đại Dương Đen')">
+                            <a href="javascript:void(0)" class="sidebar-article-item" data-article-id="dam-tre-dai-duong-den" onclick="showArticleDetail('dam-tre-dai-duong-den')">
                                 <img src="https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=150" alt="Đám Trẻ Ở Đại Dương Đen" class="sidebar-art-thumb">
                                 <div class="sidebar-art-info">
                                     <h4 class="sidebar-art-title">Đám Trẻ Ở Đại Dương Đen</h4>
@@ -270,8 +292,8 @@
                                 </div>
                             </a>
 
-                            <a href="javascript:void(0)" class="sidebar-article-item" onclick="alert('Đang mở bài viết: Cây Cam Ngọt Của Tôi')">
-                                <img src="https://images.unsplash.com/photo-1532012164546-f432f2e3777a?w=150" alt="Cây Cam Ngọt Của Tôi" class="sidebar-art-thumb">
+                            <a href="javascript:void(0)" class="sidebar-article-item" data-article-id="cay-cam-ngot-cua-toi" onclick="showArticleDetail('cay-cam-ngot-cua-toi')">
+                                <img src="https://images.unsplash.com/photo-1495640388908-05fa85288e61?w=150" alt="Cây Cam Ngọt Của Tôi" class="sidebar-art-thumb">
                                 <div class="sidebar-art-info">
                                     <h4 class="sidebar-art-title">Cây Cam Ngọt Của Tôi: Khúc Ca Về Tình Yêu Thương Và Sự Trưởng Thành</h4>
                                     <span class="sidebar-art-date">20.12.2024</span>
@@ -409,5 +431,325 @@
     </div>
 
     <script src="/js/app.js?v=20260926_10"></script>
+    <script>
+        // Dữ liệu nội dung chi tiết 5 bài viết mới nhất
+        const articlesData = {
+            'minh-am': {
+                id: 'minh-am',
+                title: 'Minh Ám - Cuốn Tiểu Thuyết Dang Dở Đầy Ám Ảnh Của Natsume Soseki',
+                category: 'Điểm Sách Văn Học',
+                date: '25.12.2024',
+                author: 'Ban Biên Tập Bookora',
+                views: '1.240 lượt xem',
+                readTime: '6 phút đọc',
+                image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=1000',
+                content: `
+                    <p><strong>"Minh Ám" (Meian - Sáng và Tối)</strong> là tác phẩm đồ sộ và cũng là di cảo cuối cùng của <strong>Natsume Soseki</strong> – đại văn hào được mệnh danh là cha đẻ của văn học hiện đại Nhật Bản. Dù ngòi bút của ông phải đột ngột dừng lại giữa trang viết thứ 188 vì cơn bạo bệnh, "Minh Ám" vẫn sừng sững như một kiệt tác tâm lý hiện thực xuất sắc bậc nhất của văn học phương Đông thế kỷ 20.</p>
+                    
+                    <div class="article-quote-box">
+                        <i class="fas fa-quote-left"></i> "Con người càng cố gắng dùng trí tuệ duy lý để che đậy cái tôi ích kỷ, khoảng tối trong tâm thức của họ lại càng bành trướng dữ dội."
+                    </div>
+
+                    <h3>1. Cuộc phẫu thuật nội tâm của con người hiện đại</h3>
+                    <p>Không có những tình tiết giật gân, những biến cố lịch sử dồn dập, "Minh Ám" đưa độc giả đi sâu vào từng ngóc ngách của cuộc sống gia đình trung lưu Tokyo đầu thế kỷ 20 thông qua đôi vợ chồng mới cưới Tsuda và O-Nobu. Tsuda là một công chức tự mãn, luôn khao khát được công nhận nhưng đầy vị kỷ và mặc cảm; trong khi O-Nobu là người vợ thông minh, sắc sảo và luôn nỗ lực nắm quyền kiểm soát tình cảm gia đình.</p>
+                    <p>Soseki bóc tách từng cử chỉ, từng lời đối thoại tưởng chừng xã giao nhưng ngầm chứa một cuộc đấu trí tâm lý gay cấn. Sự "sáng" (Minh) và "tối" (Ám) không chỉ là ánh sáng của lý trí đối chọi với bóng tối bản năng, mà còn là ranh giới mong manh giữa sự chân thành và thói đạo đức giả của thời đại kim tiền.</p>
+
+                    <h3>2. Di sản văn học vượt thời gian</h3>
+                    <p>Đọc "Minh Ám", độc giả hiện đại sẽ bất ngờ khi thấy hình bóng của chính mình trong xã hội đương đại: những áp lực vị thế, sự mâu thuẫn giữa khát vọng cá nhân và chuẩn mực xã hội, và sự thiếu vắng khả năng lắng nghe thấu cảm giữa những người thân thiết nhất.</p>
+                `,
+                relatedBook: {
+                    id: 24,
+                    title: 'Rừng Na Uy (Norwegian Wood) - Haruki Murakami',
+                    author: 'Haruki Murakami',
+                    price: '110.000 đ',
+                    originalPrice: '140.000 đ',
+                    image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=500',
+                    desc: 'Nếu bạn yêu thích chiều sâu tâm lý và phong cách văn chương Nhật Bản, cuốn tiểu thuyết này là lựa chọn không thể bỏ qua.'
+                }
+            },
+            'stop-overthinking': {
+                id: 'stop-overthinking',
+                title: 'Review Sách: "Stop Overthinking - Sống Tự Do, Không Âu Lo"',
+                category: 'Kỹ Năng & Tâm Lý',
+                date: '23.12.2024',
+                author: 'Nguyễn Thảo Ly - Chuyên gia Tâm lý Bookora',
+                views: '2.180 lượt xem',
+                readTime: '5 phút đọc',
+                image: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=1000',
+                content: `
+                    <p>Bạn có bao giờ nằm trằn trọc thâu đêm chỉ để tua đi tua lại một câu nói vô tình của đồng nghiệp vào ban sáng? Bạn có thường xuyên suy diễn hàng tá kịch bản tồi tệ nhất cho một vấn đề nhỏ nhặt? Nếu câu trả lời là "có", bạn đang rơi vào chiếc bẫy tinh vi của hội chứng <em>Overthinking (suy nghĩ quá mức)</em>.</p>
+                    
+                    <div class="article-quote-box">
+                        <i class="fas fa-quote-left"></i> "Suy nghĩ quá nhiều không giải quyết được các vấn đề của tương lai, nó chỉ làm khánh kiệt năng lượng và tước đoạt sự bình yên của hiện tại."
+                    </div>
+
+                    <h3>1. Căn bệnh của thời đại kỹ thuật số</h3>
+                    <p>Trong một thế giới ngập tràn thông tin và kỳ vọng xã hội, não bộ của chúng ta liên tục bị quá tải. Cuốn sách không dừng lại ở những lời động viên sáo rỗng, mà cung cấp các công cụ khoa học dựa trên phương pháp <strong>Liệu pháp Nhận thức Hành vi (CBT)</strong> giúp bạn tái cấu trúc các luồng suy nghĩ tiêu cực.</p>
+                    <p>Tác giả chỉ ra rằng: lo âu không phải là sự chuẩn bị, mà là sự giam cầm. Nhận biết được khoảnh khắc bạn bắt đầu rơi vào "vòng xoáy suy nghĩ" chính là bước đầu tiên để giành lại quyền kiểm soát tâm trí.</p>
+
+                    <h3>2. 3 Kỹ thuật hữu hiệu tức thì từ cuốn sách</h3>
+                    <p><strong>• Kỹ thuật Neo tâm trí 5-4-3-2-1:</strong> Quan sát 5 thứ bạn nhìn thấy, 4 thứ bạn có thể chạm, 3 âm thanh nghe được, 2 mùi hương và 1 vị giác. Điều này ngay lập tức kéo hệ thần kinh trở về thực tại.</p>
+                    <p><strong>• Thiết lập "Giờ lo âu" (Worry Window):</strong> Dành đúng 15 phút mỗi ngày lúc 17h00 chỉ để lo âu và viết ra giấy. Nếu suy nghĩ lo lắng nảy sinh vào lúc khác, hãy ghi chú lại và hoãn đến đúng khung giờ này.</p>
+                    <p><strong>• Nguyên tắc hành động 5 giây:</strong> Biến suy nghĩ thành hành động nhỏ thay vì phân tích quá lâu.</p>
+                `,
+                relatedBook: {
+                    id: 25,
+                    title: 'Tháo Dây Oan Trái - Nghệ Thuật Chuyển Hóa Cảm Xúc',
+                    author: 'Thích Nhật Từ',
+                    price: '89.000 đ',
+                    originalPrice: '89.000 đ',
+                    image: '/images/thao-day-oan-trai.jpg',
+                    desc: 'Cẩm nang tuyệt vời giúp thanh lọc tâm trí, chuyển hóa những lo âu và bất an nội tâm thành sự bình an vững chãi.'
+                }
+            },
+            'song-du-hoa': {
+                id: 'song-du-hoa',
+                title: '"Sống" - Dư Hoa: Tóm Tắt Chi Tiết, Phân Tích Sâu Sắc và Lý Do Bạn Nên Đọc',
+                category: 'Tác Phẩm Kinh Điển',
+                date: '23.12.2024',
+                author: 'Trần Minh Quang - Book Reviewer',
+                views: '3.450 lượt xem',
+                readTime: '7 phút đọc',
+                image: 'https://images.unsplash.com/photo-1495640388908-05fa85288e61?w=1000',
+                content: `
+                    <p>Nếu có một cuốn sách khiến độc giả gấp lại mà lồng ngực thắt lại trong nỗi xót xa vô bờ, nhưng đồng thời lại khơi dậy một khát vọng sinh tồn mãnh liệt nhất, thì đó chính là <strong>"Sống"</strong> của nhà văn Trung Quốc <strong>Dư Hoa</strong>.</p>
+                    
+                    <div class="article-quote-box">
+                        <i class="fas fa-quote-left"></i> "Con người sống là để sống, chứ không phải sống để phục vụ cho bất cứ thứ gì ngoài chính sự sống." — Dư Hoa
+                    </div>
+
+                    <h3>1. Cuộc đời chìm nổi của Phú Quý</h3>
+                    <p>Cuốn tiểu thuyết là lời tự sự của ông lão Phú Quý với một thanh niên đi thu thập dân ca. Phú Quý vốn là thiếu gia một gia đình giàu có, vì cờ bạc mà tán gia bại sản. Từ một kẻ phóng đãng, ông phải tự tay cày cuốc, nếm trải nạn đói, chiến tranh loạn lạc, và kinh hoàng nhất là lần lượt chứng kiến những người thân yêu nhất — mẹ, vợ (Gia Trân), con gái (Phượng Hà), con trai (Hữu Khánh), con rể và đứa cháu ngoại bé bỏng — ra đi mãi mãi.</p>
+                    <p>Đến cuối đời, bầu bạn cùng ông chỉ còn một con trâu già cũng tên là Phú Quý. Nhưng điều kỳ diệu là trong ánh mắt ông già ấy không có sự oán hận số phận hay tuyệt vọng, mà chỉ có sự thấu hiểu sâu sắc và bao dung tuyệt đối với kiếp nhân sinh.</p>
+
+                    <h3>2. Ý nghĩa triết học về sự tồn tại</h3>
+                    <p>"Sống" dạy chúng ta rằng: giá trị lớn nhất của cuộc đời không nằm ở vinh quang, của cải hay những danh xưng mỹ miều, mà nằm ở chính hơi thở, ở năng lực kiên cường chịu đựng những nghịch cảnh để bước tiếp ngày mai. Cuốn sách là liều thuốc thức tỉnh mạnh mẽ cho bất kỳ ai đang cảm thấy cuộc sống quá nhiều áp lực.</p>
+                `,
+                relatedBook: {
+                    id: 7,
+                    title: 'Cây Cam Ngọt Của Tôi',
+                    author: 'José Mauro de Vasconcelos',
+                    price: '82.000 đ',
+                    originalPrice: '108.000 đ',
+                    image: 'https://images.unsplash.com/photo-1495640388908-05fa85288e61?w=500',
+                    desc: 'Cùng chung rung cảm sâu lắng về thân phận con người và tình yêu thương giữa những mất mát đau thương của cuộc đời.'
+                }
+            },
+            'dam-tre-dai-duong-den': {
+                id: 'dam-tre-dai-duong-den',
+                title: 'Đám Trẻ Ở Đại Dương Đen: Nỗi Cô Đơn Và Hành Trình Đi Tìm Bản Ngã',
+                category: 'Tâm Lý Học Tuổi Trẻ',
+                date: '23.12.2024',
+                author: 'Hồng Nhung - Biên tập viên Bookora',
+                views: '1.890 lượt xem',
+                readTime: '5 phút đọc',
+                image: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=1000',
+                content: `
+                    <p>Có bao giờ bạn cảm thấy lạc lõng ngay trong chính ngôi nhà của mình? Cảm thấy tiếng nói của mình bị chìm nghỉm giữa những kỳ vọng, áp đặt và sự thờ ơ của người lớn? <strong>"Đám Trẻ Ở Đại Dương Đen"</strong> chính là tiếng vọng đầy đau đáu từ sâu thẳm tâm hồn những người trẻ đang chật vật tìm kiếm tình thương và sự thấu hiểu.</p>
+
+                    <div class="article-quote-box">
+                        <i class="fas fa-quote-left"></i> "Dưới đáy đại dương đen kịt của sự hiểu lầm và cô độc, mỗi chúng ta đều là một ngọn hải đăng nhỏ đang nỗ lực thắp sáng chính mình."
+                    </div>
+
+                    <h3>1. Vết thương từ sự kỳ vọng và khoảng cách thế hệ</h3>
+                    <p>Tác phẩm không phán xét, không răn dạy mà đóng vai trò như một người bạn tri kỷ ngồi cạnh, lắng nghe những góc khuất tâm lý của thanh thiếu niên: nỗi sợ thất bại, sự so sánh độc hại, cảm giác kiệt sức tinh thần (burnout) và những vết sẹo tuổi thơ vô hình.</p>
+                    <p>Cuốn sách chỉ ra rằng, nhiều khi sự tổn thương không đến từ những hành vi bạo lực thể xác, mà đến từ sự "bạo lực lạnh" — sự thờ ơ, coi nhẹ cảm xúc của con trẻ từ các bậc phụ huynh bận rộn.</p>
+
+                    <h3>2. Lối thoát hướng về ánh sáng</h3>
+                    <p>Hơn cả một bức tranh hiện thực, tác phẩm mang lại sự vỗ về và hy vọng: bạn không đơn độc trên hành trình này. Học cách yêu thương và ôm lấy đứa trẻ tổn thương bên trong mình chính là chìa khóa để thoát khỏi đáy đại dương tăm tối.</p>
+                `,
+                relatedBook: {
+                    id: 15,
+                    title: 'Dám Bị Ghét',
+                    author: 'Kishimi Ichiro, Koga Fumitake',
+                    price: '98.000 đ',
+                    originalPrice: '125.000 đ',
+                    image: 'https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=500',
+                    desc: 'Dũng khí giải phóng bản thân khỏi ánh nhìn và kỳ vọng của người khác để tìm lại cuộc đời của chính mình.'
+                }
+            },
+            'cay-cam-ngot-cua-toi': {
+                id: 'cay-cam-ngot-cua-toi',
+                title: 'Cây Cam Ngọt Của Tôi: Khúc Ca Về Tình Yêu Thương Và Sự Trưởng Thành',
+                category: 'Văn Học Kinh Điển',
+                date: '20.12.2024',
+                author: 'Lê Hoàng Yến - Bookora Community',
+                views: '4.810 lượt xem',
+                readTime: '6 phút đọc',
+                image: 'https://images.unsplash.com/photo-1532012164546-f432f2e3777a?w=1000',
+                content: `
+                    <p>Được xuất bản lần đầu năm 1968 tại Brazil, <strong>"Cây Cam Ngọt Của Tôi" (Meu Pé de Laranja Lima)</strong> của nhà văn <strong>José Mauro de Vasconcelos</strong> đã lấy đi nước mắt của hàng chục triệu độc giả trên toàn thế giới và được đưa vào chương trình giảng dạy tiểu học tại nhiều quốc gia.</p>
+
+                    <div class="article-quote-box">
+                        <i class="fas fa-quote-left"></i> "Ai đã từng yêu thương một cái cây hay một con người bằng cả tấm lòng thơ ngây, người đó sẽ không bao giờ hoàn toàn cô độc giữa cuộc đời này."
+                    </div>
+
+                    <h3>1. Cậu bé Zezé và thế giới tưởng tượng diệu kỳ</h3>
+                    <p>Zezé là một cậu bé năm tuổi thông minh xuất chúng, tự học đọc chữ và có một trí tưởng tượng phong phú vô bờ bến. Thế nhưng, sinh ra trong một gia đình nghèo khó đông con ở Rio de Janeiro, cậu bé thường xuyên phải hứng chịu những trận đòn roi tàn nhẫn từ những người lớn đang quẫn bách vì cái nghèo.</p>
+                    <p>Nơi nương náu duy nhất của Zezé là cây cam ngọt sau vườn nhà, nơi cậu đặt tên là Pinkie và cùng sẻ chia mọi niềm vui nỗi buồn. Cho đến khi cậu gặp ông Bồ (Portuga) — người đàn ông Bồ Đào Nha giàu lòng trắc ẩn đã mở ra cho cậu thấy thế nào là tình phụ tử và sự dịu dàng đích thực.</p>
+
+                    <h3>2. Nỗi đau của sự trưởng thành</h3>
+                    <p>Bi kịch ập đến khi người bạn lớn Portuga qua đời trong một tai nạn đường sắt, và cây cam ngọt bị chặt hạ để mở rộng đường lộ. Zezé đã trưởng thành trong một cơn đau xé lòng: <em>"Bây giờ tôi đã biết thế nào là đau đớn. Đau đớn không phải là bị đánh đến bất tỉnh... Đau đớn là cái làm cho trái tim ta tan nát và ta phải chết đi cùng với nó."</em></p>
+                    <p>Cuốn sách là lời nhắc nhở thiêng liêng tới tất cả người lớn: hãy lắng nghe và trân trọng thế giới tâm hồn non nớt của trẻ thơ trước khi quá muộn.</p>
+                `,
+                relatedBook: {
+                    id: 7,
+                    title: 'Cây Cam Ngọt Của Tôi (Bản Tiếng Việt)',
+                    author: 'José Mauro de Vasconcelos',
+                    price: '82.000 đ',
+                    originalPrice: '108.000 đ',
+                    image: 'https://images.unsplash.com/photo-1495640388908-05fa85288e61?w=500',
+                    desc: 'Tác phẩm bán chạy nhất tại Bookora với hơn 3.200 lượt đánh giá 5 sao. Tặng kèm thiệp minh họa màu cao cấp.'
+                }
+            }
+        };
+
+        // Hàm chiếu bài viết chi tiết ngay trên màn hình
+        function showArticleDetail(articleId) {
+            const article = articlesData[articleId];
+            if (!article) return;
+
+            const companyView = document.getElementById('companyAboutView');
+            const articleView = document.getElementById('articleDetailView');
+            const articleContent = document.getElementById('articleDetailContent');
+
+            if (!companyView || !articleView || !articleContent) return;
+
+            // Xây dựng giao diện hiển thị bài viết chi tiết
+            articleContent.innerHTML = `
+                <span class="article-category-badge"><i class="fas fa-feather-pointed"></i> ${article.category}</span>
+                <h1 class="article-detail-title">${article.title}</h1>
+                <div class="article-detail-meta">
+                    <span><i class="far fa-calendar-alt"></i> ${article.date}</span>
+                    <span><i class="far fa-user"></i> ${article.author}</span>
+                    <span><i class="far fa-eye"></i> ${article.views}</span>
+                    <span><i class="far fa-clock"></i> ${article.readTime}</span>
+                </div>
+                <img src="${article.image}" alt="${article.title}" class="article-featured-img">
+                <div class="article-prose">
+                    ${article.content}
+                </div>
+                ${article.relatedBook ? `
+                    <div class="article-book-cta">
+                        <img src="${article.relatedBook.image}" alt="${article.relatedBook.title}" class="article-book-cta-thumb">
+                        <div class="article-book-cta-info">
+                            <h4>${article.relatedBook.title}</h4>
+                            <p>${article.relatedBook.desc}</p>
+                            <div class="article-book-cta-price">${article.relatedBook.price}</div>
+                            <div class="article-book-cta-actions">
+                                <button type="button" class="btn-cta-view-detail" onclick="goToBookDetail(${article.relatedBook.id})">
+                                    <i class="fas fa-circle-info"></i> Xem Chi Tiết Sách
+                                </button>
+                                <button type="button" class="btn-cta-view-detail" style="background: #ea580c;" onclick="addToCart(${article.relatedBook.id}, event)">
+                                    <i class="fas fa-cart-plus"></i> Thêm Vào Giỏ
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+
+            // Chuyển màn hình
+            companyView.style.display = 'none';
+            articleView.style.display = 'block';
+
+            // Đánh dấu active ở sidebar
+            document.querySelectorAll('.sidebar-article-item').forEach(el => {
+                if (el.getAttribute('data-article-id') === articleId) {
+                    el.classList.add('active');
+                } else {
+                    el.classList.remove('active');
+                }
+            });
+
+            // Cập nhật Breadcrumb
+            const bcContainer = document.querySelector('.breadcrumb-inner');
+            if (bcContainer) {
+                bcContainer.innerHTML = `
+                    <a href="home" class="bc-link"><i class="fas fa-house"></i> Trang chủ</a>
+                    <span class="bc-sep"><i class="fas fa-chevron-right"></i></span>
+                    <a href="javascript:void(0)" class="bc-link" onclick="showCompanyAbout()">Giới thiệu</a>
+                    <span class="bc-sep"><i class="fas fa-chevron-right"></i></span>
+                    <span class="bc-current">${article.title.substring(0, 40)}...</span>
+                `;
+            }
+
+            // Cập nhật URL mà không reload trang
+            try {
+                const newUrl = window.location.pathname + '?article=' + articleId;
+                window.history.pushState({ articleId: articleId }, article.title, newUrl);
+            } catch (e) {}
+
+            // Cuộn mượt lên đầu bài viết (bù trừ khoảng cách header cố định)
+            const targetEl = document.getElementById('articleDetailView') || document.getElementById('mainContentArticle');
+            if (targetEl) {
+                const headerOffset = 130;
+                const elementPosition = targetEl.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+                window.scrollTo({
+                    top: Math.max(0, offsetPosition),
+                    behavior: 'smooth'
+                });
+            }
+        }
+
+        // Hàm quay trở lại màn hình Giới thiệu công ty
+        function showCompanyAbout() {
+            const companyView = document.getElementById('companyAboutView');
+            const articleView = document.getElementById('articleDetailView');
+
+            if (companyView) companyView.style.display = 'block';
+            if (articleView) articleView.style.display = 'none';
+
+            // Xóa active khỏi sidebar
+            document.querySelectorAll('.sidebar-article-item').forEach(el => el.classList.remove('active'));
+
+            // Phục hồi breadcrumb
+            const bcContainer = document.querySelector('.breadcrumb-inner');
+            if (bcContainer) {
+                bcContainer.innerHTML = `
+                    <a href="home" class="bc-link"><i class="fas fa-house"></i> Trang chủ</a>
+                    <span class="bc-sep"><i class="fas fa-chevron-right"></i></span>
+                    <span class="bc-current">Giới thiệu</span>
+                `;
+            }
+
+            // Cập nhật lại URL
+            try {
+                window.history.pushState({}, 'Giới thiệu - Bookora', window.location.pathname);
+            } catch (e) {}
+
+            // Cuộn mượt lên đầu trang (bù trừ khoảng cách header)
+            const targetEl = document.getElementById('companyAboutView') || document.getElementById('mainContentArticle');
+            if (targetEl) {
+                const headerOffset = 130;
+                const elementPosition = targetEl.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+                window.scrollTo({
+                    top: Math.max(0, offsetPosition),
+                    behavior: 'smooth'
+                });
+            }
+        }
+
+        // Tự động kiểm tra tham số URL khi trang tải hoặc khi bấm nút Back của trình duyệt
+        window.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const articleParam = params.get('article');
+            if (articleParam && articlesData[articleParam]) {
+                showArticleDetail(articleParam);
+            }
+        });
+
+        window.addEventListener('popstate', (e) => {
+            const params = new URLSearchParams(window.location.search);
+            const articleParam = params.get('article');
+            if (articleParam && articlesData[articleParam]) {
+                showArticleDetail(articleParam);
+            } else {
+                showCompanyAbout();
+            }
+        });
+    </script>
 </body>
 </html>

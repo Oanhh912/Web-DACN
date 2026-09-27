@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${book.title} - Bookora | Tiệm Sách Tri Thức</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/css/style.css?v=20260925_04">
+    <link rel="stylesheet" href="/css/style.css?v=20260927_07">
 </head>
 <body class="book-detail-page">
 
@@ -147,10 +147,10 @@
     <!-- 2. BREADCRUMBS NAVIGATION -->
     <nav class="breadcrumb-bar" aria-label="Breadcrumb">
         <div class="container breadcrumb-inner">
-            <a href="home" class="bc-link">Trang chủ</a>
-            <span class="bc-sep">/</span>
+            <a href="home" class="bc-link"><i class="fas fa-house"></i> Trang chủ</a>
+            <span class="bc-sep"><i class="fas fa-chevron-right"></i></span>
             <a href="home?category=${book.category}" class="bc-link">${book.category}</a>
-            <span class="bc-sep">/</span>
+            <span class="bc-sep"><i class="fas fa-chevron-right"></i></span>
             <span class="bc-current" title="${book.title}">${book.title}</span>
         </div>
     </nav>
@@ -267,6 +267,7 @@
                         <h2 class="section-title-text">GIỚI THIỆU SÁCH</h2>
                         <div class="title-underline"></div>
                     </div>
+                    <h3 class="detail-book-intro-title" style="font-size: 16px; font-weight: 700; color: #1e293b; margin: 15px 0 12px 0; line-height: 1.4;">${book.title}</h3>
                     <div class="book-description-text" id="bookDescriptionParagraph">
                         ${book.description}
                     </div>
@@ -288,12 +289,20 @@
                                     <td class="spec-val">${book.author}</td>
                                 </tr>
                                 <tr>
+                                    <td class="spec-label">Người Dịch</td>
+                                    <td class="spec-val">${book.translator}</td>
+                                </tr>
+                                <tr>
                                     <td class="spec-label">NXB</td>
                                     <td class="spec-val">${book.publisher}</td>
                                 </tr>
                                 <tr>
                                     <td class="spec-label">Năm XB</td>
                                     <td class="spec-val">2024</td>
+                                </tr>
+                                <tr>
+                                    <td class="spec-label">Số trang</td>
+                                    <td class="spec-val">${book.pageCount}</td>
                                 </tr>
                                 <tr>
                                     <td class="spec-label">Trọng lượng (gr)</td>
@@ -332,7 +341,7 @@
                 <div class="related-header">
                     <h2 class="related-heading">Sản phẩm liên quan</h2>
                 </div>
-                <div class="related-products-grid">
+                <div class="book-grid related-products-grid" id="relatedBookGrid">
                     <!-- ${RELATED_PRODUCTS_HTML} -->
                 </div>
             </section>
