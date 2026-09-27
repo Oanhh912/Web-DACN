@@ -652,7 +652,7 @@
     </div>
 
     <!-- SCRIPTS -->
-    <script src="/js/app.js?v=20260926_10"></script>
+    <script src="/js/app.js?v=20260927_12"></script>
     <script>
         // Điều chỉnh số lượng sách trên trang chi tiết
         function adjustDetailQty(delta) {
@@ -660,9 +660,22 @@
             if (!input) return;
             let current = parseInt(input.value) || 1;
             let max = parseInt(input.getAttribute('max')) || 999;
+            const infoCol = document.querySelector('.detail-info-column');
+            if (infoCol && infoCol.getAttribute('data-stock')) {
+                max = parseInt(infoCol.getAttribute('data-stock')) || max;
+            }
             let next = current + delta;
             if (next < 1) next = 1;
-            if (next > max) next = max;
+            if (next > max) {
+                const title = infoCol ? (infoCol.getAttribute('data-title') || 'Sách') : 'Sách';
+                if (typeof showStockLimitPopup === 'function') {
+                    showStockLimitPopup(title, max);
+                } else {
+                    alert('Số lượng sản phẩm trong kho không đủ!');
+                }
+                input.value = max;
+                return;
+            }
             input.value = next;
         }
 

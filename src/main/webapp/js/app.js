@@ -6,6 +6,140 @@
 // Giỏ hàng lưu trong LocalStorage
 let cart = JSON.parse(localStorage.getItem('bookstore_cart') || '[]');
 
+// Cache lưu tồn kho các cuốn sách từ API/DOM
+let bookStockCache = {};
+
+async function fetchAllBooksStock() {
+    try {
+        const res = await fetch('/api/books');
+        if (res.ok) {
+            const list = await res.json();
+            if (Array.isArray(list)) {
+                list.forEach(b => {
+                    if (b && b.id) {
+                        bookStockCache[Number(b.id)] = (typeof b.stock === 'number') ? b.stock : 10;
+                    }
+                });
+            }
+        }
+    } catch (e) {
+        console.warn('[Bookora] Could not fetch books stock:', e);
+    }
+}
+
+async function getBookStock(bookId, fallbackItem = null) {
+    bookId = Number(bookId);
+    if (bookStockCache[bookId] !== undefined) {
+        return bookStockCache[bookId];
+    }
+
+    // Kiểm tra data-stock trong DOM (cards hoặc detail column)
+    const elWithStock = document.querySelector(`[data-id="${bookId}"][data-stock]`);
+    if (elWithStock && elWithStock.getAttribute('data-stock') !== null) {
+        const s = parseInt(elWithStock.getAttribute('data-stock'), 10);
+        if (!isNaN(s)) {
+            bookStockCache[bookId] = s;
+            return s;
+        }
+    }
+
+    const detailCol = document.querySelector(`.detail-info-column[data-id="${bookId}"]`);
+    if (detailCol && detailCol.getAttribute('data-stock') !== null) {
+        const s = parseInt(detailCol.getAttribute('data-stock'), 10);
+        if (!isNaN(s)) {
+            bookStockCache[bookId] = s;
+            return s;
+        }
+    }
+
+    if (fallbackItem && typeof fallbackItem.stock === 'number') {
+        bookStockCache[bookId] = fallbackItem.stock;
+        return fallbackItem.stock;
+    }
+
+    // Tải từ API nếu chưa có
+    try {
+        const res = await fetch('/api/books');
+        if (res.ok) {
+            const list = await res.json();
+            if (Array.isArray(list)) {
+                list.forEach(b => {
+                    if (b && b.id) bookStockCache[Number(b.id)] = (typeof b.stock === 'number') ? b.stock : 10;
+                });
+                if (bookStockCache[bookId] !== undefined) {
+                    return bookStockCache[bookId];
+                }
+            }
+        }
+    } catch (e) {}
+
+    return 10; // Fallback an toàn
+}
+
+function showStockLimitPopup(bookTitle, availableStock) {
+    let backdrop = document.getElementById('stockLimitModalBackdrop');
+    if (!backdrop) {
+        backdrop = document.createElement('div');
+        backdrop.id = 'stockLimitModalBackdrop';
+        backdrop.className = 'stock-limit-modal-backdrop';
+        backdrop.innerHTML = `
+            <div class="stock-limit-modal" role="dialog" aria-modal="true" aria-labelledby="stockLimitModalTitle">
+                <button type="button" class="stock-limit-close" onclick="closeStockLimitModal()" title="Đóng">&times;</button>
+                <div class="stock-limit-icon-wrap">
+                    <i class="fas fa-triangle-exclamation"></i>
+                </div>
+                <h3 class="stock-limit-title" id="stockLimitModalTitle">Số lượng trong kho không đủ</h3>
+                <p class="stock-limit-msg" id="stockLimitModalMsg"></p>
+                <div class="stock-limit-actions">
+                    <button type="button" class="btn-stock-limit-ok" onclick="closeStockLimitModal()">Đã hiểu</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(backdrop);
+        backdrop.addEventListener('click', (e) => {
+            if (e.target === backdrop) closeStockLimitModal();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeStockLimitModal();
+        });
+    }
+
+    const msgEl = document.getElementById('stockLimitModalMsg');
+    if (msgEl) {
+        msgEl.innerHTML = `Rất tiếc, số lượng sản phẩm trong kho không đủ để đáp ứng yêu cầu của bạn.`;
+    }
+
+    backdrop.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+
+    if (typeof showToast === 'function') {
+        showToast(`⚠️ Số lượng sản phẩm trong kho không đủ!`);
+    }
+}
+
+function closeStockLimitModal() {
+    const backdrop = document.getElementById('stockLimitModalBackdrop');
+    if (backdrop) {
+        backdrop.style.display = 'none';
+    }
+    document.body.style.overflow = '';
+}
+
+function clampCartQuantitiesToStock() {
+    let changed = false;
+    cart.forEach(item => {
+        const stock = bookStockCache[Number(item.id)] !== undefined ? bookStockCache[Number(item.id)] : (typeof item.stock === 'number' ? item.stock : 10);
+        item.stock = stock;
+        if (item.quantity > stock) {
+            item.quantity = stock;
+            changed = true;
+        }
+    });
+    if (changed) {
+        saveCart();
+    }
+}
+
 function formatVNCurrency(amount) {
     if (typeof amount !== 'number') amount = Number(amount) || 0;
     return new Intl.NumberFormat('vi-VN').format(amount) + ' đ';
@@ -16,6 +150,10 @@ function formatMoney(amount) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    fetchAllBooksStock().then(() => {
+        clampCartQuantitiesToStock();
+        if (typeof updateCartUI === 'function') updateCartUI();
+    });
     if (typeof initPasswordToggle === 'function') initPasswordToggle();
     if (typeof initQuickLoginPills === 'function') initQuickLoginPills();
     if (typeof initUserDropdown === 'function') initUserDropdown();
@@ -1216,9 +1354,24 @@ async function addToCart(bookId, quantity = 1) {
         }
     }
 
+    const stock = await getBookStock(bookId);
     const existingIndex = cart.findIndex(item => item.id == bookId);
+    const currentQtyInCart = existingIndex > -1 ? (parseInt(cart[existingIndex].quantity) || 0) : 0;
+
+    if (currentQtyInCart + quantity > stock) {
+        showStockLimitPopup(title, stock);
+        if (existingIndex > -1 && currentQtyInCart < stock) {
+            cart[existingIndex].quantity = stock;
+            cart[existingIndex].stock = stock;
+            saveCart();
+            updateCartUI();
+        }
+        return;
+    }
+
     if (existingIndex > -1) {
         cart[existingIndex].quantity += quantity;
+        cart[existingIndex].stock = stock;
         if (!cart[existingIndex].code && code) cart[existingIndex].code = code;
         if (!cart[existingIndex].publisher && publisher) cart[existingIndex].publisher = publisher;
         if (!cart[existingIndex].category && category) cart[existingIndex].category = category;
@@ -1236,7 +1389,8 @@ async function addToCart(bookId, quantity = 1) {
             price: price,
             formattedPrice: formattedPrice,
             image: image,
-            quantity: quantity
+            quantity: quantity,
+            stock: stock
         });
     }
 
@@ -1368,6 +1522,11 @@ function initCartPage() {
         });
     }
 
+    fetchAllBooksStock().then(() => {
+        clampCartQuantitiesToStock();
+        renderCartPageUI();
+    });
+
     renderCartPageUI();
 }
 
@@ -1381,6 +1540,8 @@ function renderCartPageUI() {
     const tableWrapper = document.getElementById('cartTableWrapper');
     const bottomGrid = document.getElementById('cartBottomGrid');
     const emptyView = document.getElementById('cartEmptyView');
+
+    clampCartQuantitiesToStock();
 
     const totalQty = cart.reduce((sum, item) => sum + (parseInt(item.quantity) || 1), 0);
     const totalPrice = cart.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
@@ -1433,11 +1594,12 @@ function renderCartPageUI() {
     }
 }
 
-function changeCartItemQty(bookId, delta) {
+async function changeCartItemQty(bookId, delta) {
     const item = cart.find(i => i.id == bookId);
     if (!item) return;
 
-    const newQty = (parseInt(item.quantity) || 1) + delta;
+    const currentQty = parseInt(item.quantity) || 1;
+    const newQty = currentQty + delta;
     if (newQty <= 0) {
         const confirmRemove = confirm(`Bạn có chắc muốn xóa "${item.title}" khỏi giỏ hàng?`);
         if (confirmRemove) {
@@ -1446,20 +1608,42 @@ function changeCartItemQty(bookId, delta) {
         return;
     }
 
+    if (delta > 0) {
+        const stock = await getBookStock(bookId, item);
+        item.stock = stock;
+        if (newQty > stock) {
+            showStockLimitPopup(item.title, stock);
+            return; // KHÔNG CHO PHÉP TĂNG!
+        }
+    }
+
     item.quantity = newQty;
     saveCart();
     updateCartUI();
 }
 
 // Điều chỉnh số lượng sách trên trang chi tiết
-function adjustDetailQty(delta) {
+async function adjustDetailQty(delta) {
     const input = document.getElementById('detailQuantityInput');
     if (!input) return;
     let current = parseInt(input.value) || 1;
-    let max = parseInt(input.getAttribute('max')) || 999;
+    const infoCol = document.querySelector('.detail-info-column');
+    const bookId = infoCol ? parseInt(infoCol.getAttribute('data-id')) : 0;
+    let max = 999;
+    if (bookId) {
+        max = await getBookStock(bookId);
+    } else if (input.getAttribute('max')) {
+        max = parseInt(input.getAttribute('max')) || 999;
+    }
+
     let next = current + delta;
     if (next < 1) next = 1;
-    if (next > max) next = max;
+    if (next > max) {
+        const title = infoCol ? (infoCol.getAttribute('data-title') || 'Sách') : 'Sách';
+        showStockLimitPopup(title, max);
+        input.value = max;
+        return;
+    }
     input.value = next;
 }
 
@@ -1931,4 +2115,8 @@ window.applyPromoSearch = function(code) {
     if (inp) { inp.value = code; }
     onFilterChange();
 };
+window.showStockLimitPopup = showStockLimitPopup;
+window.closeStockLimitModal = closeStockLimitModal;
+window.clampCartQuantitiesToStock = clampCartQuantitiesToStock;
+window.getBookStock = getBookStock;
 window.hideSuggestions = hideSuggestions;

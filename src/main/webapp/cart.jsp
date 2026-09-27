@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="com.bookstore.model.User" %>
 <%
     User currentUser = (User) session.getAttribute("user");
@@ -258,6 +258,6 @@
     <!-- Toast Notification Container -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <script src="js/app.js?v=20260926_10"></script>
+    <script src="js/app.js?v=20260927_12"></script>
 </body>
 </html>
