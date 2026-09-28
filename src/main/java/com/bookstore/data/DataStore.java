@@ -17,7 +17,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -102,6 +104,56 @@ public class DataStore {
         // Khởi tạo phương thức thanh toán (PHUONG_THUC_TT)
         memoryPaymentMethods.add(new PaymentMethod(1, "COD", "Thanh toán tiền mặt khi nhận hàng (COD)", "Nhận sách, kiểm tra hàng rồi thanh toán cho shipper", true));
         memoryPaymentMethods.add(new PaymentMethod(2, "ONLINE", "Thanh toán trực tuyến (Chuyển khoản VietQR / MoMo / Thẻ ATM)", "Quét mã VietQR chuyển khoản nhanh 24/7 không mất phí", true));
+
+        // Khởi tạo các đơn hàng mẫu cho tài khoản thử nghiệm (oanh, khachhang, admin)
+        Order o1 = new Order(
+            101, "ORD-20260925-1001", "oanh", 1, "Hoàng Oanh", "0912345678",
+            "123 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh",
+            "BOOKORA2026", 243000, 30000, 0, 213000,
+            "COD", "Thanh toán khi nhận hàng (COD)", "PAID", "HOAN_THANH",
+            "Giao trong giờ hành chính", null, "2026-09-25 14:30:00"
+        );
+        List<OrderItem> o1Items = new ArrayList<>();
+        o1Items.add(new OrderItem(1, 101, 1, "MS001", "Nhà Giả Kim (The Alchemist)", "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500", 79000, 1, 79000));
+        o1Items.add(new OrderItem(2, 101, 7, "MS007", "Cây Cam Ngọt Của Tôi", "https://images.unsplash.com/photo-1495640388908-05fa85288e61?w=500", 82000, 2, 164000));
+        o1.setItems(o1Items);
+        memoryOrders.add(o1);
+
+        Order o2 = new Order(
+            102, "ORD-20260927-1002", "oanh", 1, "Hoàng Oanh", "0912345678",
+            "123 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh",
+            "FREESHIP", 285000, 30000, 0, 255000,
+            "ONLINE", "Chuyển khoản VietQR", "PAID", "DANG_GIAO",
+            "Gọi trước khi giao hàng", "VNQR179051003", "2026-09-27 09:15:00"
+        );
+        List<OrderItem> o2Items = new ArrayList<>();
+        o2Items.add(new OrderItem(3, 102, 3, "MS003", "Clean Code: A Handbook of Agile Software Craftsmanship", "https://images.unsplash.com/photo-1532012164546-f432f2e3777a?w=500", 285000, 1, 285000));
+        o2.setItems(o2Items);
+        memoryOrders.add(o2);
+
+        Order o3 = new Order(
+            103, "ORD-20260928-1003", "oanh", 1, "Hoàng Oanh", "0912345678",
+            "123 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh",
+            null, 89000, 0, 30000, 119000,
+            "COD", "Thanh toán khi nhận hàng (COD)", "PENDING", "CHO_XAC_NHAN",
+            "Đóng gói cẩn thận giúp tôi", null, "2026-09-28 10:00:00"
+        );
+        List<OrderItem> o3Items = new ArrayList<>();
+        o3Items.add(new OrderItem(4, 103, 25, "8935278601425", "Tháo Dây Oan Trái - Nghệ Thuật Chuyển Hóa Cảm Xúc", "/images/thao-day-oan-trai.jpg", 89000, 1, 89000));
+        o3.setItems(o3Items);
+        memoryOrders.add(o3);
+
+        Order o4 = new Order(
+            104, "ORD-20260928-1004", "khachhang", 2, "Khách Hàng Thân Thiết", "0909888999",
+            "456 Đường Lê Lợi, Quận 1, TP. Hồ Chí Minh",
+            null, 88000, 0, 30000, 118000,
+            "COD", "Thanh toán khi nhận hàng (COD)", "PAID", "HOAN_THANH",
+            "Đơn mẫu khách hàng", null, "2026-09-28 11:00:00"
+        );
+        List<OrderItem> o4Items = new ArrayList<>();
+        o4Items.add(new OrderItem(5, 104, 2, "MS002", "Đắc Nhân Tâm (How to Win Friends)", "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=500", 88000, 1, 88000));
+        o4.setItems(o4Items);
+        memoryOrders.add(o4);
     }
 
     /**
@@ -1544,6 +1596,7 @@ public class DataStore {
         List<Order> list = new ArrayList<>();
         if (username == null || username.trim().isEmpty()) return list;
 
+        Set<String> seenCodes = new HashSet<>();
         String sql = "SELECT id, order_code, username, address_id, recipient_name, recipient_phone, delivery_address, voucher_code, subtotal, discount_amount, shipping_fee, total_amount, payment_method_code, payment_method_name, payment_status, order_status, note, transaction_id, created_at FROM don_hang WHERE LOWER(username) = ? ORDER BY id DESC";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -1572,38 +1625,42 @@ public class DataStore {
                             rs.getString("created_at")
                     );
                     list.add(o);
+                    if (o.getOrderCode() != null) {
+                        seenCodes.add(o.getOrderCode().toLowerCase());
+                    }
                 }
             }
-            if (!list.isEmpty()) {
-                for (Order o : list) {
-                    List<OrderItem> items = new ArrayList<>();
-                    try (PreparedStatement psItems = conn.prepareStatement("SELECT id, order_id, book_id, book_code, book_title, book_image, price, quantity, subtotal FROM ct_don_hang WHERE order_id = ?")) {
-                        psItems.setInt(1, o.getId());
-                        try (ResultSet rsItems = psItems.executeQuery()) {
-                            while (rsItems.next()) {
-                                items.add(new OrderItem(
-                                        rsItems.getInt("id"),
-                                        rsItems.getInt("order_id"),
-                                        rsItems.getInt("book_id"),
-                                        rsItems.getString("book_code"),
-                                        rsItems.getString("book_title"),
-                                        rsItems.getString("book_image"),
-                                        rsItems.getDouble("price"),
-                                        rsItems.getInt("quantity"),
-                                        rsItems.getDouble("subtotal")
-                                ));
-                            }
+            for (Order o : list) {
+                List<OrderItem> items = new ArrayList<>();
+                try (PreparedStatement psItems = conn.prepareStatement("SELECT id, order_id, book_id, book_code, book_title, book_image, price, quantity, subtotal FROM ct_don_hang WHERE order_id = ?")) {
+                    psItems.setInt(1, o.getId());
+                    try (ResultSet rsItems = psItems.executeQuery()) {
+                        while (rsItems.next()) {
+                            items.add(new OrderItem(
+                                    rsItems.getInt("id"),
+                                    rsItems.getInt("order_id"),
+                                    rsItems.getInt("book_id"),
+                                    rsItems.getString("book_code"),
+                                    rsItems.getString("book_title"),
+                                    rsItems.getString("book_image"),
+                                    rsItems.getDouble("price"),
+                                    rsItems.getInt("quantity"),
+                                    rsItems.getDouble("subtotal")
+                            ));
                         }
                     }
-                    o.setItems(items);
                 }
-                return list;
+                o.setItems(items);
             }
         } catch (SQLException ignored) {}
 
         for (Order o : memoryOrders) {
-            if (username.trim().equalsIgnoreCase(o.getUsername())) {
-                list.add(o);
+            if (o.getUsername() != null && username.trim().equalsIgnoreCase(o.getUsername().trim())) {
+                String code = o.getOrderCode();
+                if (code != null && !seenCodes.contains(code.toLowerCase())) {
+                    list.add(0, o);
+                    seenCodes.add(code.toLowerCase());
+                }
             }
         }
         return list;

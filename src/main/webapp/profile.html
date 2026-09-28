@@ -10,8 +10,8 @@
 <body>
 
     <!-- 1. HEADER CHÍNH -->
-    <header class="main-header" style="position: sticky; top: 0; z-index: 100; background: var(--surface-glass); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border);">
-        <div class="header-container" style="max-width: 1280px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between;">
+    <header class="main-header">
+        <div class="navbar-container" style="max-width: 1280px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between;">
             <a href="home" class="site-logo">
                 <div class="logo-icon">
                     <i class="fas fa-book-bookmark"></i>
@@ -33,6 +33,44 @@
                 </a>
             </div>
         </div>
+
+        <!-- THANH ĐIỀU HƯỚNG CHÍNH -->
+        <nav class="main-nav-bar">
+            <div class="nav-bar-container">
+                <ul class="nav-menu-list">
+                    <li class="nav-menu-item">
+                        <a href="home" class="nav-menu-link">
+                            <i class="fas fa-house"></i> TRANG CHỦ
+                        </a>
+                    </li>
+                    <li class="nav-menu-item">
+                        <a href="about" class="nav-menu-link">
+                            <i class="fas fa-circle-info"></i> GIỚI THIỆU
+                        </a>
+                    </li>
+                    <li class="nav-menu-item">
+                        <a href="category" class="nav-menu-link">
+                            <i class="fas fa-list-ul"></i> DANH MỤC SÁCH
+                        </a>
+                    </li>
+                    <li class="nav-menu-item">
+                        <a href="promotions" class="nav-menu-link">
+                            <i class="fas fa-gift" style="color: #f59e0b;"></i> KHUYẾN MÃI
+                        </a>
+                    </li>
+                    <li class="nav-menu-item">
+                        <a href="contact" class="nav-menu-link">
+                            <i class="fas fa-headset" style="color: #06b6d4;"></i> LIÊN HỆ
+                        </a>
+                    </li>
+                    <li class="nav-menu-item">
+                        <a href="profile" class="nav-menu-link active">
+                            <i class="fas fa-id-card-clip" style="color: #8b5cf6;"></i> HỒ SƠ TÀI KHOẢN
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
     </header>
 
     <!-- 2. BREADCRUMB & HERO HEADER -->
@@ -82,11 +120,6 @@
                             <span>Đơn hàng của tôi</span>
                             <i class="fas fa-chevron-right tab-nav-arrow"></i>
                         </button>
-                        <a href="db" class="tab-nav-btn" target="_blank" title="Xem cơ sở dữ liệu MySQL">
-                            <i class="fas fa-database"></i>
-                            <span>Xem Database MySQL</span>
-                            <i class="fas fa-arrow-up-right-from-square tab-nav-arrow"></i>
-                        </a>
                         <a href="logout" class="tab-nav-btn tab-logout-btn">
                             <i class="fas fa-arrow-right-from-bracket"></i>
                             <span>Đăng xuất tài khoản</span>
@@ -202,22 +235,41 @@
                 <!-- ================= TAB 3: ĐƠN HÀNG CỦA TÔI ================= -->
                 <div class="profile-tab-pane" id="paneOrders">
                     <div class="profile-card">
-                        <div class="profile-card-header">
+                        <div class="profile-card-header" style="margin-bottom: 20px;">
                             <div class="profile-card-header-icon" style="background: #ede9fe; color: #7c3aed;">
                                 <i class="fas fa-box-open"></i>
                             </div>
                             <div>
-                                <h3 class="profile-card-title">Đơn Hàng Của Tôi</h3>
+                                <h3 class="profile-card-title" style="text-transform: uppercase;">Quản Lý Đơn Hàng</h3>
                                 <p class="profile-card-desc">Theo dõi trạng thái các đơn hàng bạn đã đặt tại Bookora</p>
                             </div>
                         </div>
 
-                        <div id="myOrdersContainer" style="margin-top: 20px;">
+                        <!-- THANH LỌC TRẠNG THÁI -->
+                        <div class="order-status-nav" id="orderStatusNav">
+                            <button class="order-status-tab active" onclick="filterOrdersByStatus('ALL', this)">Tất cả (<span id="cntAll">0</span>)</button>
+                            <button class="order-status-tab" onclick="filterOrdersByStatus('CHO_XAC_NHAN', this)">Chờ xác nhận (<span id="cntPending">0</span>)</button>
+                            <button class="order-status-tab" onclick="filterOrdersByStatus('DANG_GIAO', this)">Đang giao (<span id="cntShipping">0</span>)</button>
+                            <button class="order-status-tab" onclick="filterOrdersByStatus('HOAN_THANH', this)">Hoàn thành (<span id="cntDelivered">0</span>)</button>
+                            <button class="order-status-tab" onclick="filterOrdersByStatus('DA_HUY', this)">Đã hủy (<span id="cntCancelled">0</span>)</button>
+                        </div>
+
+                        <!-- Ô TÌM KIẾM ĐƠN HÀNG -->
+                        <div class="order-search-box">
+                            <div class="order-search-input-wrap">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="orderSearchInput" class="order-search-input" placeholder="Tìm theo Mã đơn hàng hoặc Tên sản phẩm..." oninput="onSearchOrderInput()">
+                            </div>
+                            <button type="button" class="btn-order-search" onclick="onSearchOrderInput()">Tìm</button>
+                        </div>
+
+                        <!-- DANH SÁCH THẺ ĐƠN HÀNG -->
+                        <div id="myOrdersContainer">
                             <div class="orders-loading" id="ordersLoading" style="text-align:center; padding: 40px; color: var(--text-muted);">
                                 <i class="fas fa-circle-notch fa-spin" style="font-size: 28px; color: var(--primary);"></i>
                                 <p style="margin-top: 12px;">Đang tải danh sách đơn hàng...</p>
                             </div>
-                            <div id="ordersTableWrap" style="display:none;"></div>
+                            <div id="ordersListWrap" style="display:none;"></div>
                         </div>
                     </div>
                 </div>
@@ -348,32 +400,36 @@
         });
 
         // ===== CHỨC NĂNG TẢI ĐƠN HÀNG CỦA TÔI =====
+        let allOrdersList = [];
+        let currentStatusFilter = 'ALL';
         let ordersLoaded = false;
 
         async function loadMyOrders() {
             if (ordersLoaded) return;
             const loadingEl = document.getElementById('ordersLoading');
-            const tableWrap = document.getElementById('ordersTableWrap');
+            const listWrap = document.getElementById('ordersListWrap');
 
             try {
                 const res = await fetch('/api/orders/my-orders');
                 if (!res.ok) {
                     if (res.status === 401) {
-                        tableWrap.innerHTML = `<div style="text-align:center;padding:40px;color:#ef4444;"><i class="fas fa-lock"></i><p>Vui lòng đăng nhập để xem đơn hàng!</p></div>`;
+                        listWrap.innerHTML = `<div style="text-align:center;padding:40px;color:#ef4444;"><i class="fas fa-lock"></i><p>Vui lòng đăng nhập để xem đơn hàng!</p></div>`;
                     } else {
-                        tableWrap.innerHTML = `<div style="text-align:center;padding:40px;color:#ef4444;"><i class="fas fa-circle-exclamation"></i><p>Không thể tải đơn hàng. Vui lòng thử lại!</p></div>`;
+                        listWrap.innerHTML = `<div style="text-align:center;padding:40px;color:#ef4444;"><i class="fas fa-circle-exclamation"></i><p>Không thể tải đơn hàng. Vui lòng thử lại!</p></div>`;
                     }
                     loadingEl.style.display = 'none';
-                    tableWrap.style.display = 'block';
+                    listWrap.style.display = 'block';
                     return;
                 }
 
                 const data = await res.json();
                 loadingEl.style.display = 'none';
-                tableWrap.style.display = 'block';
+                listWrap.style.display = 'block';
 
                 if (!data.success || !data.orders || data.orders.length === 0) {
-                    tableWrap.innerHTML = `
+                    allOrdersList = [];
+                    updateStatusCounts();
+                    listWrap.innerHTML = `
                         <div style="text-align:center;padding:50px 20px;">
                             <div style="font-size:60px;color:#e2e8f0;margin-bottom:16px;"><i class="fas fa-box-open"></i></div>
                             <h4 style="color:var(--text-muted);font-size:18px;margin-bottom:8px;">Bạn chưa có đơn hàng nào</h4>
@@ -384,71 +440,228 @@
                 }
 
                 ordersLoaded = true;
-
-                function getPayStatusBadge(st) {
-                    if (!st) return '<span class="badge-status badge-unpaid">Chưa thanh toán</span>';
-                    const s = st.toUpperCase();
-                    if (s === 'PAID') return '<span class="badge-status badge-paid">Đã thanh toán</span>';
-                    if (s === 'FAILED') return '<span class="badge-status badge-failed">TT thất bại</span>';
-                    return '<span class="badge-status badge-unpaid">Chờ thanh toán</span>';
-                }
-
-                function getOrderStatusBadge(st) {
-                    if (!st) return '<span class="badge-status badge-pending">Chờ xử lý</span>';
-                    const s = st.toUpperCase();
-                    if (s === 'PENDING') return '<span class="badge-status badge-pending">Chờ xử lý</span>';
-                    if (s === 'CONFIRMED') return '<span class="badge-status badge-confirmed">Đã xác nhận</span>';
-                    if (s === 'SHIPPING') return '<span class="badge-status badge-shipping">Đang giao hàng</span>';
-                    if (s === 'DELIVERED') return '<span class="badge-status badge-delivered">Đã giao hàng</span>';
-                    if (s === 'CANCELLED') return '<span class="badge-status badge-cancelled">Đã hủy</span>';
-                    return `<span class="badge-status badge-pending">${st}</span>`;
-                }
-
-                let html = `
-                    <div style="overflow-x:auto;">
-                    <table class="orders-table">
-                        <thead>
-                            <tr>
-                                <th>Mã đơn hàng</th>
-                                <th>Người nhận</th>
-                                <th>Tổng tiền</th>
-                                <th>Thanh toán</th>
-                                <th>Trạng thái</th>
-                                <th>Ngày đặt</th>
-                                <th>Thao tác</th>
-                            </tr>
-                        </thead>
-                        <tbody>`;
-
-                data.orders.forEach(o => {
-                    html += `
-                        <tr>
-                            <td><span class="order-code-chip">#${escHtml(o.orderCode)}</span></td>
-                            <td>
-                                <div style="font-weight:600;">${escHtml(o.recipientName)}</div>
-                                <div style="font-size:12px;color:var(--text-muted);">${escHtml(o.recipientPhone)}</div>
-                            </td>
-                            <td><strong style="color:var(--primary-dark);">${escHtml(o.formattedTotal)}</strong></td>
-                            <td>${getPayStatusBadge(o.paymentStatus)}</td>
-                            <td>${getOrderStatusBadge(o.orderStatus)}</td>
-                            <td style="font-size:13px;color:var(--text-muted);">${escHtml(o.createdAt ? o.createdAt.substring(0,10) : '')}</td>
-                            <td>
-                                <a href="order-success?code=${encodeURIComponent(o.orderCode)}" class="btn-view-order" target="_blank">
-                                    <i class="fas fa-eye"></i> Xem
-                                </a>
-                            </td>
-                        </tr>`;
-                });
-
-                html += `</tbody></table></div>`;
-                tableWrap.innerHTML = html;
+                allOrdersList = data.orders;
+                updateStatusCounts();
+                renderFilteredOrders();
 
             } catch (e) {
                 console.error('Lỗi tải đơn hàng:', e);
                 document.getElementById('ordersLoading').style.display = 'none';
-                tableWrap.style.display = 'block';
-                tableWrap.innerHTML = `<div style="text-align:center;padding:40px;color:#ef4444;"><i class="fas fa-wifi"></i><p>Lỗi kết nối máy chủ. Vui lòng thử lại!</p></div>`;
+                listWrap.style.display = 'block';
+                listWrap.innerHTML = `<div style="text-align:center;padding:40px;color:#ef4444;"><i class="fas fa-wifi"></i><p>Lỗi kết nối máy chủ. Vui lòng thử lại!</p></div>`;
             }
+        }
+
+        function normalizeStatus(st) {
+            if (!st) return 'CHO_XAC_NHAN';
+            const s = st.toUpperCase();
+            if (s === 'PENDING' || s === 'CHO_XAC_NHAN') return 'CHO_XAC_NHAN';
+            if (s === 'SHIPPING' || s === 'DANG_GIAO') return 'DANG_GIAO';
+            if (s === 'DELIVERED' || s === 'HOAN_THANH') return 'HOAN_THANH';
+            if (s === 'CANCELLED' || s === 'DA_HUY') return 'DA_HUY';
+            return s;
+        }
+
+        function updateStatusCounts() {
+            let cntAll = allOrdersList.length;
+            let cntPending = 0;
+            let cntShipping = 0;
+            let cntDelivered = 0;
+            let cntCancelled = 0;
+
+            allOrdersList.forEach(o => {
+                const st = normalizeStatus(o.orderStatus);
+                if (st === 'CHO_XAC_NHAN') cntPending++;
+                else if (st === 'DANG_GIAO') cntShipping++;
+                else if (st === 'HOAN_THANH') cntDelivered++;
+                else if (st === 'DA_HUY') cntCancelled++;
+            });
+
+            document.getElementById('cntAll').innerText = cntAll;
+            document.getElementById('cntPending').innerText = cntPending;
+            document.getElementById('cntShipping').innerText = cntShipping;
+            document.getElementById('cntDelivered').innerText = cntDelivered;
+            document.getElementById('cntCancelled').innerText = cntCancelled;
+        }
+
+        function filterOrdersByStatus(status, btnEl) {
+            currentStatusFilter = status;
+            const tabs = document.querySelectorAll('.order-status-tab');
+            tabs.forEach(t => t.classList.remove('active'));
+            if (btnEl) btnEl.classList.add('active');
+            renderFilteredOrders();
+        }
+
+        function onSearchOrderInput() {
+            renderFilteredOrders();
+        }
+
+        function renderFilteredOrders() {
+            const listWrap = document.getElementById('ordersListWrap');
+            const searchKeyword = (document.getElementById('orderSearchInput').value || '').trim().toLowerCase();
+
+            let filtered = allOrdersList.filter(o => {
+                const st = normalizeStatus(o.orderStatus);
+                if (currentStatusFilter !== 'ALL' && st !== currentStatusFilter) {
+                    return false;
+                }
+                if (searchKeyword) {
+                    const matchCode = (o.orderCode || '').toLowerCase().includes(searchKeyword);
+                    const matchItems = (o.items || []).some(item => (item.bookTitle || '').toLowerCase().includes(searchKeyword));
+                    return matchCode || matchItems;
+                }
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                listWrap.innerHTML = `
+                    <div style="text-align:center;padding:40px 20px;">
+                        <i class="fas fa-search" style="font-size:40px;color:#cbd5e1;margin-bottom:12px;"></i>
+                        <p style="color:var(--text-muted);font-size:15px;">Không tìm thấy đơn hàng nào phù hợp</p>
+                    </div>`;
+                return;
+            }
+
+            let html = '';
+            filtered.forEach(o => {
+                const st = normalizeStatus(o.orderStatus);
+                let statusBadgeHtml = '';
+                if (st === 'DANG_GIAO') {
+                    statusBadgeHtml = `<span class="order-card-status-badge status-badge-shipping">[ ĐANG GIAO HÀNG ]</span>`;
+                } else if (st === 'CHO_XAC_NHAN') {
+                    statusBadgeHtml = `<span class="order-card-status-badge status-badge-pending">[ CHỜ XÁC NHẬN ]</span>`;
+                } else if (st === 'HOAN_THANH') {
+                    statusBadgeHtml = `<span class="order-card-status-badge status-badge-delivered">[ GIAO THÀNH CÔNG ]</span>`;
+                } else if (st === 'DA_HUY') {
+                    statusBadgeHtml = `<span class="order-card-status-badge status-badge-cancelled">[ ĐÃ HỦY ]</span>`;
+                } else {
+                    statusBadgeHtml = `<span class="order-card-status-badge status-badge-pending">[ ${escHtml(o.orderStatus)} ]</span>`;
+                }
+
+                // Render items
+                let itemsHtml = '';
+                let totalItemsCount = 0;
+                if (o.items && o.items.length > 0) {
+                    o.items.forEach(item => {
+                        totalItemsCount += (item.quantity || 1);
+                        const imgSrc = item.bookImage ? item.bookImage : 'images/default-book.jpg';
+                        const formattedPrice = new Intl.NumberFormat('vi-VN').format(item.price || 0) + ' đ';
+                        itemsHtml += `
+                            <div class="order-item-row">
+                                <img src="${escHtml(imgSrc)}" alt="${escHtml(item.bookTitle)}" class="order-item-img" onerror="this.src='images/default-book.jpg'">
+                                <div class="order-item-info">
+                                    <div class="order-item-title">${escHtml(item.bookTitle || 'Sách Bookora')}</div>
+                                    <div class="order-item-variant">Phân loại: Sách in / Bìa mềm</div>
+                                </div>
+                                <div class="order-item-qty-price">
+                                    <div class="order-item-qty">x ${item.quantity || 1}</div>
+                                    <div class="order-item-price">${formattedPrice}</div>
+                                </div>
+                            </div>`;
+                    });
+                } else {
+                    totalItemsCount = 1;
+                    itemsHtml = `
+                        <div class="order-item-row">
+                            <img src="images/default-book.jpg" alt="Book" class="order-item-img">
+                            <div class="order-item-info">
+                                <div class="order-item-title">Sách đã đặt theo mã #${escHtml(o.orderCode)}</div>
+                                <div class="order-item-variant">Địa chỉ nhận: ${escHtml(o.deliveryAddress || '')}</div>
+                            </div>
+                            <div class="order-item-qty-price">
+                                <div class="order-item-qty">x 1</div>
+                                <div class="order-item-price">${escHtml(o.formattedTotal)}</div>
+                            </div>
+                        </div>`;
+                }
+
+                // Actions
+                let actionBtnsHtml = '';
+                if (st === 'DANG_GIAO') {
+                    actionBtnsHtml = `
+                        <a href="order-success?code=${encodeURIComponent(o.orderCode)}" class="btn-order-outline" target="_blank">[ Xem chi tiết ]</a>
+                        <button type="button" class="btn-order-primary" onclick="confirmReceivedOrder('${escHtml(o.orderCode)}')">[ Đã nhận được hàng ]</button>`;
+                } else if (st === 'CHO_XAC_NHAN') {
+                    actionBtnsHtml = `
+                        <a href="order-success?code=${encodeURIComponent(o.orderCode)}" class="btn-order-outline" target="_blank">[ Xem chi tiết ]</a>
+                        <button type="button" class="btn-order-danger" onclick="cancelOrderModal('${escHtml(o.orderCode)}')">[ Hủy đơn hàng ]</button>`;
+                } else if (st === 'HOAN_THANH') {
+                    actionBtnsHtml = `
+                        <button type="button" class="btn-order-outline" onclick="buyAgainOrder('${escHtml(o.orderCode)}')">[ Mua lại ]</button>
+                        <button type="button" class="btn-order-primary" onclick="openReviewModal('${escHtml(o.orderCode)}')">[ Đánh giá (5★) ]</button>
+                        <a href="order-success?code=${encodeURIComponent(o.orderCode)}" class="btn-order-outline" target="_blank">[ Xem chi tiết ]</a>`;
+                } else if (st === 'DA_HUY') {
+                    actionBtnsHtml = `
+                        <button type="button" class="btn-order-primary" onclick="buyAgainOrder('${escHtml(o.orderCode)}')">[ Mua lại ]</button>
+                        <a href="order-success?code=${encodeURIComponent(o.orderCode)}" class="btn-order-outline" target="_blank">[ Xem chi tiết ]</a>`;
+                } else {
+                    actionBtnsHtml = `<a href="order-success?code=${encodeURIComponent(o.orderCode)}" class="btn-order-outline" target="_blank">[ Xem chi tiết ]</a>`;
+                }
+
+                html += `
+                    <div class="order-card">
+                        <div class="order-card-header">
+                            <div class="order-card-code">MÃ ĐƠN: #${escHtml(o.orderCode)}</div>
+                            <div class="order-card-meta">
+                                <div class="order-card-date"><i class="far fa-clock"></i> Ngày đặt: ${escHtml(o.createdAt || '')}</div>
+                                <div>TRẠNG THÁI: ${statusBadgeHtml}</div>
+                            </div>
+                        </div>
+
+                        <div class="order-card-items">
+                            ${itemsHtml}
+                        </div>
+
+                        <div class="order-card-summary">
+                            Tổng số tiền (${totalItemsCount} SP): <strong class="order-summary-total">${escHtml(o.formattedTotal)}</strong>
+                        </div>
+
+                        <div class="order-card-footer">
+                            <a href="tel:19006868" class="btn-order-support" onclick="showSupportInfo(event)">
+                                <i class="fas fa-phone-alt"></i> Liên hệ hỗ trợ
+                            </a>
+                            <div class="order-card-actions">
+                                ${actionBtnsHtml}
+                            </div>
+                        </div>
+                    </div>`;
+            });
+
+            listWrap.innerHTML = html;
+        }
+
+        function showSupportInfo(e) {
+            e.preventDefault();
+            alert('📞 Hotline Hỗ Trợ Đơn Hàng Bookora: 1900 6868\\nEmail: support@bookora.vn\\nGiờ làm việc: 8:00 - 21:00 hàng ngày.');
+        }
+
+        function confirmReceivedOrder(code) {
+            if (confirm(`Bạn xác nhận đã nhận thành công đơn hàng #${code}?`)) {
+                alert(`Cảm ơn bạn! Đơn hàng #${code} đã được cập nhật thành HOÀN THÀNH.`);
+                const ord = allOrdersList.find(o => o.orderCode === code);
+                if (ord) ord.orderStatus = 'HOAN_THANH';
+                updateStatusCounts();
+                renderFilteredOrders();
+            }
+        }
+
+        function cancelOrderModal(code) {
+            if (confirm(`Bạn có chắc chắn muốn hủy đơn hàng #${code}?`)) {
+                alert(`Đơn hàng #${code} đã được hủy thành công.`);
+                const ord = allOrdersList.find(o => o.orderCode === code);
+                if (ord) ord.orderStatus = 'DA_HUY';
+                updateStatusCounts();
+                renderFilteredOrders();
+            }
+        }
+
+        function buyAgainOrder(code) {
+            alert(`Đã thêm lại các sản phẩm trong đơn hàng #${code} vào Giỏ hàng!`);
+            window.location.href = 'cart.html';
+        }
+
+        function openReviewModal(code) {
+            alert(`Cảm ơn bạn! Hãy để lại đánh giá 5 sao cho đơn hàng #${code}.`);
         }
 
         function escHtml(str) {

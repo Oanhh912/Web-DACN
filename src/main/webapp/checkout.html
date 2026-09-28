@@ -96,6 +96,11 @@
                             <i class="fas fa-envelope"></i> LIÊN HỆ
                         </a>
                     </li>
+                    <li class="nav-menu-item">
+                        <a href="profile" class="nav-menu-link">
+                            <i class="fas fa-id-card-clip" style="color: #8b5cf6;"></i> HỒ SƠ TÀI KHOẢN
+                        </a>
+                    </li>
                 </ul>
             </div>
         </nav>
@@ -321,15 +326,21 @@
                 <div class="form-row-3">
                     <div class="form-group-custom">
                         <label class="form-label-bold">Tỉnh / Thành phố <span class="required-star">*</span></label>
-                        <input type="text" id="newAddrProvince" class="form-input-custom" placeholder="Ví dụ: Hà Nội" required>
+                        <select id="newAddrProvince" class="form-input-custom" required onchange="onProvinceChange()">
+                            <option value="">-- Chọn Tỉnh / Thành phố --</option>
+                        </select>
                     </div>
                     <div class="form-group-custom">
                         <label class="form-label-bold">Quận / Huyện <span class="required-star">*</span></label>
-                        <input type="text" id="newAddrDistrict" class="form-input-custom" placeholder="Ví dụ: Cầu Giấy" required>
+                        <select id="newAddrDistrict" class="form-input-custom" required onchange="onDistrictChange()">
+                            <option value="">-- Chọn Quận / Huyện --</option>
+                        </select>
                     </div>
                     <div class="form-group-custom">
                         <label class="form-label-bold">Phường / Xã <span class="required-star">*</span></label>
-                        <input type="text" id="newAddrWard" class="form-input-custom" placeholder="Ví dụ: Dịch Vọng Hậu" required>
+                        <select id="newAddrWard" class="form-input-custom" required>
+                            <option value="">-- Chọn Phường / Xã --</option>
+                        </select>
                     </div>
                 </div>
 

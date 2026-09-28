@@ -1158,13 +1158,16 @@ public class BookstoreApp {
                 if (i > 0) sb.append(",");
                 sb.append(String.format(
                     "{\"id\":%d,\"orderCode\":%s,\"recipientName\":%s,\"recipientPhone\":%s," +
-                    "\"deliveryAddress\":%s,\"totalAmount\":%.0f,\"formattedTotal\":%s," +
-                    "\"paymentMethodName\":%s,\"paymentStatus\":%s,\"orderStatus\":%s,\"createdAt\":%s}",
+                    "\"deliveryAddress\":%s,\"subtotal\":%.0f,\"discountAmount\":%.0f,\"shippingFee\":%.0f,\"totalAmount\":%.0f,\"formattedTotal\":%s," +
+                    "\"paymentMethodName\":%s,\"paymentStatus\":%s,\"orderStatus\":%s,\"createdAt\":%s,\"items\":[",
                     o.getId(),
                     escapeJson(o.getOrderCode()),
                     escapeJson(o.getRecipientName()),
                     escapeJson(o.getRecipientPhone()),
                     escapeJson(o.getDeliveryAddress()),
+                    o.getSubtotal(),
+                    o.getDiscountAmount(),
+                    o.getShippingFee(),
                     o.getTotalAmount(),
                     escapeJson(o.getFormattedTotal()),
                     escapeJson(o.getPaymentMethodName()),
@@ -1172,6 +1175,25 @@ public class BookstoreApp {
                     escapeJson(o.getOrderStatus()),
                     escapeJson(o.getCreatedAt())
                 ));
+                List<OrderItem> items = o.getItems();
+                if (items != null) {
+                    for (int j = 0; j < items.size(); j++) {
+                        OrderItem item = items.get(j);
+                        if (j > 0) sb.append(",");
+                        sb.append(String.format(
+                            "{\"id\":%d,\"bookId\":%d,\"bookCode\":%s,\"bookTitle\":%s,\"bookImage\":%s,\"price\":%.0f,\"quantity\":%d,\"subtotal\":%.0f}",
+                            item.getId(),
+                            item.getBookId(),
+                            escapeJson(item.getBookCode()),
+                            escapeJson(item.getBookTitle()),
+                            escapeJson(item.getBookImage()),
+                            item.getPrice(),
+                            item.getQuantity(),
+                            item.getSubtotal()
+                        ));
+                    }
+                }
+                sb.append("]}");
             }
             sb.append("]}");
 

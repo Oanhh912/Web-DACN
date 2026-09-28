@@ -1,16 +1,9 @@
 @echo off
-cd /d "%~dp0"
-
-echo ===================================================
-echo [1/2] Dang bien dich ma nguon Java Bookora...
-echo ===================================================
-
-if not exist "build\classes" mkdir "build\classes"
-
-javac -encoding UTF-8 -cp "lib\servlet-api.jar;lib\mysql-connector-j.jar;src\main\java" -d "build\classes" src\main\java\com\bookstore\model\*.java src\main\java\com\bookstore\service\*.java src\main\java\com\bookstore\data\*.java src\main\java\com\bookstore\servlet\*.java src\main\java\com\bookstore\server\*.java
-
-if %ERRORLEVEL% EQU 0 (
-    echo [THANH CONG] Bien dich hoan tat vao thu muc build\classes!
+powershell -Command "(Get-ChildItem -Path 'src/main/java' -Recurse -Filter '*.java').FullName.Replace('\', '/') | ForEach-Object { '\"' + $_ + '\"' } | Set-Content -Path 'sources.txt'"
+javac -encoding UTF-8 -d "target\classes" -cp "target\classes;src\main\webapp\WEB-INF\lib\mysql-connector-j-8.3.0.jar;src\main\webapp\WEB-INF\lib\servlet-api.jar" @sources.txt
+if %errorlevel% equ 0 (
+    echo BUILD SUCCESS
+    del sources.txt
 ) else (
-    echo [LOI] Qua trinh bien dich gap su co. Vui long kiem tra lai JDK tren may.
+    echo BUILD FAILED
 )
