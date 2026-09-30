@@ -2,6 +2,7 @@ package com.bookstore.data;
 
 import com.bookstore.model.Address;
 import com.bookstore.model.Book;
+import com.bookstore.model.Category;
 import com.bookstore.model.Order;
 import com.bookstore.model.OrderItem;
 import com.bookstore.model.PaymentMethod;
@@ -34,12 +35,76 @@ public class DataStore {
     private static final List<Voucher> memoryVouchers = Collections.synchronizedList(new ArrayList<>());
     private static final List<PaymentMethod> memoryPaymentMethods = Collections.synchronizedList(new ArrayList<>());
     private static final List<Order> memoryOrders = Collections.synchronizedList(new ArrayList<>());
+    private static final List<Category> memoryCategories = Collections.synchronizedList(new ArrayList<>());
     private static final ConcurrentHashMap<String, List<OrderItem>> memoryCarts = new ConcurrentHashMap<>();
     private static int nextAddressId = 100;
     private static int nextOrderId = 100;
 
     static {
         initMemoryDefaults();
+        ensureBookTableSchema();
+        ensureUserTableSchema();
+        ensureCategoryTableSchema();
+    }
+
+    public static void ensureCategoryTableSchema() {
+        String sqlCreate = "CREATE TABLE IF NOT EXISTS categories ("
+                + "id INT AUTO_INCREMENT PRIMARY KEY, "
+                + "code VARCHAR(50) NOT NULL UNIQUE, "
+                + "name VARCHAR(100) NOT NULL UNIQUE, "
+                + "description VARCHAR(500), "
+                + "status VARCHAR(20) DEFAULT 'ACTIVE', "
+                + "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+                + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+        try (Connection conn = DBContext.getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.executeUpdate(sqlCreate);
+
+            try (ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM categories")) {
+                if (rs.next() && rs.getInt(1) == 0) {
+                    String[] defaultCats = {
+                        "INSERT INTO categories (code, name, description, status) VALUES ('DM001', 'Văn học', 'Tiểu thuyết, truyện ngắn và các tác phẩm văn học trong nước và quốc tế kinh điển', 'ACTIVE')",
+                        "INSERT INTO categories (code, name, description, status) VALUES ('DM002', 'Kỹ năng sống', 'Sách rèn luyện bản thân, phát triển tư duy, giao tiếp và kỹ năng làm chủ cuộc sống', 'ACTIVE')",
+                        "INSERT INTO categories (code, name, description, status) VALUES ('DM003', 'Công nghệ', 'Cẩm nang lập trình, kiến trúc phần mềm, khoa học dữ liệu & công nghệ mới', 'ACTIVE')",
+                        "INSERT INTO categories (code, name, description, status) VALUES ('DM004', 'Tâm lý học', 'Khám phá hành vi, tư duy và nhận thức con người qua góc nhìn khoa học tâm lý', 'ACTIVE')",
+                        "INSERT INTO categories (code, name, description, status) VALUES ('DM005', 'Kinh tế', 'Quản trị kinh doanh, tư duy tài chính, làm giàu và khởi nghiệp tinh gọn', 'ACTIVE')",
+                        "INSERT INTO categories (code, name, description, status) VALUES ('DM006', 'Tâm linh & Đời sống', 'Sách nuôi dưỡng tâm hồn, thức tỉnh tâm thức và nghệ thuật chuyển hóa cảm xúc', 'ACTIVE')",
+                        "INSERT INTO categories (code, name, description, status) VALUES ('DM007', 'Khoa học', 'Khám phá tri thức vũ trụ, lịch sử loài người và khoa học tự nhiên', 'ACTIVE')",
+                        "INSERT INTO categories (code, name, description, status) VALUES ('DM008', 'Trinh thám', 'Tiểu thuyết trinh thám, vụ án bí ẩn và hình sự kịch tính', 'ACTIVE')",
+                        "INSERT INTO categories (code, name, description, status) VALUES ('DM009', 'Sách thiếu nhi', 'Truyện tranh, sách màu và tri thức bổ ích dành cho trẻ em và tuổi mới lớn', 'ACTIVE')"
+                    };
+                    for (String seedSql : defaultCats) {
+                        try { stmt.executeUpdate(seedSql); } catch (SQLException ignored) {}
+                    }
+                }
+            }
+        } catch (SQLException ignored) {}
+    }
+
+    public static void ensureUserTableSchema() {
+        String sql = "ALTER TABLE users ADD COLUMN status VARCHAR(20) DEFAULT 'ACTIVE'";
+        try (Connection conn = DBContext.getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.executeUpdate(sql);
+        } catch (SQLException ignored) {}
+    }
+
+    public static void ensureBookTableSchema() {
+        String[] alterSqls = {
+            "ALTER TABLE books ADD COLUMN publish_year INT DEFAULT 2024",
+            "ALTER TABLE books ADD COLUMN page_count INT DEFAULT 250",
+            "ALTER TABLE books ADD COLUMN weight INT DEFAULT 350",
+            "ALTER TABLE books ADD COLUMN dimensions VARCHAR(100) DEFAULT '21 x 13.5 x 1.2 cm'",
+            "ALTER TABLE books ADD COLUMN cover_format VARCHAR(50) DEFAULT 'Bìa Mềm'"
+        };
+        try (Connection conn = DBContext.getConnection();
+             Statement stmt = conn.createStatement()) {
+            for (String sql : alterSqls) {
+                try {
+                    stmt.executeUpdate(sql);
+                } catch (SQLException ignored) {}
+            }
+        } catch (SQLException ignored) {}
     }
 
     private static void initMemoryDefaults() {
@@ -154,6 +219,17 @@ public class DataStore {
         o4Items.add(new OrderItem(5, 104, 2, "MS002", "Đắc Nhân Tâm (How to Win Friends)", "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=500", 88000, 1, 88000));
         o4.setItems(o4Items);
         memoryOrders.add(o4);
+
+        memoryCategories.clear();
+        memoryCategories.add(new Category(1, "DM001", "Văn học", "Tiểu thuyết, truyện ngắn và các tác phẩm văn học trong nước và quốc tế kinh điển", "ACTIVE"));
+        memoryCategories.add(new Category(2, "DM002", "Kỹ năng sống", "Sách rèn luyện bản thân, phát triển tư duy, giao tiếp và kỹ năng làm chủ cuộc sống", "ACTIVE"));
+        memoryCategories.add(new Category(3, "DM003", "Công nghệ", "Cẩm nang lập trình, kiến trúc phần mềm, khoa học dữ liệu & công nghệ mới", "ACTIVE"));
+        memoryCategories.add(new Category(4, "DM004", "Tâm lý học", "Khám phá hành vi, tư duy và nhận thức con người qua góc nhìn khoa học tâm lý", "ACTIVE"));
+        memoryCategories.add(new Category(5, "DM005", "Kinh tế", "Quản trị kinh doanh, tư duy tài chính, làm giàu và khởi nghiệp tinh gọn", "ACTIVE"));
+        memoryCategories.add(new Category(6, "DM006", "Tâm linh & Đời sống", "Sách nuôi dưỡng tâm hồn, thức tỉnh tâm thức và nghệ thuật chuyển hóa cảm xúc", "ACTIVE"));
+        memoryCategories.add(new Category(7, "DM007", "Khoa học", "Khám phá tri thức vũ trụ, lịch sử loài người và khoa học tự nhiên", "ACTIVE"));
+        memoryCategories.add(new Category(8, "DM008", "Trinh thám", "Tiểu thuyết trinh thám, vụ án bí ẩn và hình sự kịch tính", "ACTIVE"));
+        memoryCategories.add(new Category(9, "DM009", "Sách thiếu nhi", "Truyện tranh, sách màu và tri thức bổ ích dành cho trẻ em và tuổi mới lớn", "ACTIVE"));
     }
 
     /**
@@ -161,13 +237,19 @@ public class DataStore {
      */
     public static User findUser(String username) {
         if (username == null) return null;
-        String sql = "SELECT username, password, full_name, email, phone, role, avatar FROM users WHERE LOWER(username) = ?";
+        String sql = "SELECT username, password, full_name, email, phone, role, avatar, status FROM users WHERE LOWER(username) = ?";
 
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, username.trim().toLowerCase());
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
+                    String st = "ACTIVE";
+                    try {
+                        st = rs.getString("status");
+                    } catch (SQLException ignored) {}
+                    if (st == null || st.trim().isEmpty()) st = "ACTIVE";
+
                     return new User(
                             rs.getString("username"),
                             rs.getString("password"),
@@ -175,7 +257,8 @@ public class DataStore {
                             rs.getString("email"),
                             rs.getString("phone"),
                             rs.getString("role"),
-                            rs.getString("avatar")
+                            rs.getString("avatar"),
+                            st
                     );
                 }
             }
@@ -224,7 +307,7 @@ public class DataStore {
             return false; // Tên đăng nhập đã tồn tại
         }
 
-        String sql = "INSERT INTO users (username, password, full_name, email, phone, role, avatar) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO users (username, password, full_name, email, phone, role, avatar, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -235,6 +318,7 @@ public class DataStore {
             ps.setString(5, (newUser.getPhone() != null && !newUser.getPhone().trim().isEmpty()) ? newUser.getPhone().trim() : null);
             ps.setString(6, newUser.getRole() != null ? newUser.getRole() : "CUSTOMER");
             ps.setString(7, newUser.getAvatar() != null ? newUser.getAvatar() : "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150");
+            ps.setString(8, newUser.getStatus() != null ? newUser.getStatus() : "ACTIVE");
             int rows = ps.executeUpdate();
             if (rows > 0) {
                 memoryUsers.put(cleanUsername.toLowerCase(), newUser);
@@ -247,6 +331,118 @@ public class DataStore {
         }
 
         return false;
+    }
+
+    /**
+     * Lấy danh sách tất cả tài khoản người dùng
+     */
+    public static List<User> getAllUsers() {
+        List<User> list = new ArrayList<>();
+        String sql = "SELECT username, password, full_name, email, phone, role, avatar, status FROM users ORDER BY id ASC";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                String st = "ACTIVE";
+                try {
+                    st = rs.getString("status");
+                } catch (SQLException ignored) {}
+                if (st == null || st.trim().isEmpty()) st = "ACTIVE";
+
+                list.add(new User(
+                        rs.getString("username"),
+                        rs.getString("password"),
+                        rs.getString("full_name"),
+                        rs.getString("email"),
+                        rs.getString("phone"),
+                        rs.getString("role"),
+                        rs.getString("avatar"),
+                        st
+                ));
+            }
+        } catch (SQLException e) {
+            System.err.println("⚠️ MySQL getAllUsers fallback: " + e.getMessage());
+            list.addAll(memoryUsers.values());
+        }
+        if (list.isEmpty()) {
+            list.addAll(memoryUsers.values());
+        }
+        return list;
+    }
+
+    /**
+     * Cập nhật trạng thái tài khoản người dùng (ACTIVE / LOCKED)
+     */
+    public static boolean updateUserStatus(String username, String status) {
+        if (username == null || username.trim().isEmpty()) return false;
+        String cleanUser = username.trim().toLowerCase();
+        String newStatus = (status != null && !status.trim().isEmpty()) ? status.trim().toUpperCase() : "ACTIVE";
+
+        String sql = "UPDATE users SET status = ? WHERE LOWER(username) = ?";
+        boolean updatedInDb = false;
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, newStatus);
+            ps.setString(2, cleanUser);
+            updatedInDb = ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("⚠️ MySQL updateUserStatus lỗi: " + e.getMessage());
+        }
+
+        User u = memoryUsers.get(cleanUser);
+        if (u != null) {
+            u.setStatus(newStatus);
+        } else {
+            User dbUser = findUser(cleanUser);
+            if (dbUser != null) {
+                dbUser.setStatus(newStatus);
+                memoryUsers.put(cleanUser, dbUser);
+            }
+        }
+        return updatedInDb || memoryUsers.containsKey(cleanUser);
+    }
+
+    /**
+     * Lấy danh sách tất cả đơn hàng trên hệ thống
+     */
+    public static List<Order> getAllOrders() {
+        List<Order> list = new ArrayList<>();
+        String sql = "SELECT id, order_code, username, recipient_name, recipient_phone, delivery_address, voucher_code, subtotal, discount_amount, shipping_fee, total_amount, payment_method_code, payment_method_name, payment_status, order_status, note, transaction_id, created_at FROM don_hang ORDER BY id DESC";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                Order order = new Order(
+                        rs.getInt("id"),
+                        rs.getString("order_code"),
+                        rs.getString("username"),
+                        0,
+                        rs.getString("recipient_name"),
+                        rs.getString("recipient_phone"),
+                        rs.getString("delivery_address"),
+                        rs.getString("voucher_code"),
+                        rs.getDouble("subtotal"),
+                        rs.getDouble("discount_amount"),
+                        rs.getDouble("shipping_fee"),
+                        rs.getDouble("total_amount"),
+                        rs.getString("payment_method_code"),
+                        rs.getString("payment_method_name"),
+                        rs.getString("payment_status"),
+                        rs.getString("order_status"),
+                        rs.getString("note"),
+                        rs.getString("transaction_id"),
+                        rs.getString("created_at")
+                );
+                list.add(order);
+            }
+        } catch (SQLException e) {
+            System.err.println("⚠️ MySQL getAllOrders fallback: " + e.getMessage());
+            list.addAll(memoryOrders);
+        }
+        if (list.isEmpty()) {
+            list.addAll(memoryOrders);
+        }
+        return list;
     }
 
     /**
@@ -436,7 +632,7 @@ public class DataStore {
      */
     public static List<Book> getAllBooks() {
         List<Book> list = new ArrayList<>();
-        String sql = "SELECT id, code, title, author, publisher, price, original_price, category, stock, rating, review_count, image, description, promotion, is_bestseller FROM books ORDER BY id ASC";
+        String sql = "SELECT id, code, title, author, publisher, price, original_price, category, stock, rating, review_count, image, description, promotion, is_bestseller, publish_year, page_count, weight, dimensions, cover_format FROM books ORDER BY id ASC";
 
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
@@ -458,7 +654,7 @@ public class DataStore {
      * Tìm sách theo ID từ MySQL
      */
     public static Book getBookById(int id) {
-        String sql = "SELECT id, code, title, author, publisher, price, original_price, category, stock, rating, review_count, image, description, promotion, is_bestseller FROM books WHERE id = ?";
+        String sql = "SELECT id, code, title, author, publisher, price, original_price, category, stock, rating, review_count, image, description, promotion, is_bestseller, publish_year, page_count, weight, dimensions, cover_format FROM books WHERE id = ?";
 
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -570,7 +766,7 @@ public class DataStore {
         String pub = publisher == null ? "" : publisher.trim();
         String stock = stockStatus == null ? "" : stockStatus.trim();
 
-        StringBuilder sql = new StringBuilder("SELECT id, code, title, author, publisher, price, original_price, category, stock, rating, review_count, image, description, promotion, is_bestseller FROM books WHERE 1=1 ");
+        StringBuilder sql = new StringBuilder("SELECT id, code, title, author, publisher, price, original_price, category, stock, rating, review_count, image, description, promotion, is_bestseller, publish_year, page_count, weight, dimensions, cover_format FROM books WHERE 1=1 ");
         List<Object> params = new ArrayList<>();
 
         if (!kw.isEmpty()) {
@@ -666,32 +862,220 @@ public class DataStore {
     }
 
     /**
-     * Lấy danh sách các thể loại sách từ MySQL (kèm dự phòng bộ nhớ)
+     * Lấy danh sách đối tượng Category từ MySQL / Memory kèm tính toán số lượng sách
      */
-    public static List<String> getCategories() {
-        List<String> categories = new ArrayList<>();
-        categories.add("Tất cả");
-        String sql = "SELECT DISTINCT category FROM books ORDER BY category ASC";
-
+    public static List<Category> getAllCategoriesList() {
+        List<Category> list = new ArrayList<>();
+        String sql = "SELECT id, code, name, description, status FROM categories ORDER BY id ASC";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
-                String c = rs.getString("category");
-                if (c != null && !categories.contains(c)) {
-                    categories.add(c);
-                }
-            }
-            if (categories.size() > 1) {
-                return categories;
+                list.add(new Category(
+                        rs.getInt("id"),
+                        rs.getString("code"),
+                        rs.getString("name"),
+                        rs.getString("description"),
+                        rs.getString("status")
+                ));
             }
         } catch (SQLException e) {
-            System.err.println("⚠️ MySQL getCategories lỗi (" + e.getMessage() + "). Dùng bộ nhớ tạm.");
+            System.err.println("⚠️ MySQL getAllCategoriesList error: " + e.getMessage());
+            list.addAll(memoryCategories);
         }
 
-        for (Book b : memoryBooks) {
-            if (!categories.contains(b.getCategory())) {
-                categories.add(b.getCategory());
+        if (list.isEmpty()) {
+            list.addAll(memoryCategories);
+        }
+
+        // Tính toán số lượng sách của từng danh mục
+        List<Book> allBooks = getAllBooks();
+        for (Category c : list) {
+            int count = 0;
+            if (c.getName() != null) {
+                String cName = c.getName().trim().toLowerCase();
+                for (Book b : allBooks) {
+                    if (b.getCategory() != null && b.getCategory().trim().toLowerCase().equals(cName)) {
+                        count++;
+                    }
+                }
+            }
+            c.setBookCount(count);
+        }
+
+        return list;
+    }
+
+    public static Category getCategoryById(int id) {
+        List<Category> all = getAllCategoriesList();
+        for (Category c : all) {
+            if (c.getId() == id) return c;
+        }
+        return null;
+    }
+
+    public static Category getCategoryByCode(String code) {
+        if (code == null) return null;
+        List<Category> all = getAllCategoriesList();
+        for (Category c : all) {
+            if (code.trim().equalsIgnoreCase(c.getCode())) return c;
+        }
+        return null;
+    }
+
+    public static Category getCategoryByName(String name) {
+        if (name == null) return null;
+        List<Category> all = getAllCategoriesList();
+        for (Category c : all) {
+            if (name.trim().equalsIgnoreCase(c.getName())) return c;
+        }
+        return null;
+    }
+
+    public static boolean addCategory(Category newCat) {
+        if (newCat == null || newCat.getName() == null || newCat.getName().trim().isEmpty()) {
+            return false;
+        }
+        String cleanName = newCat.getName().trim();
+
+        // Kiểm tra trùng tên (Requirement 6)
+        if (getCategoryByName(cleanName) != null) {
+            return false;
+        }
+
+        String cleanCode = (newCat.getCode() != null && !newCat.getCode().trim().isEmpty())
+                ? newCat.getCode().trim().toUpperCase()
+                : "DM" + String.format("%03d", getAllCategoriesList().size() + 1);
+
+        String sql = "INSERT INTO categories (code, name, description, status) VALUES (?, ?, ?, ?)";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, cleanCode);
+            ps.setString(2, cleanName);
+            ps.setString(3, newCat.getDescription() != null ? newCat.getDescription().trim() : "");
+            ps.setString(4, newCat.getStatus() != null ? newCat.getStatus() : "ACTIVE");
+            int rows = ps.executeUpdate();
+            if (rows > 0) {
+                newCat.setCode(cleanCode);
+                newCat.setName(cleanName);
+                memoryCategories.add(newCat);
+                return true;
+            }
+        } catch (SQLException e) {
+            System.err.println("⚠️ MySQL addCategory error: " + e.getMessage());
+            newCat.setCode(cleanCode);
+            newCat.setName(cleanName);
+            memoryCategories.add(newCat);
+            return true;
+        }
+
+        return false;
+    }
+
+    public static boolean updateCategory(Category cat) {
+        if (cat == null || cat.getName() == null || cat.getName().trim().isEmpty()) {
+            return false;
+        }
+        String cleanName = cat.getName().trim();
+
+        // Kiểm tra trùng tên với các danh mục khác (Requirement 7)
+        Category existingByName = getCategoryByName(cleanName);
+        if (existingByName != null && existingByName.getId() != cat.getId()) {
+            return false;
+        }
+
+        Category oldCat = getCategoryById(cat.getId());
+        String oldName = oldCat != null ? oldCat.getName() : null;
+
+        String sql = "UPDATE categories SET name = ?, description = ?, status = ? WHERE id = ?";
+        boolean updatedInDb = false;
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, cleanName);
+            ps.setString(2, cat.getDescription() != null ? cat.getDescription().trim() : "");
+            ps.setString(3, cat.getStatus() != null ? cat.getStatus() : "ACTIVE");
+            ps.setInt(4, cat.getId());
+            updatedInDb = ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("⚠️ MySQL updateCategory error: " + e.getMessage());
+        }
+
+        for (Category c : memoryCategories) {
+            if (c.getId() == cat.getId()) {
+                c.setName(cleanName);
+                c.setDescription(cat.getDescription());
+                c.setStatus(cat.getStatus());
+                break;
+            }
+        }
+
+        // Đổi tên thể loại trong sách nếu tên danh mục thay đổi (Requirement 13)
+        if (oldName != null && !oldName.equalsIgnoreCase(cleanName)) {
+            String sqlBookUpdate = "UPDATE books SET category = ? WHERE LOWER(category) = ?";
+            try (Connection conn = DBContext.getConnection();
+                 PreparedStatement ps = conn.prepareStatement(sqlBookUpdate)) {
+                ps.setString(1, cleanName);
+                ps.setString(2, oldName.toLowerCase());
+                ps.executeUpdate();
+            } catch (SQLException ignored) {}
+
+            for (Book b : memoryBooks) {
+                if (b.getCategory() != null && b.getCategory().equalsIgnoreCase(oldName)) {
+                    b.setCategory(cleanName);
+                }
+            }
+        }
+
+        return updatedInDb || true;
+    }
+
+    public static List<Book> getBooksByCategory(String categoryName) {
+        List<Book> list = new ArrayList<>();
+        if (categoryName == null || categoryName.trim().isEmpty()) return list;
+        String cleanCat = categoryName.trim().toLowerCase();
+        for (Book b : getAllBooks()) {
+            if (b.getCategory() != null && b.getCategory().trim().toLowerCase().equals(cleanCat)) {
+                list.add(b);
+            }
+        }
+        return list;
+    }
+
+    public static boolean deleteCategory(int id) {
+        Category cat = getCategoryById(id);
+        if (cat == null) return false;
+
+        // Kiểm tra nếu danh mục đang được sử dụng bởi sách (Requirement 9 & 10)
+        List<Book> booksInCat = getBooksByCategory(cat.getName());
+        if (booksInCat != null && !booksInCat.isEmpty()) {
+            return false; // KHÔNG CHO PHÉP XÓA DANH MỤC ĐANG CÓ SÁCH
+        }
+
+        String sql = "DELETE FROM categories WHERE id = ?";
+        boolean deletedInDb = false;
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            deletedInDb = ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("⚠️ MySQL deleteCategory error: " + e.getMessage());
+        }
+
+        memoryCategories.removeIf(c -> c.getId() == id);
+        return deletedInDb || true;
+    }
+
+    /**
+     * Lấy danh sách các tên thể loại sách cho Customer site (Đồng bộ trực tiếp từ bảng categories)
+     */
+    public static List<String> getCategories() {
+        List<String> categories = new ArrayList<>();
+        categories.add("Tất cả");
+
+        List<Category> catList = getAllCategoriesList();
+        for (Category c : catList) {
+            if (c.getName() != null && "ACTIVE".equalsIgnoreCase(c.getStatus()) && !categories.contains(c.getName())) {
+                categories.add(c.getName());
             }
         }
         return categories;
@@ -759,6 +1143,185 @@ public class DataStore {
             }
         }
         return publishers;
+    }
+
+    /**
+     * Thêm sách mới vào MySQL và bộ nhớ dự phòng
+     */
+    public static boolean addBook(Book book) {
+        if (book == null || book.getTitle() == null || book.getTitle().trim().isEmpty()) {
+            return false;
+        }
+
+        String sql = "INSERT INTO books (code, title, author, publisher, price, original_price, category, stock, rating, review_count, image, description, promotion, is_bestseller, publish_year, page_count, weight, dimensions, cover_format) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, book.getCode());
+            ps.setString(2, book.getTitle());
+            ps.setString(3, book.getAuthor());
+            ps.setString(4, book.getPublisher());
+            ps.setDouble(5, book.getPrice());
+            ps.setDouble(6, book.getOriginalPrice());
+            ps.setString(7, book.getCategory());
+            ps.setInt(8, book.getStock());
+            ps.setDouble(9, book.getRating() > 0 ? book.getRating() : 5.0);
+            ps.setInt(10, book.getReviewCount());
+            ps.setString(11, book.getImage());
+            ps.setString(12, book.getDescription());
+            ps.setString(13, book.getPromotion());
+            ps.setBoolean(14, book.isBestSeller());
+            ps.setInt(15, book.getPublishYear());
+            ps.setInt(16, book.getPageCount());
+            ps.setInt(17, book.getWeight());
+            ps.setString(18, book.getDimensions());
+            ps.setString(19, book.getCoverFormat());
+
+            int affected = ps.executeUpdate();
+            if (affected > 0) {
+                try (ResultSet rs = ps.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        book.setId(rs.getInt(1));
+                    }
+                }
+            }
+            memoryBooks.add(book);
+            return true;
+        } catch (SQLException e) {
+            System.err.println("⚠️ MySQL addBook error: " + e.getMessage() + ". Saving to memory.");
+            if (book.getId() <= 0) {
+                int maxId = memoryBooks.stream().mapToInt(Book::getId).max().orElse(33);
+                book.setId(maxId + 1);
+            }
+            memoryBooks.add(book);
+            return true;
+        }
+    }
+
+    /**
+     * Cập nhật thông tin sách vào MySQL và bộ nhớ dự phòng
+     */
+    public static boolean updateBook(Book book) {
+        if (book == null || book.getId() <= 0 || book.getTitle() == null || book.getTitle().trim().isEmpty()) {
+            return false;
+        }
+
+        String sql = "UPDATE books SET code = ?, title = ?, author = ?, publisher = ?, price = ?, original_price = ?, category = ?, stock = ?, image = ?, description = ?, promotion = ?, is_bestseller = ?, publish_year = ?, page_count = ?, weight = ?, dimensions = ?, cover_format = ? WHERE id = ?";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, book.getCode());
+            ps.setString(2, book.getTitle());
+            ps.setString(3, book.getAuthor());
+            ps.setString(4, book.getPublisher());
+            ps.setDouble(5, book.getPrice());
+            ps.setDouble(6, book.getOriginalPrice());
+            ps.setString(7, book.getCategory());
+            ps.setInt(8, book.getStock());
+            ps.setString(9, book.getImage());
+            ps.setString(10, book.getDescription());
+            ps.setString(11, book.getPromotion());
+            ps.setBoolean(12, book.isBestSeller());
+            ps.setInt(13, book.getPublishYear());
+            ps.setInt(14, book.getPageCount());
+            ps.setInt(15, book.getWeight());
+            ps.setString(16, book.getDimensions());
+            ps.setString(17, book.getCoverFormat());
+            ps.setInt(18, book.getId());
+
+            ps.executeUpdate();
+
+            for (int i = 0; i < memoryBooks.size(); i++) {
+                if (memoryBooks.get(i).getId() == book.getId()) {
+                    memoryBooks.set(i, book);
+                    break;
+                }
+            }
+            return true;
+        } catch (SQLException e) {
+            System.err.println("⚠️ MySQL updateBook error: " + e.getMessage() + ". Updating memory.");
+            for (int i = 0; i < memoryBooks.size(); i++) {
+                if (memoryBooks.get(i).getId() == book.getId()) {
+                    memoryBooks.set(i, book);
+                    break;
+                }
+            }
+            return true;
+        }
+    }
+
+    /**
+     * Cập nhật số lượng tồn kho của sách
+     */
+    public static boolean updateStock(int bookId, int newStock) {
+        if (newStock < 0) return false;
+
+        Book book = getBookById(bookId);
+        if (book != null) {
+            book.setStock(newStock);
+        }
+
+        String sql = "UPDATE books SET stock = ? WHERE id = ?";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, newStock);
+            ps.setInt(2, bookId);
+            ps.executeUpdate();
+
+            for (Book b : memoryBooks) {
+                if (b.getId() == bookId) {
+                    b.setStock(newStock);
+                    break;
+                }
+            }
+            return true;
+        } catch (SQLException e) {
+            System.err.println("⚠️ MySQL updateStock error: " + e.getMessage());
+            for (Book b : memoryBooks) {
+                if (b.getId() == bookId) {
+                    b.setStock(newStock);
+                    break;
+                }
+            }
+            return true;
+        }
+    }
+
+    /**
+     * Xóa sách khỏi MySQL và bộ nhớ dự phòng.
+     * Trả về NULL nếu thành công, hoặc thông báo lỗi nếu sách đang ở trong đơn hàng chưa hoàn tất.
+     */
+    public static String deleteBook(int bookId) {
+        Book book = getBookById(bookId);
+        if (book == null) {
+            return "Sách không tồn tại trong hệ thống!";
+        }
+
+        // 1. Kiểm tra nếu sách đang nằm trong đơn hàng chưa hoàn tất
+        String checkSql = "SELECT COUNT(*) FROM ct_don_hang ct JOIN don_hang dh ON ct.order_id = dh.id WHERE ct.book_id = ? AND UPPER(dh.order_status) NOT IN ('HOAN_THANH', 'DA_HUY')";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(checkSql)) {
+            ps.setInt(1, bookId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    return "Không thể xóa sách vì sách đang được sử dụng trong đơn hàng chưa hoàn tất.";
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("⚠️ MySQL deleteBook check order error: " + e.getMessage());
+        }
+
+        // 2. Xóa sách khỏi database
+        String deleteSql = "DELETE FROM books WHERE id = ?";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(deleteSql)) {
+            ps.setInt(1, bookId);
+            ps.executeUpdate();
+            memoryBooks.removeIf(b -> b.getId() == bookId);
+            return null; // Thành công
+        } catch (SQLException e) {
+            System.err.println("⚠️ MySQL deleteBook error: " + e.getMessage() + ". Xóa khỏi bộ nhớ.");
+            memoryBooks.removeIf(b -> b.getId() == bookId);
+            return null;
+        }
     }
 
     /**
@@ -841,6 +1404,30 @@ public class DataStore {
             if (pr != null && !pr.trim().isEmpty()) promotion = pr;
         } catch (SQLException ignored) {}
 
+        int publishYear = 2024;
+        try { publishYear = rs.getInt("publish_year"); } catch (SQLException ignored) {}
+        if (publishYear <= 0) publishYear = 2024;
+
+        int pageCount = 250;
+        try { pageCount = rs.getInt("page_count"); } catch (SQLException ignored) {}
+        if (pageCount <= 0) pageCount = 250;
+
+        int weight = 350;
+        try { weight = rs.getInt("weight"); } catch (SQLException ignored) {}
+        if (weight <= 0) weight = 350;
+
+        String dimensions = "21 x 13.5 x 1.2 cm";
+        try {
+            String d = rs.getString("dimensions");
+            if (d != null && !d.trim().isEmpty()) dimensions = d;
+        } catch (SQLException ignored) {}
+
+        String coverFormat = "Bìa Mềm";
+        try {
+            String cf = rs.getString("cover_format");
+            if (cf != null && !cf.trim().isEmpty()) coverFormat = cf;
+        } catch (SQLException ignored) {}
+
         return new Book(
                 rs.getInt("id"),
                 code,
@@ -856,7 +1443,12 @@ public class DataStore {
                 rs.getString("image"),
                 rs.getString("description"),
                 promotion,
-                rs.getBoolean("is_bestseller")
+                rs.getBoolean("is_bestseller"),
+                publishYear,
+                pageCount,
+                weight,
+                dimensions,
+                coverFormat
         );
     }
 
@@ -1209,6 +1801,269 @@ public class DataStore {
     }
 
     /**
+     * Lấy tất cả mã giảm giá cho trang Quản lý Khuyến Mãi Admin
+     */
+    public static List<Voucher> getAllVouchersList() {
+        List<Voucher> list = new ArrayList<>();
+        String sql = "SELECT id, code, title, description, discount_type, discount_value, min_order_amount, max_discount_amount, start_date, end_date, is_active, usage_limit, used_count FROM ma_giam_gia ORDER BY id DESC";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                list.add(new Voucher(
+                        rs.getInt("id"),
+                        rs.getString("code"),
+                        rs.getString("title"),
+                        rs.getString("description"),
+                        rs.getString("discount_type"),
+                        rs.getDouble("discount_value"),
+                        rs.getDouble("min_order_amount"),
+                        rs.getDouble("max_discount_amount"),
+                        rs.getString("start_date"),
+                        rs.getString("end_date"),
+                        rs.getBoolean("is_active"),
+                        rs.getInt("usage_limit"),
+                        rs.getInt("used_count")
+                ));
+            }
+            if (!list.isEmpty()) return list;
+        } catch (SQLException ignored) {}
+
+        return new ArrayList<>(memoryVouchers);
+    }
+
+    /**
+     * Lấy thông tin mã giảm giá theo ID
+     */
+    public static Voucher getVoucherById(int id) {
+        String sql = "SELECT id, code, title, description, discount_type, discount_value, min_order_amount, max_discount_amount, start_date, end_date, is_active, usage_limit, used_count FROM ma_giam_gia WHERE id = ?";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return new Voucher(
+                            rs.getInt("id"),
+                            rs.getString("code"),
+                            rs.getString("title"),
+                            rs.getString("description"),
+                            rs.getString("discount_type"),
+                            rs.getDouble("discount_value"),
+                            rs.getDouble("min_order_amount"),
+                            rs.getDouble("max_discount_amount"),
+                            rs.getString("start_date"),
+                            rs.getString("end_date"),
+                            rs.getBoolean("is_active"),
+                            rs.getInt("usage_limit"),
+                            rs.getInt("used_count")
+                    );
+                }
+            }
+        } catch (SQLException ignored) {}
+
+        for (Voucher v : memoryVouchers) {
+            if (v.getId() == id) return v;
+        }
+        return null;
+    }
+
+    /**
+     * Thêm mới mã giảm giá
+     */
+    public static String addVoucher(Voucher v) {
+        if (v == null || v.getCode() == null || v.getCode().trim().isEmpty()) {
+            return "Mã giảm giá không được để trống!";
+        }
+        String cleanCode = v.getCode().trim().toUpperCase();
+        v.setCode(cleanCode);
+
+        Voucher existing = findVoucher(cleanCode);
+        if (existing != null) {
+            return "Mã giảm giá '" + cleanCode + "' đã tồn tại trên hệ thống!";
+        }
+
+        String sql = "INSERT INTO ma_giam_gia (code, title, description, discount_type, discount_value, min_order_amount, max_discount_amount, start_date, end_date, is_active, usage_limit, used_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, v.getCode());
+            ps.setString(2, v.getTitle());
+            ps.setString(3, v.getDescription());
+            ps.setString(4, v.getDiscountType());
+            ps.setDouble(5, v.getDiscountValue());
+            ps.setDouble(6, v.getMinOrderAmount());
+            ps.setDouble(7, v.getMaxDiscountAmount());
+            ps.setString(8, v.getStartDate());
+            ps.setString(9, v.getEndDate());
+            ps.setBoolean(10, v.isActive());
+            ps.setInt(11, v.getUsageLimit());
+            ps.setInt(12, 0);
+            ps.executeUpdate();
+
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) {
+                    v.setId(rs.getInt(1));
+                }
+            }
+        } catch (SQLException ignored) {
+            if (v.getId() <= 0) v.setId((int)(System.currentTimeMillis() % 100000));
+        }
+
+        memoryVouchers.add(v);
+        return null; // Thành công
+    }
+
+    /**
+     * Chỉnh sửa thông tin mã giảm giá
+     */
+    public static String updateVoucher(Voucher v) {
+        if (v == null || v.getCode() == null || v.getCode().trim().isEmpty()) {
+            return "Mã giảm giá không được để trống!";
+        }
+        String cleanCode = v.getCode().trim().toUpperCase();
+        v.setCode(cleanCode);
+
+        Voucher existing = findVoucher(cleanCode);
+        if (existing != null && existing.getId() != v.getId()) {
+            return "Mã giảm giá '" + cleanCode + "' trùng với một mã khác đã tồn tại!";
+        }
+
+        String sql = "UPDATE ma_giam_gia SET code = ?, title = ?, description = ?, discount_type = ?, discount_value = ?, min_order_amount = ?, max_discount_amount = ?, start_date = ?, end_date = ?, is_active = ?, usage_limit = ? WHERE id = ?";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, v.getCode());
+            ps.setString(2, v.getTitle());
+            ps.setString(3, v.getDescription());
+            ps.setString(4, v.getDiscountType());
+            ps.setDouble(5, v.getDiscountValue());
+            ps.setDouble(6, v.getMinOrderAmount());
+            ps.setDouble(7, v.getMaxDiscountAmount());
+            ps.setString(8, v.getStartDate());
+            ps.setString(9, v.getEndDate());
+            ps.setBoolean(10, v.isActive());
+            ps.setInt(11, v.getUsageLimit());
+            ps.setInt(12, v.getId());
+            ps.executeUpdate();
+        } catch (SQLException ignored) {}
+
+        for (int i = 0; i < memoryVouchers.size(); i++) {
+            if (memoryVouchers.get(i).getId() == v.getId()) {
+                Voucher old = memoryVouchers.get(i);
+                v.setUsedCount(old.getUsedCount()); // Giữ nguyên lịch sử số lần đã sử dụng
+                memoryVouchers.set(i, v);
+                break;
+            }
+        }
+        return null; // Thành công
+    }
+
+    /**
+     * Xóa mã giảm giá (Kiểm tra lịch sử sử dụng trong đơn hàng)
+     */
+    public static String deleteVoucher(int id) {
+        Voucher v = getVoucherById(id);
+        if (v == null) {
+            return "Mã giảm giá không tồn tại!";
+        }
+
+        // 1. Kiểm tra số lần đã sử dụng từ Voucher object
+        if (v.getUsedCount() > 0) {
+            return "Không thể xóa mã giảm giá vì mã đã được sử dụng trong đơn hàng.";
+        }
+
+        // 2. Kiểm tra trực tiếp bảng don_hang
+        String countSql = "SELECT COUNT(*) FROM don_hang WHERE UPPER(voucher_code) = ?";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(countSql)) {
+            ps.setString(1, v.getCode().toUpperCase());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    return "Không thể xóa mã giảm giá vì mã đã được sử dụng trong đơn hàng.";
+                }
+            }
+        } catch (SQLException ignored) {}
+
+        // 3. Nếu chưa từng sử dụng -> Cho phép xóa
+        String deleteSql = "DELETE FROM ma_giam_gia WHERE id = ?";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(deleteSql)) {
+            ps.setInt(1, id);
+            ps.executeUpdate();
+        } catch (SQLException ignored) {}
+
+        memoryVouchers.removeIf(item -> item.getId() == id);
+        return null; // Thành công
+    }
+
+    /**
+     * Bật / Tắt trạng thái mã giảm giá
+     */
+    public static boolean toggleVoucherStatus(int id, boolean active) {
+        String sql = "UPDATE ma_giam_gia SET is_active = ? WHERE id = ?";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setBoolean(1, active);
+            ps.setInt(2, id);
+            ps.executeUpdate();
+        } catch (SQLException ignored) {}
+
+        for (Voucher v : memoryVouchers) {
+            if (v.getId() == id) {
+                v.setActive(active);
+                break;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Lấy danh sách các đơn hàng đã sử dụng mã giảm giá này (Dành cho Xem chi tiết Admin)
+     */
+    public static List<Order> getOrdersByVoucherCode(String code) {
+        List<Order> list = new ArrayList<>();
+        if (code == null || code.trim().isEmpty()) return list;
+
+        String sql = "SELECT id, order_code, username, address_id, recipient_name, recipient_phone, delivery_address, voucher_code, subtotal, discount_amount, shipping_fee, total_amount, payment_method_code, payment_method_name, payment_status, order_status, note, transaction_id, created_at FROM don_hang WHERE UPPER(voucher_code) = ? ORDER BY id DESC";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, code.trim().toUpperCase());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(new Order(
+                            rs.getInt("id"),
+                            rs.getString("order_code"),
+                            rs.getString("username"),
+                            rs.getInt("address_id"),
+                            rs.getString("recipient_name"),
+                            rs.getString("recipient_phone"),
+                            rs.getString("delivery_address"),
+                            rs.getString("voucher_code"),
+                            rs.getDouble("subtotal"),
+                            rs.getDouble("discount_amount"),
+                            rs.getDouble("shipping_fee"),
+                            rs.getDouble("total_amount"),
+                            rs.getString("payment_method_code"),
+                            rs.getString("payment_method_name"),
+                            rs.getString("payment_status"),
+                            rs.getString("order_status"),
+                            rs.getString("note"),
+                            rs.getString("transaction_id"),
+                            rs.getString("created_at")
+                    ));
+                }
+            }
+        } catch (SQLException ignored) {}
+
+        if (list.isEmpty()) {
+            for (Order o : memoryOrders) {
+                if (o.getVoucherCode() != null && code.trim().equalsIgnoreCase(o.getVoucherCode().trim())) {
+                    list.add(o);
+                }
+            }
+        }
+        return list;
+    }
+
+    /**
      * Lấy danh sách phương thức thanh toán hỗ trợ (Bảng PHUONG_THUC_TT)
      */
     public static List<PaymentMethod> getPaymentMethods() {
@@ -1507,6 +2362,10 @@ public class DataStore {
         return order;
     }
 
+    public static Order getOrderByCode(String orderCode) {
+        return getOrderByCode(orderCode, "admin");
+    }
+
     /**
      * Tra cứu chi tiết đơn hàng theo mã đơn (order_code)
      * Đảm bảo tính bảo mật: chỉ cho phép xem đơn thuộc sở hữu của tài khoản đang đăng nhập (trừ admin).
@@ -1560,9 +2419,17 @@ public class DataStore {
                             rs.getString("created_at")
                     );
 
-                    // Lấy chi tiết items
+                    // Lấy chi tiết items (tự động ghép thông tin với bảng books để luôn có Tên sách & Ảnh chính xác)
                     List<OrderItem> items = new ArrayList<>();
-                    try (PreparedStatement psItems = conn.prepareStatement("SELECT id, order_id, book_id, book_code, book_title, book_image, price, quantity, subtotal FROM ct_don_hang WHERE order_id = ?")) {
+                    String itemSql = "SELECT ct.id, ct.order_id, ct.book_id, " +
+                            "COALESCE(NULLIF(b.code, ''), NULLIF(ct.book_code, ''), 'MS000') AS final_code, " +
+                            "COALESCE(NULLIF(b.title, ''), NULLIF(ct.book_title, ''), 'Sách Bookora') AS final_title, " +
+                            "COALESCE(NULLIF(b.image, ''), NULLIF(ct.book_image, ''), '/images/default-book.jpg') AS final_image, " +
+                            "ct.price, ct.quantity, ct.subtotal " +
+                            "FROM ct_don_hang ct " +
+                            "LEFT JOIN books b ON ct.book_id = b.id " +
+                            "WHERE ct.order_id = ?";
+                    try (PreparedStatement psItems = conn.prepareStatement(itemSql)) {
                         psItems.setInt(1, oId);
                         try (ResultSet rsItems = psItems.executeQuery()) {
                             while (rsItems.next()) {
@@ -1570,9 +2437,9 @@ public class DataStore {
                                         rsItems.getInt("id"),
                                         rsItems.getInt("order_id"),
                                         rsItems.getInt("book_id"),
-                                        rsItems.getString("book_code"),
-                                        rsItems.getString("book_title"),
-                                        rsItems.getString("book_image"),
+                                        rsItems.getString("final_code"),
+                                        rsItems.getString("final_title"),
+                                        rsItems.getString("final_image"),
                                         rsItems.getDouble("price"),
                                         rsItems.getInt("quantity"),
                                         rsItems.getDouble("subtotal")
@@ -1630,9 +2497,18 @@ public class DataStore {
                     }
                 }
             }
+
+            String itemSql = "SELECT ct.id, ct.order_id, ct.book_id, " +
+                    "COALESCE(NULLIF(b.code, ''), NULLIF(ct.book_code, ''), 'MS000') AS final_code, " +
+                    "COALESCE(NULLIF(b.title, ''), NULLIF(ct.book_title, ''), 'Sách Bookora') AS final_title, " +
+                    "COALESCE(NULLIF(b.image, ''), NULLIF(ct.book_image, ''), '/images/default-book.jpg') AS final_image, " +
+                    "ct.price, ct.quantity, ct.subtotal " +
+                    "FROM ct_don_hang ct " +
+                    "LEFT JOIN books b ON ct.book_id = b.id " +
+                    "WHERE ct.order_id = ?";
             for (Order o : list) {
                 List<OrderItem> items = new ArrayList<>();
-                try (PreparedStatement psItems = conn.prepareStatement("SELECT id, order_id, book_id, book_code, book_title, book_image, price, quantity, subtotal FROM ct_don_hang WHERE order_id = ?")) {
+                try (PreparedStatement psItems = conn.prepareStatement(itemSql)) {
                     psItems.setInt(1, o.getId());
                     try (ResultSet rsItems = psItems.executeQuery()) {
                         while (rsItems.next()) {
@@ -1640,9 +2516,9 @@ public class DataStore {
                                     rsItems.getInt("id"),
                                     rsItems.getInt("order_id"),
                                     rsItems.getInt("book_id"),
-                                    rsItems.getString("book_code"),
-                                    rsItems.getString("book_title"),
-                                    rsItems.getString("book_image"),
+                                    rsItems.getString("final_code"),
+                                    rsItems.getString("final_title"),
+                                    rsItems.getString("final_image"),
                                     rsItems.getDouble("price"),
                                     rsItems.getInt("quantity"),
                                     rsItems.getDouble("subtotal")
@@ -1658,11 +2534,26 @@ public class DataStore {
             if (o.getUsername() != null && username.trim().equalsIgnoreCase(o.getUsername().trim())) {
                 String code = o.getOrderCode();
                 if (code != null && !seenCodes.contains(code.toLowerCase())) {
+                    // Đảm bảo thông tin sách trong bộ nhớ cũng đầy đủ tên và ảnh
+                    if (o.getItems() != null) {
+                        for (OrderItem it : o.getItems()) {
+                            if (it.getBookTitle() == null || it.getBookTitle().trim().isEmpty() ||
+                                it.getBookImage() == null || it.getBookImage().trim().isEmpty()) {
+                                Book b = getBookById(it.getBookId());
+                                if (b != null) {
+                                    if (it.getBookTitle() == null || it.getBookTitle().trim().isEmpty()) it.setBookTitle(b.getTitle());
+                                    if (it.getBookImage() == null || it.getBookImage().trim().isEmpty()) it.setBookImage(b.getImage());
+                                    if (it.getBookCode() == null || it.getBookCode().trim().isEmpty()) it.setBookCode(b.getCode());
+                                }
+                            }
+                        }
+                    }
                     list.add(0, o);
                     seenCodes.add(code.toLowerCase());
                 }
             }
         }
+
         return list;
     }
 

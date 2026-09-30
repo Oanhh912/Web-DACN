@@ -1,0 +1,1541 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Sách & Kho - Bookora Admin</title>
+    <!-- FontAwesome 6 Icons & Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Admin Design System CSS -->
+    <link rel="stylesheet" href="/admin/css/admin.css">
+    <style>
+        /* CSS BỔ SUNG CHO TRANG QUẢN LÝ SÁCH */
+        .filter-toolbar {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto;
+            gap: 12px;
+            background: #ffffff;
+            padding: 16px;
+            border-radius: 14px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+            align-items: center;
+        }
+
+        .filter-input-wrap {
+            position: relative;
+        }
+
+        .filter-input-wrap i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .filter-input-wrap input {
+            width: 100%;
+            padding: 9px 12px 9px 36px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 13.5px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .filter-input-wrap input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .filter-select {
+            padding: 9px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 13.5px;
+            background: #fff;
+            outline: none;
+            cursor: pointer;
+            color: #334155;
+            transition: all 0.2s;
+        }
+
+        .filter-select:focus {
+            border-color: var(--primary);
+        }
+
+        .btn-filter-reset {
+            padding: 9px 16px;
+            border-radius: 8px;
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #cbd5e1;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .btn-filter-reset:hover {
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+
+        /* Summary Stats Cards Bar */
+        .summary-pills-bar {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .summary-pill {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            padding: 12px 18px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            min-width: 180px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+
+        .summary-pill-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .pill-purple { background: #f3e8ff; color: #9333ea; }
+        .pill-green { background: #dcfce7; color: #16a34a; }
+        .pill-amber { background: #fef3c7; color: #d97706; }
+        .pill-rose { background: #ffe4e6; color: #e11d48; }
+
+        .summary-pill-val {
+            font-size: 20px;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1.1;
+        }
+
+        .summary-pill-label {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        /* Table custom styling */
+        .book-img-thumb {
+            width: 44px;
+            height: 56px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .book-title-cell {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .book-title-text {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 14px;
+            line-height: 1.3;
+        }
+
+        .book-code-badge {
+            display: inline-block;
+            background: #f1f5f9;
+            color: #475569;
+            font-family: monospace;
+            font-size: 11.5px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid #cbd5e1;
+        }
+
+        .stock-indicator {
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .stock-ok { color: #16a34a; }
+        .stock-warn { color: #d97706; }
+        .stock-empty { color: #dc2626; }
+
+        .actions-group {
+            display: flex;
+            gap: 6px;
+        }
+
+        .btn-act {
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            color: #475569;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.15s;
+        }
+
+        .btn-act:hover {
+            background: #f8fafc;
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .btn-act-edit:hover { background: #eff6ff; color: #2563eb; border-color: #2563eb; }
+        .btn-act-stock:hover { background: #fef3c7; color: #b45309; border-color: #f59e0b; }
+        .btn-act-delete:hover { background: #fef2f2; color: #dc2626; border-color: #ef4444; }
+
+        /* Modal Overlay System */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.25s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-container {
+            background: #ffffff;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 680px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+            transform: scale(0.95) translateY(10px);
+            transition: all 0.25s ease;
+        }
+
+        .modal-overlay.active .modal-container {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f8fafc;
+            border-top-left-radius: 16px;
+            border-top-right-radius: 16px;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 800;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-close-btn {
+            background: transparent;
+            border: none;
+            font-size: 20px;
+            color: #94a3b8;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .modal-close-btn:hover { background: #e2e8f0; color: #0f172a; }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 12px;
+            background: #f8fafc;
+            border-bottom-left-radius: 16px;
+            border-bottom-right-radius: 16px;
+        }
+
+        /* Form Controls */
+        .form-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            font-size: 13px;
+            color: #334155;
+            margin-bottom: 6px;
+        }
+
+        .form-label span.req {
+            color: #dc2626;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s;
+            background: #fff;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .form-control.is-invalid {
+            border-color: #ef4444;
+            background-color: #fff5f5;
+        }
+
+        .invalid-feedback {
+            color: #dc2626;
+            font-size: 12px;
+            margin-top: 4px;
+            font-weight: 500;
+            display: none;
+        }
+
+        /* Toast Container */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        .toast-msg {
+            pointer-events: auto;
+            min-width: 300px;
+            max-width: 420px;
+            background: #fff;
+            border-radius: 10px;
+            padding: 14px 18px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            border-left: 4px solid var(--primary);
+            animation: slideInRight 0.3s ease;
+        }
+
+        .toast-success { border-left-color: #10b981; }
+        .toast-error { border-left-color: #ef4444; }
+        .toast-warning { border-left-color: #f59e0b; }
+
+        .toast-icon { font-size: 18px; margin-top: 2px; }
+        .toast-success .toast-icon { color: #10b981; }
+        .toast-error .toast-icon { color: #ef4444; }
+        .toast-warning .toast-icon { color: #f59e0b; }
+
+        .toast-content { flex: 1; }
+        .toast-title { font-weight: 700; font-size: 14px; color: #0f172a; margin-bottom: 2px; }
+        .toast-body { font-size: 12.5px; color: #475569; line-height: 1.4; }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .filter-toolbar { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 640px) {
+            .filter-toolbar { grid-template-columns: 1fr; }
+            .form-grid-2 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="admin-layout">
+        <!-- 1. SIDEBAR MENU ADMIN -->
+        <aside class="admin-sidebar" id="adminSidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo-icon">
+                    <i class="fas fa-book-bookmark"></i>
+                </div>
+                <div class="sidebar-logo-text">
+                    <span class="sidebar-brand-title">BOOKORA</span>
+                    <span class="sidebar-brand-badge"><i class="fas fa-shield-halved"></i> ADMIN PORTAL</span>
+                </div>
+            </div>
+
+            <div class="sidebar-menu">
+                <div class="menu-category-title">Bảng điều khiển</div>
+                <ul class="sidebar-nav-list">
+                    <li class="sidebar-nav-item">
+                        <a href="/admin" class="sidebar-nav-link">
+                            <i class="fas fa-chart-pie"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="menu-category-title">Quản lý hệ thống</div>
+                <ul class="sidebar-nav-list">
+                    <li class="sidebar-nav-item">
+                        <a href="/admin/books" class="sidebar-nav-link active">
+                            <i class="fas fa-book"></i>
+                            <span>Quản lý sách & kho</span>
+                            <span class="sidebar-badge badge-danger" id="sidebarLowStockBadge">0</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="/admin/customers" class="sidebar-nav-link">
+                            <i class="fas fa-users"></i>
+                            <span>Quản lý khách hàng</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="/admin/categories" class="sidebar-nav-link">
+                            <i class="fas fa-tags"></i>
+                            <span>Quản lý danh mục sách</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="/admin/promotions" class="sidebar-nav-link">
+                            <i class="fas fa-ticket"></i>
+                            <span>Khuyến mãi & mã giảm giá</span>
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="menu-category-title">Báo cáo & AI</div>
+                <ul class="sidebar-nav-list">
+                    <li class="sidebar-nav-item">
+                        <a href="/admin/reports" class="sidebar-nav-link">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Thống kê & báo cáo</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="/admin/chatbot" class="sidebar-nav-link">
+                            <i class="fas fa-robot"></i>
+                            <span>Quản lý nội dung Chatbot AI</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-user-card">
+                    <img src="${adminAvatar}" alt="Admin Avatar" class="sidebar-user-avatar" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150';">
+                    <div class="sidebar-user-info">
+                        <div class="sidebar-user-name">${adminFullName}</div>
+                        <div class="sidebar-user-role"><i class="fas fa-crown" style="color:#f59e0b;"></i> ${adminUsername} (ADMIN)</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 2. MAIN WRAPPER CONTAINER -->
+        <div class="admin-main-wrapper">
+            <!-- HEADER BAR ADMIN -->
+            <header class="admin-header">
+                <div class="header-search-wrap">
+                    <i class="fas fa-magnifying-glass header-search-icon"></i>
+                    <input type="text" class="header-search-input" id="quickSearchInput" placeholder="Tìm kiếm nhanh sản phẩm, tác giả, mã kho..." onkeyup="handleQuickSearch(event)">
+                </div>
+
+                <div class="header-actions">
+                    <button type="button" class="header-btn-icon" title="Thông báo hệ thống">
+                        <i class="far fa-bell"></i>
+                        <span class="header-badge-dot"></span>
+                    </button>
+                    <a href="/home" target="_blank" class="header-user-btn" title="Xem trang chủ khách hàng">
+                        <i class="fas fa-globe" style="color:var(--primary);"></i>
+                        <span class="header-user-title">Trang Khách Hàng</span>
+                    </a>
+                    <a href="/logout" class="header-user-btn" style="border-color:#fca5a5; color:#dc2626;" title="Đăng xuất khỏi hệ thống">
+                        <i class="fas fa-right-from-bracket"></i>
+                        <span class="header-user-title">Đăng xuất</span>
+                    </a>
+                </div>
+            </header>
+
+            <!-- MAIN CONTENT AREA -->
+            <main class="admin-content">
+                <!-- BREADCRUMB & TITLE -->
+                <div class="admin-breadcrumb">
+                    <a href="/admin"><i class="fas fa-house"></i> Admin Portal</a>
+                    <i class="fas fa-chevron-right"></i>
+                    <span>Quản lý sách & kho</span>
+                </div>
+
+                <div class="admin-page-header">
+                    <div class="admin-page-title-wrap">
+                        <h1><i class="fas fa-book" style="color:var(--primary);"></i> Quản Lý Sách Và Tồn Kho</h1>
+                        <p class="admin-page-sub">Quản lý toàn bộ danh mục sách, cập nhật số lượng tồn kho, giá bán và cảnh báo kho hàng.</p>
+                    </div>
+                    <div>
+                        <button class="btn-admin btn-admin-primary" onclick="openAddBookModal()">
+                            <i class="fas fa-plus"></i>
+                            <span>Thêm sách mới</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 1. BAR THỐNG KÊ KHO HÀNG CẤP TỐC -->
+                <div class="summary-pills-bar">
+                    <div class="summary-pill">
+                        <div class="summary-pill-icon pill-purple"><i class="fas fa-book"></i></div>
+                        <div>
+                            <div class="summary-pill-val" id="cntTotalBooks">0</div>
+                            <div class="summary-pill-label">Tổng đầu sách</div>
+                        </div>
+                    </div>
+                    <div class="summary-pill">
+                        <div class="summary-pill-icon pill-green"><i class="fas fa-boxes-stacked"></i></div>
+                        <div>
+                            <div class="summary-pill-val" id="cntInStock">0</div>
+                            <div class="summary-pill-label">Còn hàng sẵn sàng</div>
+                        </div>
+                    </div>
+                    <div class="summary-pill">
+                        <div class="summary-pill-icon pill-amber"><i class="fas fa-triangle-exclamation"></i></div>
+                        <div>
+                            <div class="summary-pill-val" id="cntLowStock">0</div>
+                            <div class="summary-pill-label">Sắp hết hàng (&le; 5)</div>
+                        </div>
+                    </div>
+                    <div class="summary-pill">
+                        <div class="summary-pill-icon pill-rose"><i class="fas fa-circle-xmark"></i></div>
+                        <div>
+                            <div class="summary-pill-val" id="cntOutOfStock">0</div>
+                            <div class="summary-pill-label">Đã hết hàng (= 0)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. BỘ LỌC VÀ TÌM KIẾM ĐA TIÊU CHÍ -->
+                <div class="filter-toolbar">
+                    <div class="filter-input-wrap">
+                        <i class="fas fa-magnifying-glass"></i>
+                        <input type="text" id="filterKeyword" placeholder="Nhập từ khóa mã sách, tên sách, tác giả..." oninput="debounceFilter()">
+                    </div>
+
+                    <select id="filterCategory" class="filter-select" onchange="loadBooksData()">
+                        <option value="Tất cả">Danh mục: Tất cả</option>
+                    </select>
+
+                    <select id="filterAuthor" class="filter-select" onchange="loadBooksData()">
+                        <option value="Tất cả">Tác giả: Tất cả</option>
+                    </select>
+
+                    <select id="filterPublisher" class="filter-select" onchange="loadBooksData()">
+                        <option value="Tất cả">NXB: Tất cả</option>
+                    </select>
+
+                    <select id="filterStockStatus" class="filter-select" onchange="loadBooksData()">
+                        <option value="all">Trạng thái kho: Tất cả</option>
+                        <option value="in_stock">Còn hàng (&gt; 0)</option>
+                        <option value="low_stock">Sắp hết hàng (&le; 5)</option>
+                        <option value="out_of_stock">Hết hàng (= 0)</option>
+                    </select>
+
+                    <button type="button" class="btn-filter-reset" onclick="resetFilters()">
+                        <i class="fas fa-rotate-left"></i> Đặt lại
+                    </button>
+                </div>
+
+                <!-- 3. BẢNG DANH SÁCH SÁCH -->
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">
+                            <i class="fas fa-list-check" style="color:var(--primary);"></i>
+                            Danh Sách Đầu Sách & Kho Hàng
+                        </h3>
+                        <div style="display:flex; gap:10px;">
+                            <span class="badge-status badge-info" id="totalRecordsBadge"><i class="fas fa-spinner fa-spin"></i> Đang tải dữ liệu...</span>
+                        </div>
+                    </div>
+
+                    <div class="admin-table-wrap">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px;">STT</th>
+                                    <th style="width: 110px;">Mã sách</th>
+                                    <th>Tên sách & Ảnh</th>
+                                    <th>Tác giả</th>
+                                    <th>Nhà xuất bản</th>
+                                    <th>Danh mục</th>
+                                    <th>Giá bán</th>
+                                    <th style="width: 90px; text-align: center;">Tồn kho</th>
+                                    <th>Trạng thái</th>
+                                    <th style="width: 220px;">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="booksTableBody">
+                                <tr>
+                                    <td colspan="10" style="text-align: center; padding: 40px; color: #64748b;">
+                                        <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: var(--primary);"></i>
+                                        <p style="margin-top: 10px;">Đang tải danh sách sách từ hệ thống database...</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 1: THÊM / SỬA SÁCH (#bookModal) -->
+    <!-- ========================================================================= -->
+    <div class="modal-overlay" id="bookModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <div class="modal-title" id="bookModalTitle">
+                    <i class="fas fa-book" style="color: var(--primary);"></i>
+                    <span>Thêm Sách Mới</span>
+                </div>
+                <button type="button" class="modal-close-btn" onclick="closeModal('bookModal')"><i class="fas fa-xmark"></i></button>
+            </div>
+            
+            <form id="bookForm" onsubmit="saveBookForm(event)" novalidate>
+                <div class="modal-body">
+                    <input type="hidden" id="bookId" value="0">
+                    
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Tên sách <span class="req">*</span></label>
+                            <input type="text" id="bookTitle" class="form-control" placeholder="Nhập tên đầu sách..." required>
+                            <div class="invalid-feedback" id="errBookTitle">Tên sách không được để trống.</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Mã sách (ISBN / Code)</label>
+                            <input type="text" id="bookCode" class="form-control" placeholder="Để trống tự tạo (VD: MS001)">
+                        </div>
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Tác giả <span class="req">*</span></label>
+                            <input type="text" id="bookAuthor" class="form-control" list="authorOptions" placeholder="Chọn hoặc nhập tác giả..." required>
+                            <datalist id="authorOptions"></datalist>
+                            <div class="invalid-feedback" id="errBookAuthor">Tác giả không hợp lệ.</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Nhà xuất bản <span class="req">*</span></label>
+                            <input type="text" id="bookPublisher" class="form-control" list="publisherOptions" placeholder="Chọn hoặc nhập NXB..." required>
+                            <datalist id="publisherOptions"></datalist>
+                            <div class="invalid-feedback" id="errBookPublisher">Nhà xuất bản không hợp lệ.</div>
+                        </div>
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Danh mục sách <span class="req">*</span></label>
+                            <input type="text" id="bookCategory" class="form-control" list="categoryOptions" placeholder="Chọn hoặc nhập thể loại..." required>
+                            <datalist id="categoryOptions"></datalist>
+                            <div class="invalid-feedback" id="errBookCategory">Danh mục không hợp lệ.</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Số lượng tồn kho <span class="req">*</span></label>
+                            <input type="number" id="bookStock" class="form-control" min="0" value="10" placeholder="0" required>
+                            <div class="invalid-feedback" id="errBookStock">Số lượng tồn kho không được nhỏ hơn 0.</div>
+                        </div>
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Giá bán thực tế (đ) <span class="req">*</span></label>
+                            <input type="number" id="bookPrice" class="form-control" min="0" placeholder="VD: 89000" required>
+                            <div class="invalid-feedback" id="errBookPrice">Giá sách không hợp lệ và không được âm.</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Giá gốc chưa giảm (đ)</label>
+                            <input type="number" id="bookOriginalPrice" class="form-control" min="0" placeholder="VD: 110000">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Đường dẫn Hình ảnh Bìa (URL)</label>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="bookImage" class="form-control" placeholder="https://... hoặc /images/book.jpg" oninput="previewImage(this.value)">
+                            <button type="button" class="btn-act" style="white-space: nowrap; height: 42px; background: #e0e7ff; color: #4338ca; border-color: #c7d2fe; padding: 0 14px; font-weight: 700;" onclick="document.getElementById('bookCoverFileInput').click()" title="Chọn file ảnh từ máy tính">
+                                <i class="fas fa-upload"></i> Tải từ máy tính
+                            </button>
+                            <input type="file" id="bookCoverFileInput" accept="image/*" style="display: none;" onchange="handleCoverFileUpload(event)">
+                        </div>
+                        <div id="imageUrlWarning" style="display: none; margin-top: 8px; font-size: 12px; color: #b91c1c; background: #fef2f2; padding: 10px 14px; border-radius: 8px; border: 1px solid #fca5a5; line-height: 1.5;">
+                            <i class="fas fa-triangle-exclamation" style="font-size: 14px; color: #dc2626;"></i> <strong>Cảnh báo đường dẫn ảnh:</strong> Link bạn vừa dán là đường dẫn trang web HTML (trang sản phẩm), không phải file ảnh!<br>
+                            👉 <strong>Cách lấy link ảnh online:</strong> Nhấp chuột phải vào hình ảnh bìa trên trang web &rarr; Chọn <em>"Sao chép địa chỉ hình ảnh"</em> (Copy Image Address) rồi dán vào đây.<br>
+                            👉 <strong>Hoặc:</strong> Nhấn nút <strong>"Tải từ máy tính"</strong> bên trên để tải trực tiếp ảnh từ máy của bạn!
+                        </div>
+                        <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px;">
+                            <img id="imagePreview" src="/images/default-book.jpg" style="width: 48px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1;" onerror="handleImagePreviewError(this)">
+                            <span style="font-size: 12px; color: #64748b;" id="imagePreviewHint">Xem trước hình ảnh đại diện sản phẩm</span>
+                        </div>
+                    </div>
+
+                    <!-- THÔNG SỐ KỸ THUẬT CHI TIẾT SÁCH -->
+                    <div style="background: #f8fafc; padding: 14px; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom: 16px;">
+                        <div style="font-weight: 700; font-size: 13.5px; color: #1e293b; margin-bottom: 10px;">
+                            <i class="fas fa-sliders" style="color: var(--primary);"></i> Thông Số Kỹ Thuật Chi Tiết (Hiển thị trang Khách hàng)
+                        </div>
+                        <div class="form-grid-2">
+                            <div class="form-group">
+                                <label class="form-label">Năm xuất bản</label>
+                                <input type="number" id="bookPublishYear" class="form-control" placeholder="VD: 2024" value="2024">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Số trang</label>
+                                <input type="number" id="bookPageCount" class="form-control" placeholder="VD: 250" value="250">
+                            </div>
+                        </div>
+                        <div class="form-grid-2">
+                            <div class="form-group">
+                                <label class="form-label">Trọng lượng (gram)</label>
+                                <input type="number" id="bookWeight" class="form-control" placeholder="VD: 350" value="350">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Kích thước bao bì</label>
+                                <input type="text" id="bookDimensions" class="form-control" placeholder="VD: 21 x 13.5 x 1.2 cm" value="21 x 13.5 x 1.2 cm">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label">Hình thức bìa</label>
+                            <select id="bookCoverFormat" class="form-control">
+                                <option value="Bìa Mềm">Bìa Mềm</option>
+                                <option value="Bìa Cứng">Bìa Cứng</option>
+                                <option value="Bìa Gập">Bìa Gập</option>
+                                <option value="Bìa Da Special">Bìa Da Đặc Biệt</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Mô tả sản phẩm</label>
+                        <textarea id="bookDescription" class="form-control" rows="3" placeholder="Nhập tóm tắt nội dung cuốn sách..."></textarea>
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Khuyến mãi / Ưu đãi kèm theo</label>
+                            <input type="text" id="bookPromotion" class="form-control" placeholder="Tặng kèm Bookmark độc quyền">
+                        </div>
+
+                        <div class="form-group" style="display: flex; align-items: center; margin-top: 24px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; font-size: 13.5px; color: #1e293b;">
+                                <input type="checkbox" id="bookBestSeller" style="width: 18px; height: 18px; accent-color: var(--primary);">
+                                <span>Gắn nhãn Sách Bán Chạy (BestSeller)</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-admin btn-admin-secondary" onclick="closeModal('bookModal')">Hủy bỏ</button>
+                    <button type="submit" class="btn-admin btn-admin-primary" id="btnSaveBook">
+                        <i class="fas fa-floppy-disk"></i>
+                        <span>Lưu thông tin</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 2: XEM CHI TIẾT SÁCH (#detailModal) -->
+    <!-- ========================================================================= -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal-container" style="max-width: 640px;">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="fas fa-circle-info" style="color: var(--primary);"></i>
+                    <span>Chi Tiết Sách</span>
+                </div>
+                <button type="button" class="modal-close-btn" onclick="closeModal('detailModal')"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" id="detailModalBody">
+                <!-- Nội dung được điền động bằng JS -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-admin btn-admin-secondary" onclick="closeModal('detailModal')">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 3: CẬP NHẬT KHO HÀNG (#stockModal) -->
+    <!-- ========================================================================= -->
+    <div class="modal-overlay" id="stockModal">
+        <div class="modal-container" style="max-width: 480px;">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="fas fa-warehouse" style="color: #f59e0b;"></i>
+                    <span>Cập Nhật Tồn Kho Sách</span>
+                </div>
+                <button type="button" class="modal-close-btn" onclick="closeModal('stockModal')"><i class="fas fa-xmark"></i></button>
+            </div>
+            <form onsubmit="saveStockForm(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="stockBookId" value="0">
+                    <div style="background: #f8fafc; padding: 14px; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom: 16px;">
+                        <div style="font-weight: 700; font-size: 15px; color: #0f172a;" id="stockBookTitle">---</div>
+                        <div style="font-size: 12.5px; color: #64748b; margin-top: 4px;">
+                            Mã sách: <span id="stockBookCode" class="book-code-badge">---</span> | 
+                            Tồn kho hiện tại: <strong id="stockCurrentVal" style="color: #d97706;">0</strong>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Số lượng tồn kho mới <span class="req">*</span></label>
+                        <input type="number" id="stockNewVal" class="form-control" min="0" required placeholder="Nhập số lượng mới..." style="font-size: 18px; font-weight: 700; color: var(--primary);">
+                        <div class="invalid-feedback" id="errStockVal">Số lượng tồn kho không được nhỏ hơn 0.</div>
+                    </div>
+
+                    <div style="display: flex; gap: 8px; margin-top: 10px;">
+                        <button type="button" class="btn-act" onclick="adjustStockInput(5)">+5 cuốn</button>
+                        <button type="button" class="btn-act" onclick="adjustStockInput(10)">+10 cuốn</button>
+                        <button type="button" class="btn-act" onclick="adjustStockInput(20)">+20 cuốn</button>
+                        <button type="button" class="btn-act" onclick="document.getElementById('stockNewVal').value = 0" style="color: #dc2626;">Set = 0 (Hết hàng)</button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-admin btn-admin-secondary" onclick="closeModal('stockModal')">Hủy</button>
+                    <button type="submit" class="btn-admin btn-admin-primary">
+                        <i class="fas fa-check"></i> Cập nhật kho
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 4: XÁC NHẬN XÓA SÁCH (#deleteModal) -->
+    <!-- ========================================================================= -->
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal-container" style="max-width: 450px;">
+            <div class="modal-header" style="background: #fef2f2;">
+                <div class="modal-title" style="color: #dc2626;">
+                    <i class="fas fa-triangle-exclamation"></i>
+                    <span>Xác Nhận Xóa Sách</span>
+                </div>
+                <button type="button" class="modal-close-btn" onclick="closeModal('deleteModal')"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" style="text-align: center; padding: 24px 16px;">
+                <input type="hidden" id="deleteBookId" value="0">
+                <div style="width: 56px; height: 56px; background: #fee2e2; color: #dc2626; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 16px;">
+                    <i class="fas fa-trash-can"></i>
+                </div>
+                <h3 style="font-size: 16px; color: #0f172a; margin-bottom: 8px;">Bạn có chắc chắn muốn xóa sách này không?</h3>
+                <p style="font-size: 13.5px; color: #64748b;" id="deleteBookTitleText">Sách sẽ bị xóa khỏi cơ sở dữ liệu hệ thống.</p>
+            </div>
+            <div class="modal-footer" style="justify-content: center;">
+                <button type="button" class="btn-admin btn-admin-secondary" onclick="closeModal('deleteModal')">Hủy bỏ</button>
+                <button type="button" class="btn-admin" style="background: #dc2626; color: #fff; border: none;" onclick="confirmDeleteBook()">
+                    <i class="fas fa-trash"></i> Xác nhận xóa
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- JAVASCRIPT XỬ LÝ NGHIỆP VỤ -->
+    <script>
+        let allBooksData = [];
+        let filterDebounceTimer = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadBooksData();
+        });
+
+        // =========================================================================
+        // 1. TẢI DỮ LIỆU SÁCH TỪ BACKEND API (/api/admin/books)
+        // =========================================================================
+        function loadBooksData() {
+            const kw = document.getElementById('filterKeyword').value.trim();
+            const cat = document.getElementById('filterCategory').value;
+            const auth = document.getElementById('filterAuthor').value;
+            const pub = document.getElementById('filterPublisher').value;
+            const stock = document.getElementById('filterStockStatus').value;
+
+            const url = `/api/admin/books?q=${encodeURIComponent(kw)}&category=${encodeURIComponent(cat)}&author=${encodeURIComponent(auth)}&publisher=${encodeURIComponent(pub)}&stockStatus=${encodeURIComponent(stock)}`;
+
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        allBooksData = data.books || [];
+                        renderBooksTable(allBooksData);
+                        renderFilterDropdowns(data.categories, data.authors, data.publishers);
+                        updateSummaryBar(allBooksData);
+                    } else {
+                        showToast('Lỗi', data.message || 'Không thể tải dữ liệu!', 'error');
+                    }
+                })
+                .catch(err => {
+                    console.error('Fetch books error:', err);
+                    showToast('Lỗi kết nối', 'Không thể kết nối với máy chủ!', 'error');
+                });
+        }
+
+        function debounceFilter() {
+            clearTimeout(filterDebounceTimer);
+            filterDebounceTimer = setTimeout(() => {
+                loadBooksData();
+            }, 300);
+        }
+
+        function handleQuickSearch(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('filterKeyword').value = e.target.value;
+                loadBooksData();
+            }
+        }
+
+        function resetFilters() {
+            document.getElementById('filterKeyword').value = '';
+            document.getElementById('quickSearchInput').value = '';
+            document.getElementById('filterCategory').value = 'Tất cả';
+            document.getElementById('filterAuthor').value = 'Tất cả';
+            document.getElementById('filterPublisher').value = 'Tất cả';
+            document.getElementById('filterStockStatus').value = 'all';
+            loadBooksData();
+        }
+
+        // =========================================================================
+        // 2. HIỂN THỊ DỮ LIỆU TRÊN BẢNG VÀ CẬP NHẬT STATS
+        // =========================================================================
+        function renderBooksTable(books) {
+            const tbody = document.getElementById('booksTableBody');
+            const totalBadge = document.getElementById('totalRecordsBadge');
+            totalBadge.innerHTML = `<i class="fas fa-check-circle"></i> Tìm thấy ${books.length} sách`;
+
+            if (!books || books.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="10" style="text-align: center; padding: 48px; color: #64748b;">
+                            <div style="font-size: 36px; color: #cbd5e1; margin-bottom: 12px;"><i class="fas fa-book-open"></i></div>
+                            <h3 style="font-size: 16px; color: #334155; font-weight: 700; margin-bottom: 4px;">Không tìm thấy sách phù hợp.</h3>
+                            <p style="font-size: 13px; color: #94a3b8;">Vui lòng thử tìm kiếm từ khóa khác hoặc đặt lại bộ lọc.</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            let html = '';
+            books.forEach((b, idx) => {
+                // Trạng thái tồn kho
+                let statusBadge = '';
+                if (b.stock > 5) {
+                    statusBadge = `<span class="badge-status badge-success"><i class="fas fa-circle-check"></i> Còn hàng</span>`;
+                } else if (b.stock > 0) {
+                    statusBadge = `<span class="badge-status badge-warning"><i class="fas fa-triangle-exclamation"></i> Sắp hết hàng</span>`;
+                } else {
+                    statusBadge = `<span class="badge-status badge-danger"><i class="fas fa-circle-xmark"></i> Hết hàng</span>`;
+                }
+
+                let stockCls = b.stock > 5 ? 'stock-ok' : (b.stock > 0 ? 'stock-warn' : 'stock-empty');
+
+                html += `
+                    <tr>
+                        <td style="font-weight: 600; color: #64748b;">${idx + 1}</td>
+                        <td><span class="book-code-badge">${escapeHtml(b.code)}</span></td>
+                        <td>
+                            <div class="book-title-cell">
+                                <img src="${escapeAttr(b.image)}" class="book-img-thumb" onerror="this.src='/images/default-book.jpg';">
+                                <div>
+                                    <div class="book-title-text">${escapeHtml(b.title)}</div>
+                                    ${b.isBestSeller ? '<span style="font-size: 10px; background: #fef3c7; color: #d97706; font-weight: 800; padding: 1px 5px; border-radius: 4px;"><i class="fas fa-fire"></i> BestSeller</span>' : ''}
+                                </div>
+                            </div>
+                        </td>
+                        <td style="color: #475569; font-weight: 500;">${escapeHtml(b.author)}</td>
+                        <td style="color: #475569; font-size: 13px;">${escapeHtml(b.publisher)}</td>
+                        <td><span class="badge-status badge-info">${escapeHtml(b.category)}</span></td>
+                        <td>
+                            <div style="font-weight: 700; color: #d97706; font-size: 14px;">${escapeHtml(b.formattedPrice)}</div>
+                            ${b.originalPrice > b.price ? `<div style="font-size: 11px; color: #94a3b8; text-decoration: line-through;">${escapeHtml(formatVnd(b.originalPrice))}</div>` : ''}
+                        </td>
+                        <td style="text-align: center;">
+                            <span class="stock-indicator ${stockCls}">${b.stock}</span>
+                        </td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <div class="actions-group">
+                                <button type="button" class="btn-act" onclick="viewBookDetail(${b.id})" title="Xem chi tiết"><i class="fas fa-eye"></i> Xem</button>
+                                <button type="button" class="btn-act btn-act-edit" onclick="openEditBookModal(${b.id})" title="Chỉnh sửa"><i class="fas fa-pen-to-square"></i> Sửa</button>
+                                <button type="button" class="btn-act btn-act-stock" onclick="openStockModal(${b.id})" title="Cập nhật kho"><i class="fas fa-boxes-stacked"></i> Kho</button>
+                                <button type="button" class="btn-act btn-act-delete" onclick="openDeleteModal(${b.id}, '${escapeJsString(b.title)}')" title="Xóa sách"><i class="fas fa-trash-can"></i> Xóa</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        function updateSummaryBar(books) {
+            let total = books.length;
+            let inStock = books.filter(b => b.stock > 5).length;
+            let lowStock = books.filter(b => b.stock > 0 && b.stock <= 5).length;
+            let outOfStock = books.filter(b => b.stock === 0).length;
+
+            document.getElementById('cntTotalBooks').innerText = total;
+            document.getElementById('cntInStock').innerText = inStock;
+            document.getElementById('cntLowStock').innerText = lowStock;
+            document.getElementById('cntOutOfStock').innerText = outOfStock;
+            document.getElementById('sidebarLowStockBadge').innerText = lowStock + outOfStock;
+        }
+
+        function renderFilterDropdowns(categories, authors, publishers) {
+            // Category Select
+            const catSel = document.getElementById('filterCategory');
+            const currentCat = catSel.value;
+            let catOptionsHtml = '<option value="Tất cả">Danh mục: Tất cả</option>';
+            if (categories) {
+                categories.forEach(c => {
+                    if (c !== 'Tất cả') {
+                        catOptionsHtml += `<option value="${escapeAttr(c)}" ${c === currentCat ? 'selected' : ''}>${escapeHtml(c)}</option>`;
+                    }
+                });
+            }
+            catSel.innerHTML = catOptionsHtml;
+
+            // Datalist cho Form
+            let catDataHtml = '';
+            if (categories) categories.forEach(c => { if(c !== 'Tất cả') catDataHtml += `<option value="${escapeAttr(c)}">`; });
+            document.getElementById('categoryOptions').innerHTML = catDataHtml;
+
+            // Author Select
+            const authSel = document.getElementById('filterAuthor');
+            const currentAuth = authSel.value;
+            let authOptionsHtml = '<option value="Tất cả">Tác giả: Tất cả</option>';
+            if (authors) {
+                authors.forEach(a => {
+                    if (a !== 'Tất cả') {
+                        authOptionsHtml += `<option value="${escapeAttr(a)}" ${a === currentAuth ? 'selected' : ''}>${escapeHtml(a)}</option>`;
+                    }
+                });
+            }
+            authSel.innerHTML = authOptionsHtml;
+
+            let authDataHtml = '';
+            if (authors) authors.forEach(a => { if(a !== 'Tất cả') authDataHtml += `<option value="${escapeAttr(a)}">`; });
+            document.getElementById('authorOptions').innerHTML = authDataHtml;
+
+            // Publisher Select
+            const pubSel = document.getElementById('filterPublisher');
+            const currentPub = pubSel.value;
+            let pubOptionsHtml = '<option value="Tất cả">NXB: Tất cả</option>';
+            if (publishers) {
+                publishers.forEach(p => {
+                    if (p !== 'Tất cả') {
+                        pubOptionsHtml += `<option value="${escapeAttr(p)}" ${p === currentPub ? 'selected' : ''}>${escapeHtml(p)}</option>`;
+                    }
+                });
+            }
+            pubSel.innerHTML = pubOptionsHtml;
+
+            let pubDataHtml = '';
+            if (publishers) publishers.forEach(p => { if(p !== 'Tất cả') pubDataHtml += `<option value="${escapeAttr(p)}">`; });
+            document.getElementById('publisherOptions').innerHTML = pubDataHtml;
+        }
+
+        // =========================================================================
+        // 3. XỬ LÝ THÊM & SỬA SÁCH (MODAL + VALIDATION)
+        // =========================================================================
+        function openAddBookModal() {
+            document.getElementById('bookForm').reset();
+            document.getElementById('bookId').value = '0';
+            document.getElementById('bookModalTitle').innerHTML = `<i class="fas fa-plus-circle" style="color: var(--primary);"></i> <span>Thêm Sách Mới</span>`;
+            document.getElementById('bookCode').value = '';
+            document.getElementById('bookPublishYear').value = 2024;
+            document.getElementById('bookPageCount').value = 250;
+            document.getElementById('bookWeight').value = 350;
+            document.getElementById('bookDimensions').value = '21 x 13.5 x 1.2 cm';
+            document.getElementById('bookCoverFormat').value = 'Bìa Mềm';
+            document.getElementById('imagePreview').src = '/images/default-book.jpg';
+            clearValidationErrors();
+            openModal('bookModal');
+        }
+
+        function openEditBookModal(bookId) {
+            clearValidationErrors();
+            fetch(`/api/admin/books/detail?id=${bookId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.book) {
+                        const b = data.book;
+                        document.getElementById('bookId').value = b.id;
+                        document.getElementById('bookModalTitle').innerHTML = `<i class="fas fa-pen-to-square" style="color: #2563eb;"></i> <span>Sửa Thông Tin Sách #${b.id}</span>`;
+                        document.getElementById('bookTitle').value = b.title || '';
+                        document.getElementById('bookCode').value = b.code || '';
+                        document.getElementById('bookAuthor').value = b.author || '';
+                        document.getElementById('bookPublisher').value = b.publisher || '';
+                        document.getElementById('bookCategory').value = b.category || '';
+                        document.getElementById('bookStock').value = b.stock;
+                        document.getElementById('bookPrice').value = b.price;
+                        document.getElementById('bookOriginalPrice').value = b.originalPrice || '';
+                        document.getElementById('bookPublishYear').value = b.publishYear || 2024;
+                        document.getElementById('bookPageCount').value = b.pageCount || 250;
+                        document.getElementById('bookWeight').value = b.weight || 350;
+                        document.getElementById('bookDimensions').value = b.dimensions || '21 x 13.5 x 1.2 cm';
+                        document.getElementById('bookCoverFormat').value = b.coverFormat || 'Bìa Mềm';
+                        document.getElementById('bookImage').value = b.image || '';
+                        document.getElementById('imagePreview').src = b.image || '/images/default-book.jpg';
+                        document.getElementById('bookDescription').value = b.description || '';
+                        document.getElementById('bookPromotion').value = b.promotion || '';
+                        document.getElementById('bookBestSeller').checked = !!b.isBestSeller;
+                        openModal('bookModal');
+                    } else {
+                        showToast('Lỗi', 'Không thể lấy thông tin sách!', 'error');
+                    }
+                })
+                .catch(err => showToast('Lỗi kết nối', 'Không thể tải chi tiết sách!', 'error'));
+        }
+
+        function saveBookForm(e) {
+            e.preventDefault();
+            clearValidationErrors();
+
+            const id = parseInt(document.getElementById('bookId').value) || 0;
+            const title = document.getElementById('bookTitle').value.trim();
+            const code = document.getElementById('bookCode').value.trim();
+            const author = document.getElementById('bookAuthor').value.trim();
+            const publisher = document.getElementById('bookPublisher').value.trim();
+            const category = document.getElementById('bookCategory').value.trim();
+            const stockVal = document.getElementById('bookStock').value;
+            const priceVal = document.getElementById('bookPrice').value;
+            const originalPriceVal = document.getElementById('bookOriginalPrice').value;
+            const publishYear = parseInt(document.getElementById('bookPublishYear').value) || 2024;
+            const pageCount = parseInt(document.getElementById('bookPageCount').value) || 250;
+            const weight = parseInt(document.getElementById('bookWeight').value) || 350;
+            const dimensions = document.getElementById('bookDimensions').value.trim() || '21 x 13.5 x 1.2 cm';
+            const coverFormat = document.getElementById('bookCoverFormat').value || 'Bìa Mềm';
+            const image = document.getElementById('bookImage').value.trim();
+            const description = document.getElementById('bookDescription').value.trim();
+            const promotion = document.getElementById('bookPromotion').value.trim();
+            const isBestSeller = document.getElementById('bookBestSeller').checked;
+
+            let hasError = false;
+
+            if (!title) {
+                showFieldError('bookTitle', 'errBookTitle', 'Tên sách không được để trống.');
+                hasError = true;
+            }
+            if (!author) {
+                showFieldError('bookAuthor', 'errBookAuthor', 'Tác giả không hợp lệ.');
+                hasError = true;
+            }
+            if (!publisher) {
+                showFieldError('bookPublisher', 'errBookPublisher', 'Nhà xuất bản không hợp lệ.');
+                hasError = true;
+            }
+            if (!category) {
+                showFieldError('bookCategory', 'errBookCategory', 'Danh mục không hợp lệ.');
+                hasError = true;
+            }
+
+            const stock = parseInt(stockVal);
+            if (isNaN(stock) || stock < 0) {
+                showFieldError('bookStock', 'errBookStock', 'Số lượng tồn kho không được nhỏ hơn 0.');
+                hasError = true;
+            }
+
+            const price = parseFloat(priceVal);
+            if (isNaN(price) || price < 0) {
+                showFieldError('bookPrice', 'errBookPrice', 'Giá sách không hợp lệ.');
+                hasError = true;
+            }
+
+            if (hasError) return;
+
+            const payload = {
+                id: id,
+                title: title,
+                code: code,
+                author: author,
+                publisher: publisher,
+                category: category,
+                stock: stock,
+                price: price,
+                originalPrice: originalPriceVal ? parseFloat(originalPriceVal) : price,
+                publishYear: publishYear,
+                pageCount: pageCount,
+                weight: weight,
+                dimensions: dimensions,
+                coverFormat: coverFormat,
+                image: image,
+                description: description,
+                promotion: promotion,
+                isBestSeller: isBestSeller
+            };
+
+            const endpoint = id > 0 ? '/api/admin/books/edit' : '/api/admin/books/add';
+
+            fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                body: new URLSearchParams(payload).toString()
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Thành công', data.message || (id > 0 ? 'Cập nhật sách thành công.' : 'Thêm sách thành công.'), 'success');
+                    closeModal('bookModal');
+                    loadBooksData();
+                } else {
+                    showToast('Không thể lưu', data.message || 'Dữ liệu không hợp lệ!', 'error');
+                }
+            })
+            .catch(err => {
+                console.error('Save book error:', err);
+                showToast('Lỗi', 'Không thể kết nối tới máy chủ!', 'error');
+            });
+        }
+
+        // =========================================================================
+        // 4. XEM CHI TIẾT SÁCH
+        // =========================================================================
+        function viewBookDetail(bookId) {
+            fetch(`/api/admin/books/detail?id=${bookId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.book) {
+                        const b = data.book;
+                        let statusHtml = b.stock > 5 
+                            ? `<span class="badge-status badge-success">Còn hàng</span>`
+                            : (b.stock > 0 ? `<span class="badge-status badge-warning">Sắp hết hàng</span>` : `<span class="badge-status badge-danger">Hết hàng</span>`);
+
+                        document.getElementById('detailModalBody').innerHTML = `
+                            <div style="display: flex; gap: 20px;">
+                                <img src="${escapeAttr(b.image)}" style="width: 140px; height: 185px; object-fit: cover; border-radius: 10px; border: 1px solid #cbd5e1; box-shadow: 0 4px 10px rgba(0,0,0,0.1);" onerror="this.src='/images/default-book.jpg';">
+                                <div style="flex: 1;">
+                                    <div style="font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 6px;">${escapeHtml(b.title)}</div>
+                                    <div style="margin-bottom: 12px;"><span class="book-code-badge">Mã sách: ${escapeHtml(b.code)}</span> ${statusHtml}</div>
+                                    
+                                    <table style="font-size: 13.5px; width: 100%; border-collapse: collapse;">
+                                        <tr><td style="padding: 4px 0; color: #64748b; width: 120px;">Tác giả:</td><td><strong>${escapeHtml(b.author)}</strong></td></tr>
+                                        <tr><td style="padding: 4px 0; color: #64748b;">Nhà xuất bản:</td><td>${escapeHtml(b.publisher)}</td></tr>
+                                        <tr><td style="padding: 4px 0; color: #64748b;">Danh mục:</td><td><span class="badge-status badge-info">${escapeHtml(b.category)}</span></td></tr>
+                                        <tr><td style="padding: 4px 0; color: #64748b;">Năm xuất bản:</td><td>${b.publishYear || 2024}</td></tr>
+                                        <tr><td style="padding: 4px 0; color: #64748b;">Số trang:</td><td>${b.pageCount || 250} trang</td></tr>
+                                        <tr><td style="padding: 4px 0; color: #64748b;">Trọng lượng:</td><td>${b.weight || 350} gr</td></tr>
+                                        <tr><td style="padding: 4px 0; color: #64748b;">Kích thước:</td><td>${escapeHtml(b.dimensions || '21 x 13.5 x 1.2 cm')}</td></tr>
+                                        <tr><td style="padding: 4px 0; color: #64748b;">Hình thức bìa:</td><td>${escapeHtml(b.coverFormat || 'Bìa Mềm')}</td></tr>
+                                        <tr><td style="padding: 4px 0; color: #64748b;">Giá bán:</td><td style="color: #d97706; font-weight: 800; font-size: 16px;">${escapeHtml(b.formattedPrice)}</td></tr>
+                                        <tr><td style="padding: 4px 0; color: #64748b;">Tồn kho:</td><td><strong>${b.stock} cuốn</strong></td></tr>
+                                        <tr><td style="padding: 4px 0; color: #64748b;">Đánh giá:</td><td>★ ${b.rating} (${b.reviewCount} đánh giá)</td></tr>
+                                    </table>
+                                </div>
+                            </div>
+                            <div style="margin-top: 20px; background: #f8fafc; padding: 14px; border-radius: 10px; border: 1px solid #e2e8f0;">
+                                <div style="font-weight: 700; font-size: 13px; color: #334155; margin-bottom: 4px;">Mô tả sản phẩm:</div>
+                                <div style="font-size: 13px; color: #475569; line-height: 1.5; max-height: 120px; overflow-y: auto;">${escapeHtml(b.description || 'Chưa có mô tả chi tiết.')}</div>
+                            </div>
+                        `;
+                        openModal('detailModal');
+                    }
+                });
+        }
+
+        // =========================================================================
+        // 5. CẬP NHẬT TỒN KHO (#stockModal)
+        // =========================================================================
+        function openStockModal(bookId) {
+            const b = allBooksData.find(x => x.id === bookId);
+            if (b) {
+                document.getElementById('stockBookId').value = b.id;
+                document.getElementById('stockBookTitle').innerText = b.title;
+                document.getElementById('stockBookCode').innerText = b.code;
+                document.getElementById('stockCurrentVal').innerText = b.stock;
+                document.getElementById('stockNewVal').value = b.stock;
+                document.getElementById('errStockVal').style.display = 'none';
+                document.getElementById('stockNewVal').classList.remove('is-invalid');
+                openModal('stockModal');
+            }
+        }
+
+        function adjustStockInput(delta) {
+            const inp = document.getElementById('stockNewVal');
+            let current = parseInt(inp.value) || 0;
+            inp.value = Math.max(0, current + delta);
+        }
+
+        function saveStockForm(e) {
+            e.preventDefault();
+            const bookId = parseInt(document.getElementById('stockBookId').value);
+            const newStock = parseInt(document.getElementById('stockNewVal').value);
+
+            if (isNaN(newStock) || newStock < 0) {
+                showFieldError('stockNewVal', 'errStockVal', 'Số lượng tồn kho không được nhỏ hơn 0.');
+                return;
+            }
+
+            fetch('/api/admin/books/update-stock', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                body: `id=${bookId}&stock=${newStock}`
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Thành công', 'Cập nhật tồn kho thành công.', 'success');
+                    closeModal('stockModal');
+                    loadBooksData();
+                } else {
+                    showToast('Lỗi', data.message || 'Cập nhật kho thất bại!', 'error');
+                }
+            })
+            .catch(err => showToast('Lỗi', 'Không thể kết nối với máy chủ!', 'error'));
+        }
+
+        // =========================================================================
+        // 6. XÓA SÁCH (CÓ KIỂM TRA ĐƠN HÀNG CHƯA HOÀN TẤT)
+        // =========================================================================
+        function openDeleteModal(bookId, bookTitle) {
+            document.getElementById('deleteBookId').value = bookId;
+            document.getElementById('deleteBookTitleText').innerText = `Sách: "${bookTitle}"`;
+            openModal('deleteModal');
+        }
+
+        function confirmDeleteBook() {
+            const bookId = parseInt(document.getElementById('deleteBookId').value);
+
+            fetch('/api/admin/books/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                body: `id=${bookId}`
+            })
+            .then(res => res.json())
+            .then(data => {
+                closeModal('deleteModal');
+                if (data.success) {
+                    showToast('Thành công', 'Xóa sách thành công.', 'success');
+                    loadBooksData();
+                } else {
+                    // Hiển thị thông báo lỗi rõ ràng nếu sách đang nằm trong đơn hàng chưa hoàn tất
+                    showToast('Không thể xóa', data.message || 'Không thể xóa sách này!', 'error');
+                }
+            })
+            .catch(err => {
+                closeModal('deleteModal');
+                showToast('Lỗi kết nối', 'Có lỗi khi thực hiện xóa sách!', 'error');
+            });
+        }
+
+        // =========================================================================
+        // HELPER UTILITIES & TOASTS
+        // =========================================================================
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function showFieldError(inputId, errId, msg) {
+            const input = document.getElementById(inputId);
+            const err = document.getElementById(errId);
+            if (input) input.classList.add('is-invalid');
+            if (err) {
+                err.innerText = msg;
+                err.style.display = 'block';
+            }
+        }
+
+        function clearValidationErrors() {
+            document.querySelectorAll('.form-control').forEach(el => el.classList.remove('is-invalid'));
+            document.querySelectorAll('.invalid-feedback').forEach(el => el.style.display = 'none');
+        }
+
+        function previewImage(url) {
+            const img = document.getElementById('imagePreview');
+            const warn = document.getElementById('imageUrlWarning');
+            const hint = document.getElementById('imagePreviewHint');
+
+            if (warn) warn.style.display = 'none';
+            if (hint) hint.style.color = '#64748b';
+
+            if (!url || !url.trim()) {
+                img.src = '/images/default-book.jpg';
+                return;
+            }
+
+            const trimmed = url.trim();
+
+            // Nhận diện nếu dán nhầm link trang web HTML thay vì file ảnh trực tiếp (.jpg, .png, .webp...)
+            if (trimmed.includes('/products/') || trimmed.includes('.html') || (trimmed.startsWith('http') && !trimmed.match(/\.(jpg|jpeg|png|webp|gif|svg)(\?.*)?$/i) && !trimmed.includes('/uploads/'))) {
+                if (warn) warn.style.display = 'block';
+            }
+
+            img.src = trimmed;
+        }
+
+        function handleImagePreviewError(imgEl) {
+            imgEl.src = '/images/default-book.jpg';
+            const warn = document.getElementById('imageUrlWarning');
+            const inp = document.getElementById('bookImage');
+            if (inp && inp.value.trim().length > 0) {
+                if (warn) warn.style.display = 'block';
+            }
+        }
+
+        function handleCoverFileUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('Lỗi kích thước', 'File ảnh quá lớn! Vui lòng chọn tệp nhỏ hơn 5MB.', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const base64Data = evt.target.result;
+                
+                showToast('Đang tải lên...', 'Đang xử lý tải ảnh bìa từ máy tính...', 'warning');
+
+                fetch('/api/admin/books/upload-cover', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                    body: `coverData=${encodeURIComponent(base64Data)}`
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.imageUrl) {
+                        document.getElementById('bookImage').value = data.imageUrl;
+                        previewImage(data.imageUrl);
+                        showToast('Thành công', 'Đã tải ảnh bìa từ máy tính lên!', 'success');
+                    } else {
+                        showToast('Lỗi tải ảnh', data.message || 'Không thể tải ảnh!', 'error');
+                    }
+                })
+                .catch(err => {
+                    console.error('Upload cover error:', err);
+                    showToast('Lỗi kết nối', 'Không thể gửi file ảnh tới máy chủ!', 'error');
+                });
+            };
+            reader.readAsDataURL(file);
+            e.target.value = '';
+        }
+
+        function showToast(title, message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast-msg toast-${type}`;
+            
+            let icon = type === 'success' ? 'fa-circle-check' : (type === 'error' ? 'fa-circle-exclamation' : 'fa-triangle-exclamation');
+            
+            toast.innerHTML = `
+                <i class="fas ${icon} toast-icon"></i>
+                <div class="toast-content">
+                    <div class="toast-title">${escapeHtml(title)}</div>
+                    <div class="toast-body">${escapeHtml(message)}</div>
+                </div>
+            `;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                toast.style.transition = 'all 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        function formatVnd(amount) {
+            return new Intl.NumberFormat('vi-VN').format(amount) + ' đ';
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function escapeAttr(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        function escapeJsString(str) {
+            if (!str) return '';
+            return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        }
+    </script>
+</body>
+</html>

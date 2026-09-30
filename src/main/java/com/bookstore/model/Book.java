@@ -25,11 +25,21 @@ public class Book implements Serializable {
     private String description;
     private String promotion;
     private boolean isBestSeller;
+    private int publishYear;
+    private int pageCount;
+    private int weight;
+    private String dimensions;
+    private String coverFormat;
 
     public Book() {
         this.publisher = "NXB Trẻ";
         this.stock = 10;
         this.promotion = "Tặng bookmark độc quyền";
+        this.publishYear = 2024;
+        this.pageCount = 250;
+        this.weight = 350;
+        this.dimensions = "21 x 13.5 x 1.2 cm";
+        this.coverFormat = "Bìa Mềm";
     }
 
     public Book(int id, String title, String author, double price, double originalPrice, 
@@ -47,6 +57,13 @@ public class Book implements Serializable {
     public Book(int id, String code, String title, String author, String publisher, double price, double originalPrice, 
                 String category, int stock, double rating, int reviewCount, String image, 
                 String description, String promotion, boolean isBestSeller) {
+        this(id, code, title, author, publisher, price, originalPrice, category, stock, rating, reviewCount, image, description, promotion, isBestSeller, 2024, 250, 350, "21 x 13.5 x 1.2 cm", "Bìa Mềm");
+    }
+
+    public Book(int id, String code, String title, String author, String publisher, double price, double originalPrice, 
+                String category, int stock, double rating, int reviewCount, String image, 
+                String description, String promotion, boolean isBestSeller,
+                int publishYear, int pageCount, int weight, String dimensions, String coverFormat) {
         this.id = id;
         this.code = (code != null && !code.trim().isEmpty()) ? code.trim() : String.format("MS%03d", id);
         this.title = title;
@@ -62,6 +79,11 @@ public class Book implements Serializable {
         this.description = description;
         this.promotion = (promotion != null && !promotion.trim().isEmpty()) ? promotion.trim() : "Tặng bookmark độc quyền";
         this.isBestSeller = isBestSeller;
+        this.publishYear = publishYear > 0 ? publishYear : 2024;
+        this.pageCount = pageCount > 0 ? pageCount : 250;
+        this.weight = weight > 0 ? weight : 350;
+        this.dimensions = (dimensions != null && !dimensions.trim().isEmpty()) ? dimensions.trim() : "21 x 13.5 x 1.2 cm";
+        this.coverFormat = (coverFormat != null && !coverFormat.trim().isEmpty()) ? coverFormat.trim() : "Bìa Mềm";
     }
 
     public int getId() {
@@ -214,5 +236,45 @@ public class Book implements Serializable {
             return (int) Math.round(((originalPrice - price) / originalPrice) * 100);
         }
         return 0;
+    }
+
+    public int getPublishYear() {
+        return publishYear > 0 ? publishYear : 2024;
+    }
+
+    public void setPublishYear(int publishYear) {
+        this.publishYear = publishYear;
+    }
+
+    public int getPageCount() {
+        return pageCount > 0 ? pageCount : 250;
+    }
+
+    public void setPageCount(int pageCount) {
+        this.pageCount = pageCount;
+    }
+
+    public int getWeight() {
+        return weight > 0 ? weight : 350;
+    }
+
+    public void setWeight(int weight) {
+        this.weight = weight;
+    }
+
+    public String getDimensions() {
+        return dimensions != null && !dimensions.trim().isEmpty() ? dimensions : "21 x 13.5 x 1.2 cm";
+    }
+
+    public void setDimensions(String dimensions) {
+        this.dimensions = dimensions;
+    }
+
+    public String getCoverFormat() {
+        return coverFormat != null && !coverFormat.trim().isEmpty() ? coverFormat : "Bìa Mềm";
+    }
+
+    public void setCoverFormat(String coverFormat) {
+        this.coverFormat = coverFormat;
     }
 }

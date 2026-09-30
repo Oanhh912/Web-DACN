@@ -200,13 +200,21 @@
                                 <small class="form-hint">Email dùng để nhận thông báo đơn hàng và mã xác thực OTP.</small>
                             </div>
 
-                            <!-- Hàng 4: Ảnh đại diện (URL) & Xem trước -->
+                            <!-- Hàng 4: Ảnh đại diện (URL hoặc Tải từ máy tính) & Xem trước -->
                             <div class="form-group">
-                                <label for="avatar" class="form-label">Đường dẫn ảnh đại diện (Avatar URL)</label>
-                                <div class="input-with-icon">
-                                    <i class="fas fa-image input-icon"></i>
-                                    <input type="url" id="avatar" name="avatar" class="form-input" value="${user.avatar}" placeholder="https://images.unsplash.com/..." oninput="previewAvatar(this.value)">
+                                <label for="avatar" class="form-label">Ảnh đại diện tài khoản (Avatar)</label>
+                                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap;">
+                                    <div class="input-with-icon" style="flex: 1; min-width: 260px;">
+                                        <i class="fas fa-image input-icon"></i>
+                                        <input type="text" id="avatar" name="avatar" class="form-input" value="${user.avatar}" placeholder="https://... hoặc chọn tải từ máy tính" oninput="previewAvatar(this.value)">
+                                    </div>
+                                    <input type="file" id="avatarFileInput" accept="image/*" style="display:none;" onchange="uploadAvatarFromPc(this)">
+                                    <button type="button" class="btn-primary" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border: none; white-space: nowrap; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; color: white; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 8px rgba(79,70,229,0.25);" onclick="document.getElementById('avatarFileInput').click()">
+                                        <i class="fas fa-file-arrow-up"></i>
+                                        <span>Tải từ máy tính</span>
+                                    </button>
                                 </div>
+                                <div id="uploadStatusText" style="font-size: 13px; color: #4f46e5; margin-bottom: 8px; display: none;"></div>
                                 
                                 <!-- Gợi ý chọn nhanh các avatar mẫu -->
                                 <div class="avatar-presets-wrap">
@@ -220,6 +228,7 @@
                                     </div>
                                 </div>
                             </div>
+
 
                             <div class="profile-form-footer">
                                 <button type="submit" class="btn-primary btn-save-profile">
@@ -363,7 +372,75 @@
 
     <!-- JAVASCRIPT ĐIỀU KHIỂN TRANG PROFILE -->
     <script>
+        // Xử lý xem trước & chọn avatar
+        function previewAvatar(url) {
+            if (!url || !url.trim()) return;
+            const img = document.getElementById('sidebarAvatarImg');
+            if (img) img.src = url.trim();
+        }
+
+        function choosePresetAvatar(url) {
+            document.getElementById('avatar').value = url;
+            previewAvatar(url);
+        }
+
+        async function uploadAvatarFromPc(input) {
+            if (!input.files || !input.files[0]) return;
+            const file = input.files[0];
+
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Kích thước ảnh quá lớn! Vui lòng chọn tệp nhỏ hơn 5MB.');
+                input.value = '';
+                return;
+            }
+
+            const statusText = document.getElementById('uploadStatusText');
+            if (statusText) {
+                statusText.style.display = 'block';
+                statusText.style.color = '#6366f1';
+                statusText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang tải lên ảnh đại diện...';
+            }
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const base64Data = e.target.result;
+                try {
+                    const res = await fetch('/api/upload-avatar', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ avatarData: base64Data })
+                    });
+                    const data = await res.json();
+                    if (res.ok && data.success) {
+                        document.getElementById('avatar').value = data.avatarUrl;
+                        previewAvatar(data.avatarUrl);
+                        if (statusText) {
+                            statusText.style.color = '#10b981';
+                            statusText.innerHTML = '<i class="fas fa-circle-check"></i> ' + data.message;
+                        }
+                        const headerAvatars = document.querySelectorAll('.header-user-avatar, .user-avatar-small, .nav-user-avatar');
+                        headerAvatars.forEach(img => img.src = data.avatarUrl);
+                    } else {
+                        alert(data.message || 'Có lỗi xảy ra khi tải ảnh lên máy chủ!');
+                        if (statusText) {
+                            statusText.style.color = '#ef4444';
+                            statusText.innerHTML = '<i class="fas fa-triangle-exclamation"></i> Tải ảnh thất bại.';
+                        }
+                    }
+                } catch (err) {
+                    console.error('Lỗi upload avatar:', err);
+                    alert('Lỗi kết nối máy chủ khi tải ảnh đại diện!');
+                    if (statusText) {
+                        statusText.style.color = '#ef4444';
+                        statusText.innerHTML = '<i class="fas fa-wifi"></i> Lỗi kết nối máy chủ.';
+                    }
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
         // Chuyển Tab
+
         function switchProfileTab(tabName) {
             const allBtns = document.querySelectorAll('.tab-nav-btn');
             const allPanes = document.querySelectorAll('.profile-tab-pane');

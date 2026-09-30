@@ -55,6 +55,13 @@ public class LoginServlet extends HttpServlet {
         username = username.trim();
         if (DataStore.validateUser(username, password)) {
             User user = DataStore.findUser(username);
+            if (user != null && "LOCKED".equalsIgnoreCase(user.getStatus())) {
+                request.setAttribute("errorMessage", "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.");
+                request.setAttribute("username", username);
+                request.getRequestDispatcher("/login.jsp").forward(request, response);
+                return;
+            }
+
             HttpSession session = request.getSession(true);
             session.setAttribute("currentUser", user);
 

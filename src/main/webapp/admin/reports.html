@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thống Kê & Báo Cáo - Bookora Admin</title>
+    <!-- FontAwesome 6 Icons & Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Admin Design System CSS -->
+    <link rel="stylesheet" href="/admin/css/admin.css">
+</head>
+<body>
+
+    <div class="admin-layout">
+        <!-- 1. SIDEBAR MENU ADMIN -->
+        <aside class="admin-sidebar" id="adminSidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo-icon">
+                    <i class="fas fa-book-bookmark"></i>
+                </div>
+                <div class="sidebar-logo-text">
+                    <span class="sidebar-brand-title">BOOKORA</span>
+                    <span class="sidebar-brand-badge"><i class="fas fa-shield-halved"></i> ADMIN PORTAL</span>
+                </div>
+            </div>
+
+            <div class="sidebar-menu">
+                <div class="menu-category-title">Bảng điều khiển</div>
+                <ul class="sidebar-nav-list">
+                    <li class="sidebar-nav-item">
+                        <a href="/admin" class="sidebar-nav-link">
+                            <i class="fas fa-chart-pie"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="menu-category-title">Quản lý hệ thống</div>
+                <ul class="sidebar-nav-list">
+                    <li class="sidebar-nav-item">
+                        <a href="/admin/books" class="sidebar-nav-link">
+                            <i class="fas fa-book"></i>
+                            <span>Quản lý sách & kho</span>
+                            <span class="sidebar-badge badge-danger">3</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="/admin/customers" class="sidebar-nav-link">
+                            <i class="fas fa-users"></i>
+                            <span>Quản lý khách hàng</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="/admin/categories" class="sidebar-nav-link">
+                            <i class="fas fa-tags"></i>
+                            <span>Quản lý danh mục sách</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="/admin/promotions" class="sidebar-nav-link">
+                            <i class="fas fa-ticket"></i>
+                            <span>Khuyến mãi & mã giảm giá</span>
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="menu-category-title">Báo cáo & AI</div>
+                <ul class="sidebar-nav-list">
+                    <li class="sidebar-nav-item">
+                        <a href="/admin/reports" class="sidebar-nav-link active">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Thống kê & báo cáo</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="/admin/chatbot" class="sidebar-nav-link">
+                            <i class="fas fa-robot"></i>
+                            <span>Quản lý nội dung Chatbot AI</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-user-card">
+                    <img src="${adminAvatar}" alt="Admin Avatar" class="sidebar-user-avatar" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150';">
+                    <div class="sidebar-user-info">
+                        <div class="sidebar-user-name">${adminFullName}</div>
+                        <div class="sidebar-user-role"><i class="fas fa-crown" style="color:#f59e0b;"></i> ${adminUsername} (ADMIN)</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 2. MAIN WRAPPER CONTAINER -->
+        <div class="admin-main-wrapper">
+            <!-- HEADER BAR ADMIN -->
+            <header class="admin-header">
+                <div class="header-search-wrap">
+                    <i class="fas fa-magnifying-glass header-search-icon"></i>
+                    <input type="text" class="header-search-input" placeholder="Tìm kiếm dữ liệu báo cáo...">
+                </div>
+
+                <div class="header-actions">
+                    <button type="button" class="header-btn-icon" title="Thông báo">
+                        <i class="far fa-bell"></i>
+                        <span class="header-badge-dot"></span>
+                    </button>
+                    <a href="/home" target="_blank" class="header-user-btn" title="Xem trang chủ khách hàng">
+                        <i class="fas fa-globe" style="color:var(--primary);"></i>
+                        <span class="header-user-title">Trang Khách Hàng</span>
+                    </a>
+                    <a href="/logout" class="header-user-btn" style="border-color:#fca5a5; color:#dc2626;" title="Đăng xuất khỏi hệ thống">
+                        <i class="fas fa-right-from-bracket"></i>
+                        <span class="header-user-title">Đăng xuất</span>
+                    </a>
+                </div>
+            </header>
+
+            <!-- MAIN CONTENT AREA -->
+            <main class="admin-content">
+                <!-- BREADCRUMB & TITLE -->
+                <div class="admin-breadcrumb">
+                    <a href="/admin"><i class="fas fa-house"></i> Admin Portal</a>
+                    <i class="fas fa-chevron-right"></i>
+                    <span>Thống kê & báo cáo</span>
+                </div>
+
+                <div class="admin-page-header">
+                    <div class="admin-page-title-wrap">
+                        <h1><i class="fas fa-chart-line" style="color:var(--primary);"></i> Thống Kê & Báo Cáo Kinh Doanh</h1>
+                        <p class="admin-page-sub">Phân tích doanh thu, sản lượng sách bán chạy và chỉ số tăng trưởng người dùng.</p>
+                    </div>
+                    <div>
+                        <button class="btn-admin btn-admin-secondary" disabled style="opacity: 0.8; cursor: not-allowed;">
+                            <i class="fas fa-file-export"></i>
+                            <span>Xuất báo cáo Excel (Khung giao diện)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- CONTENT FRAME / PLACEHOLDER -->
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">
+                            <i class="fas fa-chart-column" style="color:var(--primary);"></i>
+                            Biểu Đồ & Báo Cáo Tổng Hợp
+                        </h3>
+                        <div style="display:flex; gap:10px;">
+                            <span class="badge-status badge-info"><i class="fas fa-info-circle"></i> Khung giao diện sẵn sàng</span>
+                        </div>
+                    </div>
+                    
+                    <div class="placeholder-box">
+                        <div class="placeholder-icon"><i class="fas fa-chart-area"></i></div>
+                        <h3 class="placeholder-title">Khu vực Thống Kê & Báo Cáo</h3>
+                        <p class="placeholder-desc">
+                            Giao diện khung đã hoàn tất kết nối route <code>/admin/reports</code>.<br>
+                            Khi có yêu cầu chi tiết (Doanh thu theo ngày/tháng, Thống kê sách bán chạy, Phân tích tăng trưởng), hệ thống biểu đồ và báo cáo sẽ được triển khai tại đây.
+                        </p>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+</body>
+</html>

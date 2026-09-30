@@ -15,11 +15,16 @@ public class User implements Serializable {
     private String phone;
     private String role; // "ADMIN" hoặc "CUSTOMER"
     private String avatar;
+    private String status = "ACTIVE"; // "ACTIVE" hoặc "LOCKED"
 
     public User() {
     }
 
     public User(String username, String password, String fullName, String email, String phone, String role, String avatar) {
+        this(username, password, fullName, email, phone, role, avatar, "ACTIVE");
+    }
+
+    public User(String username, String password, String fullName, String email, String phone, String role, String avatar, String status) {
         this.username = username;
         this.password = password;
         this.fullName = fullName;
@@ -27,6 +32,7 @@ public class User implements Serializable {
         this.phone = phone;
         this.role = role;
         this.avatar = avatar;
+        this.status = (status != null && !status.trim().isEmpty()) ? status.trim().toUpperCase() : "ACTIVE";
     }
 
     public String getUsername() {
@@ -83,5 +89,13 @@ public class User implements Serializable {
 
     public void setAvatar(String avatar) {
         this.avatar = avatar;
+    }
+
+    public String getStatus() {
+        return (status != null && !status.trim().isEmpty()) ? status.toUpperCase() : "ACTIVE";
+    }
+
+    public void setStatus(String status) {
+        this.status = (status != null && !status.trim().isEmpty()) ? status.trim().toUpperCase() : "ACTIVE";
     }
 }

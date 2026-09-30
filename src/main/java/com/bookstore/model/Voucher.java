@@ -80,13 +80,50 @@ public class Voucher {
     public void setUsedCount(int usedCount) { this.usedCount = usedCount; }
 
     /**
+     * Xác định mã trạng thái danh mục voucher (DISABLED, SCHEDULED, EXPIRED, DEPLETED, ACTIVE)
+     */
+    public String getStatusCode() {
+        if (!isActive) return "DISABLED";
+        LocalDate today = LocalDate.now();
+        if (startDate != null && !startDate.trim().isEmpty()) {
+            try {
+                LocalDate start = LocalDate.parse(startDate.trim());
+                if (today.isBefore(start)) return "SCHEDULED";
+            } catch (Exception ignored) {}
+        }
+        if (endDate != null && !endDate.trim().isEmpty()) {
+            try {
+                LocalDate end = LocalDate.parse(endDate.trim());
+                if (today.isAfter(end)) return "EXPIRED";
+            } catch (Exception ignored) {}
+        }
+        if (usageLimit > 0 && usedCount >= usageLimit) return "DEPLETED";
+        return "ACTIVE";
+    }
+
+    /**
+     * Hiển thị nhãn trạng thái tiếng Việt
+     */
+    public String getStatusText() {
+        String status = getStatusCode();
+        switch (status) {
+            case "DISABLED": return "Đã tắt";
+            case "SCHEDULED": return "Chưa bắt đầu";
+            case "EXPIRED": return "Đã hết hạn";
+            case "DEPLETED": return "Đã hết lượt";
+            case "ACTIVE":
+            default: return "Đang hoạt động";
+        }
+    }
+
+    /**
      * Kiểm tra điều kiện áp dụng mã giảm giá theo quy tắc nghiệp vụ
      * @param subtotal Tổng tiền hàng hiện tại
      * @return Thông báo lỗi nếu không hợp lệ, hoặc null nếu hợp lệ
      */
     public String validate(double subtotal) {
         if (!isActive) {
-            return "Mã giảm giá '" + code + "' hiện đang bị tạm khóa hoặc chưa được kích hoạt.";
+            return "Mã giảm giá hiện đang bị tắt.";
         }
 
         LocalDate today = LocalDate.now();
@@ -94,7 +131,7 @@ public class Voucher {
             try {
                 LocalDate start = LocalDate.parse(startDate.trim());
                 if (today.isBefore(start)) {
-                    return "Mã giảm giá '" + code + "' chưa đến thời gian áp dụng (bắt đầu từ " + startDate + ").";
+                    return "Mã giảm giá chưa đến thời gian sử dụng.";
                 }
             } catch (Exception ignored) {}
         }
@@ -103,18 +140,17 @@ public class Voucher {
             try {
                 LocalDate end = LocalDate.parse(endDate.trim());
                 if (today.isAfter(end)) {
-                    return "Mã giảm giá '" + code + "' đã hết hạn sử dụng (hết hạn ngày " + endDate + ").";
+                    return "Mã giảm giá đã hết hạn sử dụng.";
                 }
             } catch (Exception ignored) {}
         }
 
-        if (subtotal < minOrderAmount) {
-            java.text.DecimalFormat df = new java.text.DecimalFormat("###,###,### đ");
-            return "Đơn hàng cần đạt tối thiểu " + df.format(minOrderAmount) + " để áp dụng mã '" + code + "'.";
+        if (usageLimit > 0 && usedCount >= usageLimit) {
+            return "Mã giảm giá đã hết số lượt sử dụng.";
         }
 
-        if (usageLimit > 0 && usedCount >= usageLimit) {
-            return "Mã giảm giá '" + code + "' đã hết số lượt sử dụng.";
+        if (subtotal < minOrderAmount) {
+            return "Đơn hàng chưa đạt giá trị tối thiểu để sử dụng mã.";
         }
 
         return null; // Hợp lệ

@@ -160,4 +160,17 @@ public class Order {
                 return "<span class=\"badge-order status-pending\">" + orderStatus + "</span>";
         }
     }
+
+    public String getFormattedTotalAmount() {
+        return getFormattedTotal();
+    }
+
+    public String getOrderStatusText() {
+        if ("CHO_XAC_NHAN".equalsIgnoreCase(orderStatus)) return "Chờ xác nhận";
+        if ("DANG_XU_LY".equalsIgnoreCase(orderStatus)) return "Đang xử lý";
+        if ("DANG_GIAO".equalsIgnoreCase(orderStatus)) return "Đang giao hàng";
+        if ("HOAN_THANH".equalsIgnoreCase(orderStatus)) return "Đã hoàn thành";
+        if ("DA_HUY".equalsIgnoreCase(orderStatus)) return "Đã hủy";
+        return orderStatus != null ? orderStatus : "";
+    }
 }

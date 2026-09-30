@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Danh Mục Sách - Bookora Admin</title>
+    <!-- FontAwesome 6 Icons & Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Admin Design System CSS -->
+    <link rel="stylesheet" href="/admin/css/admin.css">
+    <style>
+        .search-toolbar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            align-items: center;
+            background: #ffffff;
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+        }
+        .search-input-group {
+            position: relative;
+            flex: 1;
+        }
+        .search-input-group i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+        .search-input-group input {
+            width: 100%;
+            padding: 10px 14px 10px 40px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .search-input-group input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        .btn-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .btn-primary { background: #2563eb; color: #fff; }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-info { background: #0284c7; color: #fff; }
+        .btn-info:hover { background: #0369a1; }
+        .btn-secondary { background: #64748b; color: #fff; }
+        .btn-secondary:hover { background: #475569; }
+        .btn-danger { background: #dc2626; color: #fff; }
+        .btn-danger:hover { background: #b91c1c; }
+        .btn-success { background: #16a34a; color: #fff; }
+        .btn-success:hover { background: #15803d; }
+        .btn-outline { background: transparent; border: 1px solid #cbd5e1; color: #334155; }
+        .btn-outline:hover { background: #f1f5f9; }
+
+        .table-responsive {
+            overflow-x: auto;
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 14px;
+        }
+        .admin-table th {
+            background: #f8fafc;
+            color: #475569;
+            font-weight: 600;
+            padding: 14px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            white-space: nowrap;
+        }
+        .admin-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+            color: #1e293b;
+        }
+        .admin-table tbody tr:hover {
+            background: #f8fafc;
+        }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-badge.active {
+            background: #dcfce7;
+            color: #15803d;
+        }
+        .status-badge.inactive {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            padding: 20px;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal-card {
+            background: #ffffff;
+            width: 100%;
+            max-width: 650px;
+            max-height: 90vh;
+            border-radius: 16px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: modalFadeIn 0.25s ease-out;
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .modal-header {
+            padding: 18px 24px;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 {
+            margin: 0;
+            font-size: 18px;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: #64748b;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        .modal-close:hover { background: #e2e8f0; color: #0f172a; }
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .modal-footer {
+            padding: 16px 24px;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        .form-group {
+            margin-bottom: 18px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 6px;
+        }
+        .form-group label .required {
+            color: #dc2626;
+        }
+        .form-control {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
+        }
+        .form-control:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        .form-error {
+            color: #dc2626;
+            font-size: 13px;
+            margin-top: 6px;
+            display: none;
+            font-weight: 500;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+        }
+        .info-item label {
+            display: block;
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+        .info-item span {
+            font-size: 14px;
+            color: #0f172a;
+            font-weight: 600;
+        }
+        .alert-box {
+            padding: 14px 18px;
+            border-radius: 10px;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        .alert-box.danger {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+        .alert-box i {
+            font-size: 18px;
+            margin-top: 2px;
+        }
+        .toast-msg {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 14px 20px;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: 500;
+            z-index: 10000;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            display: none;
+            align-items: center;
+            gap: 10px;
+        }
+        .toast-msg.success { background: #16a34a; }
+        .toast-msg.error { background: #dc2626; }
+    </style>
+</head>
+<body>
+
+    <div class="admin-layout">
+        <!-- 1. SIDEBAR MENU ADMIN -->
+        <aside class="admin-sidebar" id="adminSidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo-icon">
+                    <i class="fas fa-book-bookmark"></i>
+                </div>
+                <div class="sidebar-logo-text">
+                    <span class="sidebar-brand-title">BOOKORA</span>
+                    <span class="sidebar-brand-badge"><i class="fas fa-shield-halved"></i> ADMIN PORTAL</span>
+                </div>
+            </div>
+
+            <div class="sidebar-menu">
+                <div class="menu-category-title">Bảng điều khiển</div>
+                <ul class="sidebar-nav-list">
+                    <li class="sidebar-nav-item">
+                        <a href="/admin" class="sidebar-nav-link">
+                            <i class="fas fa-chart-pie"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="menu-category-title">Quản lý hệ thống</div>
+                <ul class="sidebar-nav-list">
+                    <li class="sidebar-nav-item">
+                        <a href="/admin/books" class="sidebar-nav-link">
+                            <i class="fas fa-book"></i>
+                            <span>Quản lý sách & kho</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="/admin/customers" class="sidebar-nav-link">
+                            <i class="fas fa-users"></i>
+                            <span>Quản lý khách hàng</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="/admin/categories" class="sidebar-nav-link active">
+                            <i class="fas fa-tags"></i>
+                            <span>Quản lý danh mục sách</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="/admin/promotions" class="sidebar-nav-link">
+                            <i class="fas fa-ticket"></i>
+                            <span>Khuyến mãi & mã giảm giá</span>
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="menu-category-title">Báo cáo & AI</div>
+                <ul class="sidebar-nav-list">
+                    <li class="sidebar-nav-item">
+                        <a href="/admin/reports" class="sidebar-nav-link">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Thống kê & báo cáo</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="/admin/chatbot" class="sidebar-nav-link">
+                            <i class="fas fa-robot"></i>
+                            <span>Quản lý nội dung Chatbot AI</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-user-card">
+                    <img src="${adminAvatar}" alt="Admin Avatar" class="sidebar-user-avatar" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150';">
+                    <div class="sidebar-user-info">
+                        <div class="sidebar-user-name">${adminFullName}</div>
+                        <div class="sidebar-user-role"><i class="fas fa-crown" style="color:#f59e0b;"></i> ${adminUsername} (ADMIN)</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 2. MAIN WRAPPER CONTAINER -->
+        <div class="admin-main-wrapper">
+            <!-- HEADER BAR ADMIN -->
+            <header class="admin-header">
+                <div class="header-search-wrap" style="visibility: hidden;">
+                    <i class="fas fa-magnifying-glass header-search-icon"></i>
+                    <input type="text" class="header-search-input" placeholder="Search...">
+                </div>
+
+                <div class="header-actions">
+                    <a href="/home" target="_blank" class="header-user-btn" title="Xem trang chủ khách hàng">
+                        <i class="fas fa-globe" style="color:var(--primary);"></i>
+                        <span class="header-user-title">Trang Khách Hàng</span>
+                    </a>
+                    <a href="/logout" class="header-user-btn" style="border-color:#fca5a5; color:#dc2626;" title="Đăng xuất khỏi hệ thống">
+                        <i class="fas fa-right-from-bracket"></i>
+                        <span class="header-user-title">Đăng xuất</span>
+                    </a>
+                </div>
+            </header>
+
+            <!-- MAIN CONTENT AREA -->
+            <main class="admin-content">
+                <!-- BREADCRUMB & TITLE -->
+                <div class="admin-breadcrumb">
+                    <a href="/admin"><i class="fas fa-house"></i> Admin Portal</a>
+                    <i class="fas fa-chevron-right"></i>
+                    <span>Quản lý danh mục sách</span>
+                </div>
+
+                <div class="admin-page-header">
+                    <div class="admin-page-title-wrap">
+                        <h1><i class="fas fa-tags" style="color:var(--primary);"></i> Quản Lý Danh Mục Sách</h1>
+                        <p class="admin-page-sub">Quản lý danh mục thể loại sách, thêm mới, cập nhật tên danh mục và kiểm tra ràng buộc với các đầu sách.</p>
+                    </div>
+                    <div>
+                        <button type="button" class="btn-action btn-primary" onclick="openAddCategoryModal();">
+                            <i class="fas fa-plus"></i> Thêm danh mục
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SEARCH TOOLBAR -->
+                <div class="search-toolbar">
+                    <div class="search-input-group">
+                        <i class="fas fa-magnifying-glass"></i>
+                        <input type="text" id="categorySearchInput" placeholder="Tìm kiếm theo Mã danh mục hoặc Tên danh mục..." onkeypress="if(event.key==='Enter') fetchCategories();">
+                    </div>
+                    <button type="button" class="btn-action btn-primary" onclick="fetchCategories();">
+                        <i class="fas fa-search"></i> Tìm kiếm
+                    </button>
+                    <button type="button" class="btn-action btn-outline" onclick="document.getElementById('categorySearchInput').value=''; fetchCategories();">
+                        <i class="fas fa-rotate-left"></i> Đặt lại
+                    </button>
+                </div>
+
+                <!-- CATEGORIES TABLE CONTAINER -->
+                <div class="table-responsive">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px; text-align: center;">STT</th>
+                                <th style="width: 120px;">Mã danh mục</th>
+                                <th>Tên danh mục sách</th>
+                                <th>Mô tả danh mục</th>
+                                <th style="text-align: center; width: 130px;">Số lượng sách</th>
+                                <th style="text-align: center; width: 120px;">Trạng thái</th>
+                                <th style="text-align: center; width: 230px;">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="categoryTableBody">
+                            <tr>
+                                <td colspan="7" style="text-align: center; padding: 30px; color: #64748b;">
+                                    <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: #2563eb;"></i><br><br>
+                                    Đang tải danh sách danh mục sách...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- MODAL: THÊM / SỬA DANH MỤC SÁCH -->
+    <div class="modal-overlay" id="categoryFormModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="formModalTitle"><i class="fas fa-folder-plus" style="color:#2563eb;"></i> Thêm Danh Mục Sách Mới</h3>
+                <button type="button" class="modal-close" onclick="closeModal('categoryFormModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="categoryForm" onsubmit="event.preventDefault(); saveCategory();">
+                    <input type="hidden" id="catId" value="0">
+                    
+                    <div class="form-group">
+                        <label for="catName">Tên danh mục sách <span class="required">*</span></label>
+                        <input type="text" id="catName" class="form-control" placeholder="Nhập tên danh mục (VD: Sách thiếu nhi, Tiểu thuyết...)" required>
+                        <div class="form-error" id="catNameError">Tên danh mục không được để trống.</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="catCode">Mã danh mục (Tùy chọn)</label>
+                        <input type="text" id="catCode" class="form-control" placeholder="VD: DM010 (Để trống hệ thống tự phát sinh)">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="catDescription">Mô tả danh mục</label>
+                        <textarea id="catDescription" class="form-control" rows="3" placeholder="Nhập mô tả tóm tắt nội dung các đầu sách thuộc thể loại này..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="catStatus">Trạng thái danh mục</label>
+                        <select id="catStatus" class="form-control">
+                            <option value="ACTIVE">Hoạt động (Hiển thị cho khách hàng)</option>
+                            <option value="INACTIVE">Tạm ẩn</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-action btn-outline" onclick="closeModal('categoryFormModal')">Hủy</button>
+                <button type="button" class="btn-action btn-primary" onclick="saveCategory();"><i class="fas fa-floppy-disk"></i> Lưu danh mục</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: XEM CHI TIẾT DANH MỤC SÁCH -->
+    <div class="modal-overlay" id="categoryDetailModal">
+        <div class="modal-card" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-folder-open" style="color: #2563eb;"></i> Thông Tin Chi Tiết Danh Mục</h3>
+                <button type="button" class="modal-close" onclick="closeModal('categoryDetailModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="info-grid" id="modalCategoryInfo">
+                    <!-- Populated by JS -->
+                </div>
+
+                <h4 style="margin-bottom:12px; color:#1e293b; font-size:15px; display:flex; justify-content:space-between; align-items:center;">
+                    <span><i class="fas fa-book"></i> Danh sách các đầu sách thuộc danh mục</span>
+                    <span id="categoryBookBadge" style="font-size:12px; font-weight:normal; background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:12px;">0 sách</span>
+                </h4>
+                <div class="table-responsive" style="max-height: 320px;">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Mã sách</th>
+                                <th>Tên sách</th>
+                                <th>Tác giả</th>
+                                <th style="text-align:right;">Giá bán</th>
+                                <th style="text-align:center;">Tồn kho</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modalCategoryBooksBody">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-action btn-outline" onclick="closeModal('categoryDetailModal')">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: XÁC NHẬN XÓA DANH MỤC -->
+    <div class="modal-overlay" id="confirmDeleteModal">
+        <div class="modal-card" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 id="deleteModalTitle"><i class="fas fa-triangle-exclamation" style="color:#dc2626;"></i> Xác nhận xóa danh mục</h3>
+                <button type="button" class="modal-close" onclick="closeModal('confirmDeleteModal')">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px; font-size: 15px; color: #334155; line-height: 1.6;" id="deleteModalMessage">
+                <!-- Message text -->
+            </div>
+            <div class="modal-footer" id="deleteModalFooter">
+                <button type="button" class="btn-action btn-outline" onclick="closeModal('confirmDeleteModal')">Hủy</button>
+                <button type="button" class="btn-action btn-danger" id="confirmDeleteBtn" onclick="executeDeleteCategory();"><i class="fas fa-trash-can"></i> Xác nhận xóa</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div class="toast-msg" id="toastMsg"></div>
+
+    <script>
+        let currentCategories = [];
+        let pendingDeleteId = 0;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchCategories();
+        });
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toastMsg');
+            toast.className = `toast-msg ${type}`;
+            toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'}"></i> ${message}`;
+            toast.style.display = 'flex';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3500);
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        async function fetchCategories() {
+            const keyword = document.getElementById('categorySearchInput').value.trim();
+            const tbody = document.getElementById('categoryTableBody');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 30px; color: #64748b;">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: #2563eb;"></i><br><br>
+                        Đang truy vấn danh sách danh mục...
+                    </td>
+                </tr>
+            `;
+
+            try {
+                const url = `/api/admin/categories?search=${encodeURIComponent(keyword)}`;
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (!data.success) {
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:#dc2626;">${data.message || 'Lỗi tải dữ liệu'}</td></tr>`;
+                    return;
+                }
+
+                currentCategories = data.categories || [];
+                renderCategoryTable(currentCategories);
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:#dc2626;">Không thể kết nối đến máy chủ API. Vui lòng kiểm tra lại.</td></tr>`;
+            }
+        }
+
+        function renderCategoryTable(categories) {
+            const tbody = document.getElementById('categoryTableBody');
+            if (!categories || categories.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 40px; color: #64748b;">
+                            <i class="fas fa-folder-open" style="font-size: 36px; color: #94a3b8; margin-bottom: 10px;"></i><br>
+                            <strong>Không tìm thấy danh mục phù hợp.</strong>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            let html = '';
+            categories.forEach((c, idx) => {
+                const isInactive = c.status === 'INACTIVE';
+                const statusHtml = isInactive
+                    ? `<span class="status-badge inactive"><i class="fas fa-eye-slash"></i> Tạm ẩn</span>`
+                    : `<span class="status-badge active"><i class="fas fa-check-circle"></i> Hoạt động</span>`;
+
+                const descText = c.description ? escapeHtml(c.description) : '<span style="color:#94a3b8; font-style:italic;">Chưa có mô tả</span>';
+
+                html += `
+                    <tr>
+                        <td style="text-align: center; font-weight: 500; color: #64748b;">${idx + 1}</td>
+                        <td><code style="background:#f1f5f9; padding:2px 6px; border-radius:4px; font-weight:600; color:#0f172a;">${escapeHtml(c.code)}</code></td>
+                        <td><strong style="color:#0f172a; font-size:15px;">${escapeHtml(c.name)}</strong></td>
+                        <td style="max-width:320px; font-size:13px; color:#475569;">${descText}</td>
+                        <td style="text-align: center; font-weight: 700; color: #2563eb;">${c.bookCount || 0} sách</td>
+                        <td style="text-align: center;">${statusHtml}</td>
+                        <td style="text-align: center;">
+                            <div style="display: flex; gap: 6px; justify-content: center;">
+                                <button type="button" class="btn-action btn-info" onclick="viewCategoryDetail(${c.id})" title="Xem chi tiết danh mục"><i class="fas fa-eye"></i> Xem</button>
+                                <button type="button" class="btn-action btn-primary" onclick="openEditCategoryModal(${c.id})" title="Sửa danh mục"><i class="fas fa-pen-to-square"></i> Sửa</button>
+                                <button type="button" class="btn-action btn-danger" onclick="confirmDeleteCategory(${c.id}, '${escapeQuotes(c.name)}', ${c.bookCount || 0})" title="Xóa danh mục"><i class="fas fa-trash-can"></i> Xóa</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function escapeQuotes(str) {
+            if (!str) return '';
+            return String(str).replace(/'/g, "\\'");
+        }
+
+        function openAddCategoryModal() {
+            document.getElementById('formModalTitle').innerHTML = `<i class="fas fa-folder-plus" style="color:#2563eb;"></i> Thêm Danh Mục Sách Mới`;
+            document.getElementById('catId').value = '0';
+            document.getElementById('catName').value = '';
+            document.getElementById('catCode').value = '';
+            document.getElementById('catDescription').value = '';
+            document.getElementById('catStatus').value = 'ACTIVE';
+            document.getElementById('catNameError').style.display = 'none';
+            openModal('categoryFormModal');
+        }
+
+        function openEditCategoryModal(id) {
+            const cat = currentCategories.find(c => c.id === id);
+            if (!cat) return;
+
+            document.getElementById('formModalTitle').innerHTML = `<i class="fas fa-pen-to-square" style="color:#2563eb;"></i> Sửa Danh Mục: ${escapeHtml(cat.name)}`;
+            document.getElementById('catId').value = cat.id;
+            document.getElementById('catName').value = cat.name || '';
+            document.getElementById('catCode').value = cat.code || '';
+            document.getElementById('catDescription').value = cat.description || '';
+            document.getElementById('catStatus').value = cat.status || 'ACTIVE';
+            document.getElementById('catNameError').style.display = 'none';
+            openModal('categoryFormModal');
+        }
+
+        async function saveCategory() {
+            const id = parseInt(document.getElementById('catId').value) || 0;
+            const name = document.getElementById('catName').value.trim();
+            const code = document.getElementById('catCode').value.trim();
+            const description = document.getElementById('catDescription').value.trim();
+            const status = document.getElementById('catStatus').value;
+            const errorBox = document.getElementById('catNameError');
+
+            if (!name) {
+                errorBox.textContent = 'Tên danh mục không được để trống.';
+                errorBox.style.display = 'block';
+                return;
+            }
+
+            errorBox.style.display = 'none';
+
+            const isEdit = id > 0;
+            const endpoint = isEdit ? '/api/admin/categories/edit' : '/api/admin/categories/add';
+
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id, name, code, description, status })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    closeModal('categoryFormModal');
+                    showToast(data.message, 'success');
+                    fetchCategories();
+                } else {
+                    errorBox.textContent = data.message || 'Có lỗi xảy ra.';
+                    errorBox.style.display = 'block';
+                }
+            } catch (err) {
+                console.error(err);
+                errorBox.textContent = 'Lỗi kết nối máy chủ API.';
+                errorBox.style.display = 'block';
+            }
+        }
+
+        async function viewCategoryDetail(id) {
+            openModal('categoryDetailModal');
+            const infoBox = document.getElementById('modalCategoryInfo');
+            const booksBody = document.getElementById('modalCategoryBooksBody');
+            const badge = document.getElementById('categoryBookBadge');
+
+            infoBox.innerHTML = `<div style="grid-column: 1/-1; text-align:center; color:#64748b;"><i class="fas fa-spinner fa-spin"></i> Đang tải thông tin danh mục...</div>`;
+            booksBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:#64748b;"><i class="fas fa-spinner fa-spin"></i> Đang tải danh sách sách...</td></tr>`;
+
+            try {
+                const res = await fetch(`/api/admin/categories/detail?id=${id}`);
+                const data = await res.json();
+
+                if (!data.success) {
+                    infoBox.innerHTML = `<div style="grid-column: 1/-1; color:#dc2626;">${data.message || 'Lỗi tải dữ liệu'}</div>`;
+                    booksBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#dc2626;">${data.message || 'Lỗi tải dữ liệu'}</td></tr>`;
+                    return;
+                }
+
+                const c = data.category;
+                const books = data.books || [];
+
+                badge.textContent = `${books.length} sách`;
+
+                infoBox.innerHTML = `
+                    <div class="info-item">
+                        <label>Mã danh mục:</label>
+                        <span>${escapeHtml(c.code)}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Tên danh mục:</label>
+                        <span>${escapeHtml(c.name)}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Trạng thái:</label>
+                        <span>${c.status === 'INACTIVE' ? 'Tạm ẩn' : 'Hoạt động'}</span>
+                    </div>
+                    <div class="info-item" style="grid-column: 1/-1;">
+                        <label>Mô tả chi tiết:</label>
+                        <span style="font-weight:normal; color:#475569;">${escapeHtml(c.description || 'Chưa có mô tả')}</span>
+                    </div>
+                `;
+
+                if (books.length === 0) {
+                    booksBody.innerHTML = `
+                        <tr>
+                            <td colspan="5" style="text-align:center; padding: 24px; color: #64748b;">
+                                <i class="fas fa-inbox" style="font-size: 24px; color: #cbd5e1; margin-bottom: 6px;"></i><br>
+                                <strong>Chưa có sách thuộc danh mục này.</strong>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                let booksHtml = '';
+                books.forEach(b => {
+                    const imgSrc = b.image || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500';
+                    booksHtml += `
+                        <tr>
+                            <td><code style="background:#f1f5f9; padding:2px 6px; border-radius:4px; font-weight:600; color:#0f172a;">${escapeHtml(b.code)}</code></td>
+                            <td>
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <img src="${escapeHtml(imgSrc)}" style="width:30px; height:40px; object-fit:cover; border-radius:4px;">
+                                    <span style="font-weight:600; color:#0f172a;">${escapeHtml(b.title)}</span>
+                                </div>
+                            </td>
+                            <td>${escapeHtml(b.author)}</td>
+                            <td style="text-align:right; font-weight:600; color:#d97706;">${escapeHtml(b.formattedPrice)}</td>
+                            <td style="text-align:center; font-weight:600; color:${b.stock > 0 ? '#16a34a' : '#dc2626'};">${b.stock} cuốn</td>
+                        </tr>
+                    `;
+                });
+
+                booksBody.innerHTML = booksHtml;
+
+            } catch (err) {
+                console.error(err);
+                infoBox.innerHTML = `<div style="grid-column: 1/-1; color:#dc2626;">Lỗi kết nối máy chủ API.</div>`;
+            }
+        }
+
+        function confirmDeleteCategory(id, name, bookCount) {
+            pendingDeleteId = id;
+            const msgBox = document.getElementById('deleteModalMessage');
+            const footer = document.getElementById('deleteModalFooter');
+
+            if (bookCount > 0) {
+                // RÀNG BUỘC: DANH MỤC ĐANG CÓ SÁCH -> KHÔNG CHO PHÉP XÓA (Requirement 10 & 12)
+                msgBox.innerHTML = `
+                    <div class="alert-box danger">
+                        <i class="fas fa-circle-exclamation"></i>
+                        <div>
+                            <strong>Không thể xóa danh mục!</strong><br>
+                            Danh mục <strong>"${escapeHtml(name)}"</strong> hiện đang được sử dụng bởi <strong>${bookCount} cuốn sách</strong> trong hệ thống.<br><br>
+                            <em>Vui lòng chuyển các sách này sang danh mục khác trước khi thực hiện xóa danh mục!</em>
+                        </div>
+                    </div>
+                `;
+                footer.innerHTML = `<button type="button" class="btn-action btn-outline" onclick="closeModal('confirmDeleteModal')">Đóng</button>`;
+            } else {
+                // DANH MỤC KHÔNG CÓ SÁCH -> CHO PHÉP XÓA (Requirement 11)
+                msgBox.innerHTML = `Bạn có chắc chắn muốn xóa danh mục <strong>"${escapeHtml(name)}"</strong> này không?<br><br><span style="font-size:13px; color:#64748b;"><i class="fas fa-circle-info"></i> Danh mục này hiện không có sách nào và có thể xóa an toàn.</span>`;
+                footer.innerHTML = `
+                    <button type="button" class="btn-action btn-outline" onclick="closeModal('confirmDeleteModal')">Hủy</button>
+                    <button type="button" class="btn-action btn-danger" onclick="executeDeleteCategory();"><i class="fas fa-trash-can"></i> Xác nhận xóa</button>
+                `;
+            }
+
+            openModal('confirmDeleteModal');
+        }
+
+        async function executeDeleteCategory() {
+            closeModal('confirmDeleteModal');
+            try {
+                const res = await fetch('/api/admin/categories/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: pendingDeleteId })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    fetchCategories();
+                } else {
+                    showToast(data.message || 'Xóa danh mục thất bại.', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Lỗi kết nối đến máy chủ API.', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

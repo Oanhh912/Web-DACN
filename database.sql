@@ -9,6 +9,7 @@ CHARACTER SET utf8mb4
 COLLATE utf8mb4_unicode_ci;
 
 USE `web_bookora`;
+SET FOREIGN_KEY_CHECKS = 0;
 
 -- 1. BẢNG NGƯỜI DÙNG (USERS)
 DROP TABLE IF EXISTS `users`;
@@ -21,14 +22,15 @@ CREATE TABLE `users` (
     `phone` VARCHAR(20),
     `role` VARCHAR(20) DEFAULT 'CUSTOMER',
     `avatar` VARCHAR(500),
+    `status` VARCHAR(20) DEFAULT 'ACTIVE',
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Thêm dữ liệu tài khoản mẫu
-INSERT INTO `users` (`username`, `password`, `full_name`, `email`, `phone`, `role`, `avatar`) VALUES
-('admin', '123456', 'Quản Trị Viên - Hoàng Oanh', 'admin@bookora.vn', '0988123456', 'ADMIN', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'),
-('oanh', '123456', 'Hoàng Oanh', 'oanh.nguyen@gmail.com', '0912345678', 'CUSTOMER', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150'),
-('khachhang', '123456', 'Khách Hàng Thân Thiết', 'khachhang@gmail.com', '0909888999', 'CUSTOMER', 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150');
+INSERT INTO `users` (`username`, `password`, `full_name`, `email`, `phone`, `role`, `avatar`, `status`) VALUES
+('admin', '123456', 'Quản Trị Viên - Hoàng Oanh', 'admin@bookora.vn', '0988123456', 'ADMIN', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150', 'ACTIVE'),
+('oanh', '123456', 'Hoàng Oanh', 'oanh.nguyen@gmail.com', '0912345678', 'CUSTOMER', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150', 'ACTIVE'),
+('khachhang', '123456', 'Khách Hàng Thân Thiết', 'khachhang@gmail.com', '0909888999', 'CUSTOMER', 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150', 'ACTIVE');
 
 -- 2. BẢNG SÁCH (BOOKS / SACH)
 DROP TABLE IF EXISTS `books`;
@@ -48,6 +50,11 @@ CREATE TABLE `books` (
     `description` TEXT,
     `promotion` VARCHAR(255) DEFAULT 'Tặng bookmark độc quyền',
     `is_bestseller` BOOLEAN DEFAULT FALSE,
+    `publish_year` INT DEFAULT 2024,
+    `page_count` INT DEFAULT 250,
+    `weight` INT DEFAULT 350,
+    `dimensions` VARCHAR(100) DEFAULT '21 x 13.5 x 1.2 cm',
+    `cover_format` VARCHAR(50) DEFAULT 'Bìa Mềm',
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -62,6 +69,28 @@ CREATE TABLE `kho` (
     `last_updated` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (`book_id`) REFERENCES `books`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 3.5 BẢNG DANH MỤC SÁCH (CATEGORIES / DANH_MUC)
+DROP TABLE IF EXISTS `categories`;
+CREATE TABLE `categories` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `code` VARCHAR(50) NOT NULL UNIQUE,
+    `name` VARCHAR(100) NOT NULL UNIQUE,
+    `description` VARCHAR(500),
+    `status` VARCHAR(20) DEFAULT 'ACTIVE',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `categories` (`id`, `code`, `name`, `description`, `status`) VALUES
+(1, 'DM001', 'Văn học', 'Tiểu thuyết, truyện ngắn và các tác phẩm văn học trong nước và quốc tế kinh điển', 'ACTIVE'),
+(2, 'DM002', 'Kỹ năng sống', 'Sách rèn luyện bản thân, phát triển tư duy, giao tiếp và kỹ năng làm chủ cuộc sống', 'ACTIVE'),
+(3, 'DM003', 'Công nghệ', 'Cẩm nang lập trình, kiến trúc phần mềm, khoa học dữ liệu & công nghệ mới', 'ACTIVE'),
+(4, 'DM004', 'Tâm lý học', 'Khám phá hành vi, tư duy và nhận thức con người qua góc nhìn khoa học tâm lý', 'ACTIVE'),
+(5, 'DM005', 'Kinh tế', 'Quản trị kinh doanh, tư duy tài chính, làm giàu và khởi nghiệp tinh gọn', 'ACTIVE'),
+(6, 'DM006', 'Tâm linh & Đời sống', 'Sách nuôi dưỡng tâm hồn, thức tỉnh tâm thức và nghệ thuật chuyển hóa cảm xúc', 'ACTIVE'),
+(7, 'DM007', 'Khoa học', 'Khám phá tri thức vũ trụ, lịch sử loài người và khoa học tự nhiên', 'ACTIVE'),
+(8, 'DM008', 'Trinh thám', 'Tiểu thuyết trinh thám, vụ án bí ẩn và hình sự kịch tính', 'ACTIVE'),
+(9, 'DM009', 'Sách thiếu nhi', 'Truyện tranh, sách màu và tri thức bổ ích dành cho trẻ em và tuổi mới lớn', 'ACTIVE');
 
 -- 4. BẢNG KHUYẾN MÃI (KHUYEN_MAI, SACH_KHUYEN_MAI - Phục vụ luồng cơ bản 1)
 DROP TABLE IF EXISTS `khuyen_mai`;
@@ -247,5 +276,22 @@ CREATE TABLE `ct_don_hang` (
     FOREIGN KEY (`order_id`) REFERENCES `don_hang`(`id`) ON DELETE CASCADE,
     FOREIGN KEY (`book_id`) REFERENCES `books`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Thêm đơn hàng mẫu cho tài khoản oanh & khachhang
+INSERT INTO `don_hang` (`id`, `order_code`, `username`, `address_id`, `recipient_name`, `recipient_phone`, `delivery_address`, `voucher_code`, `subtotal`, `discount_amount`, `shipping_fee`, `total_amount`, `payment_method_code`, `payment_method_name`, `payment_status`, `order_status`, `note`, `transaction_id`, `created_at`) VALUES
+(101, 'ORD-20260925-1001', 'oanh', 1, 'Hoàng Oanh', '0912345678', 'Tầng 5, Tòa nhà FPT Cầu Giấy, Số 10 Phạm Văn Bạch, Hà Nội', 'BOOKORA2026', 243000, 30000, 0, 213000, 'COD', 'Thanh toán khi nhận hàng (COD)', 'PAID', 'HOAN_THANH', 'Giao trong giờ hành chính', NULL, '2026-09-25 14:30:00'),
+(102, 'ORD-20260927-1002', 'oanh', 1, 'Hoàng Oanh', '0912345678', 'Tầng 5, Tòa nhà FPT Cầu Giấy, Số 10 Phạm Văn Bạch, Hà Nội', 'FREESHIP', 285000, 30000, 0, 255000, 'ONLINE', 'Chuyển khoản VietQR', 'PAID', 'DANG_GIAO', 'Gọi trước khi giao hàng', 'VNQR179051003', '2026-09-27 09:15:00'),
+(103, 'ORD-20260928-1003', 'oanh', 1, 'Hoàng Oanh', '0912345678', 'Tầng 5, Tòa nhà FPT Cầu Giấy, Số 10 Phạm Văn Bạch, Hà Nội', NULL, 89000, 0, 30000, 119000, 'COD', 'Thanh toán khi nhận hàng (COD)', 'PENDING', 'CHO_XAC_NHAN', 'Đóng gói cẩn thận giúp tôi', NULL, '2026-09-28 10:00:00'),
+(104, 'ORD-20260928-1004', 'khachhang', 3, 'Khách Hàng Thân Thiết', '0909888999', 'Số 68 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh', NULL, 88000, 0, 30000, 118000, 'COD', 'Thanh toán khi nhận hàng (COD)', 'PAID', 'HOAN_THANH', NULL, NULL, '2026-09-28 16:45:00');
+
+INSERT INTO `ct_don_hang` (`order_id`, `book_id`, `book_code`, `book_title`, `book_image`, `price`, `quantity`, `subtotal`) VALUES
+(101, 1, 'MS001', 'Nhà Giả Kim (The Alchemist)', 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500', 79000, 1, 79000),
+(101, 7, 'MS007', 'Cây Cam Ngọt Của Tôi', 'https://images.unsplash.com/photo-1495640388908-05fa85288e61?w=500', 82000, 2, 164000),
+(102, 3, 'MS003', 'Clean Code: A Handbook of Agile Software Craftsmanship', 'https://images.unsplash.com/photo-1532012164546-f432f2e3777a?w=500', 285000, 1, 285000),
+(103, 25, '8935278601425', 'Tháo Dây Oan Trái - Nghệ Thuật Chuyển Hóa Cảm Xúc', '/images/thao-day-oan-trai.jpg', 89000, 1, 89000),
+(104, 2, 'MS002', 'Đắc Nhân Tâm (How to Win Friends)', 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=500', 88000, 1, 88000);
+
+SET FOREIGN_KEY_CHECKS = 1;
+
 
 
