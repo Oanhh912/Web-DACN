@@ -576,8 +576,8 @@
                     : `<span class="status-badge active"><i class="fas fa-check-circle"></i> Hoạt động</span>`;
 
                 const actionBtn = isLocked
-                    ? `<button type="button" class="btn-action btn-success" onclick="requestToggleStatus('${c.username}', 'ACTIVE', '${escapeQuotes(c.fullName)}')"><i class="fas fa-unlock"></i> Mở khóa</button>`
-                    : `<button type="button" class="btn-action btn-danger" onclick="requestToggleStatus('${c.username}', 'LOCKED', '${escapeQuotes(c.fullName)}')"><i class="fas fa-user-lock"></i> Khóa tài khoản</button>`;
+                    ? `<button type="button" class="btn-act btn-action-success" onclick="requestToggleStatus('${c.username}', 'ACTIVE', '${escapeQuotes(c.fullName)}')" title="Mở khóa tài khoản"><i class="fas fa-unlock"></i></button>`
+                    : `<button type="button" class="btn-act btn-action-danger" onclick="requestToggleStatus('${c.username}', 'LOCKED', '${escapeQuotes(c.fullName)}')" title="Khóa tài khoản"><i class="fas fa-lock"></i></button>`;
 
                 const avatarSrc = c.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150';
 
@@ -599,9 +599,8 @@
                         <td style="text-align: center; font-weight: 600; color: #2563eb;">${c.orderCount || 0} đơn</td>
                         <td style="text-align: center;">${statusHtml}</td>
                         <td style="text-align: center;">
-                            <div style="display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;">
-                                <button type="button" class="btn-action btn-info" onclick="viewCustomerDetail('${c.username}')" title="Xem chi tiết"><i class="fas fa-eye"></i> Xem</button>
-                                <button type="button" class="btn-action btn-secondary" onclick="viewCustomerDetail('${c.username}')" title="Xem lịch sử đơn hàng"><i class="fas fa-history"></i> Lịch sử</button>
+                            <div class="btn-actions-group">
+                                <button type="button" class="btn-act btn-action-info" onclick="viewCustomerDetail('${c.username}')" title="Xem thông tin chi tiết & lịch sử đơn hàng"><i class="fas fa-eye"></i></button>
                                 ${actionBtn}
                             </div>
                         </td>

@@ -4,6 +4,7 @@ import com.bookstore.data.DataStore;
 import com.bookstore.model.Address;
 import com.bookstore.model.Book;
 import com.bookstore.model.Category;
+import com.bookstore.model.ChatbotContent;
 import com.bookstore.model.Order;
 import com.bookstore.model.OrderItem;
 import com.bookstore.model.PaymentMethod;
@@ -105,6 +106,14 @@ public class BookstoreApp {
         server.createContext("/api/admin/promotions/edit", new ApiAdminPromotionEditHandler());
         server.createContext("/api/admin/promotions/delete", new ApiAdminPromotionDeleteHandler());
         server.createContext("/api/admin/promotions/status", new ApiAdminPromotionStatusHandler());
+        server.createContext("/api/admin/reports", new ApiAdminReportsHandler());
+        server.createContext("/api/admin/reports/export", new ApiAdminReportsExportHandler());
+        server.createContext("/api/admin/chatbot/content", new ApiAdminChatbotContentHandler());
+        server.createContext("/api/admin/chatbot/content/detail", new ApiAdminChatbotDetailHandler());
+        server.createContext("/api/admin/chatbot/content/add", new ApiAdminChatbotAddHandler());
+        server.createContext("/api/admin/chatbot/content/edit", new ApiAdminChatbotEditHandler());
+        server.createContext("/api/admin/chatbot/content/delete", new ApiAdminChatbotDeleteHandler());
+        server.createContext("/api/admin/chatbot/content/sync", new ApiAdminChatbotSyncHandler());
         server.createContext("/db", new DatabaseViewerHandler());
         server.createContext("/admin", new AdminHandler());
         server.createContext("/admin/books", new AdminHandler());
@@ -3156,6 +3165,522 @@ public class BookstoreApp {
         }
     }
 
+    // =========================================================================
+    // API THỐNG KÊ VÀ BÁO CÁO DÀNH CHO ADMIN (UC15 - /api/admin/reports/*)
+    // =========================================================================
+
+    /**
+     * GET /api/admin/reports?type=...&fromDate=...&toDate=...&search=...
+     * Lấy dữ liệu thống kê theo loại báo cáo và khoảng thời gian
+     */
+    static class ApiAdminReportsHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendResponse(exchange, 405, "text/plain", "Method Not Allowed");
+                return;
+            }
+
+            User user = getAuthenticatedUser(exchange);
+            if (user == null || !"ADMIN".equalsIgnoreCase(user.getRole())) {
+                sendResponse(exchange, 403, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Bạn không có quyền truy cập chức năng này!\"}");
+                return;
+            }
+
+            String query = exchange.getRequestURI().getQuery();
+            String type = "REVENUE";
+            String fromDate = "";
+            String toDate = "";
+            String search = "";
+
+            if (query != null) {
+                Map<String, String> qp = parseQueryString(query);
+                type = qp.getOrDefault("type", "REVENUE");
+                fromDate = qp.getOrDefault("fromDate", "");
+                toDate = qp.getOrDefault("toDate", "");
+                search = qp.getOrDefault("search", "");
+            }
+
+            try {
+                DataStore.ReportResult res = DataStore.getReportData(type, fromDate, toDate, search);
+
+                if (res.isEmpty && "Khoảng thời gian không hợp lệ.".equals(res.message)) {
+                    sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Khoảng thời gian không hợp lệ.\"}");
+                    return;
+                }
+
+                // Build JSON response
+                StringBuilder json = new StringBuilder();
+                json.append("{");
+                json.append("\"success\":true,");
+                json.append("\"reportType\":").append(escapeJson(res.reportType)).append(",");
+                json.append("\"fromDate\":").append(escapeJson(res.fromDate)).append(",");
+                json.append("\"toDate\":").append(escapeJson(res.toDate)).append(",");
+                json.append("\"isEmpty\":").append(res.isEmpty).append(",");
+                json.append("\"message\":").append(escapeJson(res.message)).append(",");
+
+                // summary
+                json.append("\"summary\":{");
+                boolean firstS = true;
+                for (Map.Entry<String, Object> entry : res.summary.entrySet()) {
+                    if (!firstS) json.append(",");
+                    firstS = false;
+                    json.append("\"").append(entry.getKey()).append("\":");
+                    if (entry.getValue() instanceof Number) {
+                        json.append(entry.getValue());
+                    } else if (entry.getValue() instanceof Boolean) {
+                        json.append(entry.getValue());
+                    } else {
+                        json.append(escapeJson(String.valueOf(entry.getValue())));
+                    }
+                }
+                json.append("},");
+
+                // rows
+                json.append("\"rows\":[");
+                for (int i = 0; i < res.rows.size(); i++) {
+                    if (i > 0) json.append(",");
+                    Map<String, Object> row = res.rows.get(i);
+                    json.append("{");
+                    boolean firstR = true;
+                    for (Map.Entry<String, Object> entry : row.entrySet()) {
+                        if (!firstR) json.append(",");
+                        firstR = false;
+                        json.append("\"").append(entry.getKey()).append("\":");
+                        if (entry.getValue() instanceof Number) {
+                            json.append(entry.getValue());
+                        } else if (entry.getValue() instanceof Boolean) {
+                            json.append(entry.getValue());
+                        } else {
+                            json.append(escapeJson(String.valueOf(entry.getValue())));
+                        }
+                    }
+                    json.append("}");
+                }
+                json.append("],");
+
+                // chartData
+                json.append("\"chartData\":{");
+                json.append("\"labels\":[");
+                @SuppressWarnings("unchecked")
+                List<String> labels = (List<String>) res.chartData.get("labels");
+                if (labels != null) {
+                    for (int i = 0; i < labels.size(); i++) {
+                        if (i > 0) json.append(",");
+                        json.append(escapeJson(labels.get(i)));
+                    }
+                }
+                json.append("],\"values\":[");
+                List<?> values = (List<?>) res.chartData.get("values");
+                if (values != null) {
+                    for (int i = 0; i < values.size(); i++) {
+                        if (i > 0) json.append(",");
+                        json.append(values.get(i));
+                    }
+                }
+                json.append("]}");
+
+                json.append("}");
+
+                sendResponse(exchange, 200, "application/json; charset=UTF-8", json.toString());
+            } catch (Exception e) {
+                sendResponse(exchange, 500, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Không thể tải dữ liệu thống kê. Vui lòng thử lại.\"}");
+            }
+        }
+    }
+
+    /**
+     * GET /api/admin/reports/export?type=...&fromDate=...&toDate=...
+     * Xuất dữ liệu thống kê thành file CSV/Excel UTF-8
+     */
+    static class ApiAdminReportsExportHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendResponse(exchange, 405, "text/plain", "Method Not Allowed");
+                return;
+            }
+
+            User user = getAuthenticatedUser(exchange);
+            if (user == null || !"ADMIN".equalsIgnoreCase(user.getRole())) {
+                sendResponse(exchange, 403, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Bạn không có quyền truy cập chức năng này!\"}");
+                return;
+            }
+
+            String query = exchange.getRequestURI().getQuery();
+            String type = "REVENUE";
+            String fromDate = "";
+            String toDate = "";
+            String search = "";
+
+            if (query != null) {
+                Map<String, String> qp = parseQueryString(query);
+                type = qp.getOrDefault("type", "REVENUE");
+                fromDate = qp.getOrDefault("fromDate", "");
+                toDate = qp.getOrDefault("toDate", "");
+                search = qp.getOrDefault("search", "");
+            }
+
+            try {
+                DataStore.ReportResult res = DataStore.getReportData(type, fromDate, toDate, search);
+
+                if (res.isEmpty && "Khoảng thời gian không hợp lệ.".equals(res.message)) {
+                    sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Khoảng thời gian không hợp lệ.\"}");
+                    return;
+                }
+
+                if (res.rows.isEmpty()) {
+                    sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Không thể tạo file báo cáo.\"}");
+                    return;
+                }
+
+                StringBuilder csv = new StringBuilder();
+                csv.append("\uFEFF"); // UTF-8 BOM
+
+                String filename = "Bao_Cao_" + type + "_" + res.fromDate + "_Den_" + res.toDate + ".csv";
+
+                if ("REVENUE".equalsIgnoreCase(type)) {
+                    csv.append("NGÀY,SỐ ĐƠN HÀNG,TIỀN HÀNG,GIẢM GIÁ VOUCHER,PHÍ SHIP,DOANH THU THỰC TẾ\n");
+                    for (Map<String, Object> r : res.rows) {
+                        csv.append(String.format("%s,%s,%.0f,%.0f,%.0f,%.0f\n",
+                                r.get("date"), r.get("orderCount"),
+                                (Double)r.get("subtotal"), (Double)r.get("discountAmount"),
+                                (Double)r.get("shippingFee"), (Double)r.get("totalAmount")));
+                    }
+                } else if ("ORDERS".equalsIgnoreCase(type)) {
+                    csv.append("MÃ ĐƠN HÀNG,TÀI KHOẢN,NGƯỜI NHẬN,SỐ ĐIỆN THOẠI,THANH TOÁN,TRẠNG THÁI,TIỀN HÀNG,GIẢM GIÁ,TỔNG TIỀN,NGÀY ĐẶT\n");
+                    for (Map<String, Object> r : res.rows) {
+                        csv.append(String.format("%s,%s,\"%s\",%s,\"%s\",\"%s\",%.0f,%.0f,%.0f,%s\n",
+                                r.get("orderCode"), r.get("username"), r.get("recipientName"),
+                                r.get("phone"), r.get("paymentMethod"), r.get("orderStatus"),
+                                (Double)r.get("subtotal"), (Double)r.get("discountAmount"),
+                                (Double)r.get("totalAmount"), r.get("createdAt")));
+                    }
+                } else if ("PRODUCTS".equalsIgnoreCase(type)) {
+                    csv.append("MÃ SÁCH,TÊN SÁCH,DANH MỤC,ĐƠN GIÁ,SỐ LƯỢNG ĐÃ BÁN,DOANH THU,TỒN KHO HIỆN TẠI\n");
+                    for (Map<String, Object> r : res.rows) {
+                        csv.append(String.format("%s,\"%s\",\"%s\",%.0f,%s,%.0f,%s\n",
+                                r.get("bookCode"), r.get("bookTitle"), r.get("category"),
+                                (Double)r.get("price"), r.get("totalSold"),
+                                (Double)r.get("totalRevenue"), r.get("currentStock")));
+                    }
+                } else if ("INVENTORY".equalsIgnoreCase(type)) {
+                    csv.append("MÃ SÁCH,TÊN SÁCH,TÁC GIẢ,DANH MỤC,ĐƠN GIÁ,TỒN KHO,GIÁ TRỊ TỒN,VỊ TRÍ KHO,TRẠNG THÁI\n");
+                    for (Map<String, Object> r : res.rows) {
+                        csv.append(String.format("%s,\"%s\",\"%s\",\"%s\",%.0f,%s,%.0f,\"%s\",%s\n",
+                                r.get("code"), r.get("title"), r.get("author"), r.get("category"),
+                                (Double)r.get("price"), r.get("stock"), (Double)r.get("stockValue"),
+                                r.get("warehouseLocation"), r.get("stockStatus")));
+                    }
+                } else if ("CUSTOMERS".equalsIgnoreCase(type)) {
+                    csv.append("TÀI KHOẢN,HỌ VÀ TÊN,EMAIL,SỐ ĐIỆN THOẠI,TRẠNG THÁI,SỐ ĐƠN ĐẶT,TỔNG TIỀN ĐÃ CHI\n");
+                    for (Map<String, Object> r : res.rows) {
+                        csv.append(String.format("%s,\"%s\",%s,%s,%s,%s,%.0f\n",
+                                r.get("username"), r.get("fullName"), r.get("email"),
+                                r.get("phone"), r.get("status"), r.get("orderCount"),
+                                (Double)r.get("totalSpent")));
+                    }
+                }
+
+                byte[] bytes = csv.toString().getBytes(StandardCharsets.UTF_8);
+                exchange.getResponseHeaders().set("Content-Type", "text/csv; charset=UTF-8");
+                exchange.getResponseHeaders().set("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+                exchange.sendResponseHeaders(200, bytes.length);
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(bytes);
+                }
+            } catch (Exception e) {
+                sendResponse(exchange, 500, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Không thể tạo file báo cáo.\"}");
+            }
+        }
+    }
+
+    // =========================================================
+    // UC13 - QUẢN LÝ NỘI DUNG CHATBOT AI (HANDLERS)
+    // =========================================================
+
+    /**
+     * GET /api/admin/chatbot/content
+     */
+    static class ApiAdminChatbotContentHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            User user = getAuthenticatedUser(exchange);
+            if (user == null || !"ADMIN".equalsIgnoreCase(user.getRole())) {
+                sendResponse(exchange, 403, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Bạn không có quyền truy cập chức năng này!\"}");
+                return;
+            }
+
+            String query = exchange.getRequestURI().getQuery();
+            String category = "";
+            String search = "";
+
+            if (query != null) {
+                Map<String, String> qp = parseQueryString(query);
+                category = qp.getOrDefault("category", "");
+                search = qp.getOrDefault("search", "");
+            }
+
+            List<ChatbotContent> items = DataStore.getAllChatbotContents(category, search);
+
+            // Calculate category summary counts
+            int total = 0;
+            int countBookInfo = 0;
+            int countBuyPolicy = 0;
+            int countPayPolicy = 0;
+            int countShipPolicy = 0;
+            int countFaq = 0;
+
+            List<ChatbotContent> allItems = DataStore.getAllChatbotContents("ALL", "");
+            total = allItems.size();
+            for (ChatbotContent c : allItems) {
+                String cat = c.getCategoryType() != null ? c.getCategoryType().toUpperCase() : "";
+                switch (cat) {
+                    case "THONG_TIN_SACH": countBookInfo++; break;
+                    case "CHINH_SACH_MUA_HANG": countBuyPolicy++; break;
+                    case "CHINH_SACH_THANH_TOAN": countPayPolicy++; break;
+                    case "CHINH_SACH_GIAO_HANG": countShipPolicy++; break;
+                    case "CAU_HOI_THUONG_GAP": countFaq++; break;
+                }
+            }
+
+            StringBuilder json = new StringBuilder("{");
+            json.append("\"success\":true,");
+            json.append("\"total\":").append(items.size()).append(",");
+            json.append("\"summary\":{");
+            json.append("\"total\":").append(total).append(",");
+            json.append("\"bookInfo\":").append(countBookInfo).append(",");
+            json.append("\"buyPolicy\":").append(countBuyPolicy).append(",");
+            json.append("\"payPolicy\":").append(countPayPolicy).append(",");
+            json.append("\"shipPolicy\":").append(countShipPolicy).append(",");
+            json.append("\"faq\":").append(countFaq);
+            json.append("},\"items\":[");
+
+            for (int i = 0; i < items.size(); i++) {
+                ChatbotContent item = items.get(i);
+                if (i > 0) json.append(",");
+                json.append(String.format(
+                    "{\"id\":%d,\"categoryType\":%s,\"categoryTypeName\":%s,\"title\":%s,\"content\":%s,\"keywords\":%s,\"status\":%s,\"createdAt\":%s,\"updatedAt\":%s}",
+                    item.getId(),
+                    escapeJson(item.getCategoryType()),
+                    escapeJson(item.getCategoryTypeName()),
+                    escapeJson(item.getTitle()),
+                    escapeJson(item.getContent()),
+                    escapeJson(item.getKeywords() != null ? item.getKeywords() : ""),
+                    escapeJson(item.getStatus()),
+                    escapeJson(item.getCreatedAt() != null ? item.getCreatedAt() : ""),
+                    escapeJson(item.getUpdatedAt() != null ? item.getUpdatedAt() : "")
+                ));
+            }
+            json.append("]}");
+
+            sendResponse(exchange, 200, "application/json; charset=UTF-8", json.toString());
+        }
+    }
+
+    /**
+     * GET /api/admin/chatbot/content/detail?id=X
+     */
+    static class ApiAdminChatbotDetailHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            User user = getAuthenticatedUser(exchange);
+            if (user == null || !"ADMIN".equalsIgnoreCase(user.getRole())) {
+                sendResponse(exchange, 403, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Bạn không có quyền truy cập chức năng này!\"}");
+                return;
+            }
+
+            String query = exchange.getRequestURI().getQuery();
+            int id = 0;
+            if (query != null) {
+                Map<String, String> qp = parseQueryString(query);
+                try { id = Integer.parseInt(qp.getOrDefault("id", "0")); } catch (Exception ignored) {}
+            }
+
+            ChatbotContent item = DataStore.getChatbotContentById(id);
+            if (item == null) {
+                sendResponse(exchange, 404, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Nội dung Chatbot không tồn tại!\"}");
+                return;
+            }
+
+            String json = String.format(
+                "{\"success\":true,\"item\":{\"id\":%d,\"categoryType\":%s,\"categoryTypeName\":%s,\"title\":%s,\"content\":%s,\"keywords\":%s,\"status\":%s,\"createdAt\":%s,\"updatedAt\":%s}}",
+                item.getId(),
+                escapeJson(item.getCategoryType()),
+                escapeJson(item.getCategoryTypeName()),
+                escapeJson(item.getTitle()),
+                escapeJson(item.getContent()),
+                escapeJson(item.getKeywords() != null ? item.getKeywords() : ""),
+                escapeJson(item.getStatus()),
+                escapeJson(item.getCreatedAt() != null ? item.getCreatedAt() : ""),
+                escapeJson(item.getUpdatedAt() != null ? item.getUpdatedAt() : "")
+            );
+
+            sendResponse(exchange, 200, "application/json; charset=UTF-8", json);
+        }
+    }
+
+    /**
+     * POST /api/admin/chatbot/content/add
+     */
+    static class ApiAdminChatbotAddHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            User user = getAuthenticatedUser(exchange);
+            if (user == null || !"ADMIN".equalsIgnoreCase(user.getRole())) {
+                sendResponse(exchange, 403, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Bạn không có quyền truy cập chức năng này!\"}");
+                return;
+            }
+
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendResponse(exchange, 405, "text/plain", "Method Not Allowed");
+                return;
+            }
+
+            Map<String, String> params = parseFormData(exchange);
+            String categoryType = params.getOrDefault("categoryType", "").trim();
+            String title = params.getOrDefault("title", "").trim();
+            String content = params.getOrDefault("content", "").trim();
+            String keywords = params.getOrDefault("keywords", "").trim();
+            String status = params.getOrDefault("status", "ACTIVE").trim();
+
+            if (title.isEmpty()) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Tiêu đề không được để trống.\"}");
+                return;
+            }
+
+            if (content.isEmpty()) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Nội dung không được để trống.\"}");
+                return;
+            }
+
+            if (categoryType.isEmpty()) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Dữ liệu nhập không hợp lệ.\"}");
+                return;
+            }
+
+            ChatbotContent item = new ChatbotContent(0, categoryType, title, content, keywords, status, null, null);
+            String err = DataStore.addChatbotContent(item);
+            if (err != null) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", String.format("{\"success\":false,\"message\":%s}", escapeJson(err)));
+                return;
+            }
+
+            sendResponse(exchange, 200, "application/json; charset=UTF-8", "{\"success\":true,\"message\":\"Cập nhật nội dung Chatbot thành công.\"}");
+        }
+    }
+
+    /**
+     * POST /api/admin/chatbot/content/edit
+     */
+    static class ApiAdminChatbotEditHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            User user = getAuthenticatedUser(exchange);
+            if (user == null || !"ADMIN".equalsIgnoreCase(user.getRole())) {
+                sendResponse(exchange, 403, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Bạn không có quyền truy cập chức năng này!\"}");
+                return;
+            }
+
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendResponse(exchange, 405, "text/plain", "Method Not Allowed");
+                return;
+            }
+
+            Map<String, String> params = parseFormData(exchange);
+            int id = 0;
+            try { id = Integer.parseInt(params.getOrDefault("id", "0")); } catch (Exception ignored) {}
+
+            String categoryType = params.getOrDefault("categoryType", "").trim();
+            String title = params.getOrDefault("title", "").trim();
+            String content = params.getOrDefault("content", "").trim();
+            String keywords = params.getOrDefault("keywords", "").trim();
+            String status = params.getOrDefault("status", "ACTIVE").trim();
+
+            if (id <= 0) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Dữ liệu nhập không hợp lệ.\"}");
+                return;
+            }
+
+            if (title.isEmpty()) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Tiêu đề không được để trống.\"}");
+                return;
+            }
+
+            if (content.isEmpty()) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Nội dung không được để trống.\"}");
+                return;
+            }
+
+            if (categoryType.isEmpty()) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Dữ liệu nhập không hợp lệ.\"}");
+                return;
+            }
+
+            ChatbotContent item = new ChatbotContent(id, categoryType, title, content, keywords, status, null, null);
+            String err = DataStore.updateChatbotContent(item);
+            if (err != null) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", String.format("{\"success\":false,\"message\":%s}", escapeJson(err)));
+                return;
+            }
+
+            sendResponse(exchange, 200, "application/json; charset=UTF-8", "{\"success\":true,\"message\":\"Cập nhật nội dung Chatbot thành công.\"}");
+        }
+    }
+
+    /**
+     * POST /api/admin/chatbot/content/delete
+     */
+    static class ApiAdminChatbotDeleteHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            User user = getAuthenticatedUser(exchange);
+            if (user == null || !"ADMIN".equalsIgnoreCase(user.getRole())) {
+                sendResponse(exchange, 403, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Bạn không có quyền truy cập chức năng này!\"}");
+                return;
+            }
+
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendResponse(exchange, 405, "text/plain", "Method Not Allowed");
+                return;
+            }
+
+            Map<String, String> params = parseFormData(exchange);
+            int id = 0;
+            try { id = Integer.parseInt(params.getOrDefault("id", "0")); } catch (Exception ignored) {}
+
+            if (id <= 0) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Dữ liệu nhập không hợp lệ.\"}");
+                return;
+            }
+
+            boolean ok = DataStore.deleteChatbotContent(id);
+            if (!ok) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Nội dung Chatbot không tồn tại hoặc đã bị xóa!\"}");
+                return;
+            }
+
+            sendResponse(exchange, 200, "application/json; charset=UTF-8", "{\"success\":true,\"message\":\"Cập nhật nội dung Chatbot thành công.\"}");
+        }
+    }
+
+    /**
+     * POST /api/admin/chatbot/content/sync
+     */
+    static class ApiAdminChatbotSyncHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            User user = getAuthenticatedUser(exchange);
+            if (user == null || !"ADMIN".equalsIgnoreCase(user.getRole())) {
+                sendResponse(exchange, 403, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Bạn không có quyền truy cập chức năng này!\"}");
+                return;
+            }
+
+            sendResponse(exchange, 200, "application/json; charset=UTF-8", "{\"success\":true,\"message\":\"Cập nhật nội dung Chatbot thành công.\"}");
+        }
+    }
+
+
 
     // =========================================================================
     // HELPER METHODS CHO PARSE JSON VÀ ORDER REQUEST
@@ -3541,8 +4066,15 @@ public class BookstoreApp {
             List<Book> suggestedBooks = new ArrayList<>();
             List<Book> all = DataStore.getAllBooks();
 
+            String kbAnswer = DataStore.findChatbotAnswer(message);
+
             if (lowerMsg.isEmpty() || lowerMsg.contains("chào") || lowerMsg.contains("hello") || lowerMsg.contains("hi")) {
-                reply = "Xin chào bạn! Tôi là Trợ lý AI Bookora 📚. Tôi có thể giúp bạn tìm kiếm sách theo sở thích, giới thiệu các tác phẩm nổi bật, kiểm tra tình trạng tồn kho hoặc tư vấn các chương trình khuyến mãi tốt nhất. Bạn muốn tìm sách thuộc thể loại nào?";
+                reply = "Xin chào bạn! Tôi là Trợ lý AI Bookora 📚. Tôi có thể giúp bạn tìm kiếm sách theo sở thích, giải đáp chính sách giao hàng, thanh toán, đổi trả hoặc giới thiệu các tác phẩm nổi bật. Bạn cần hỗ trợ gì hôm nay?";
+                for (Book b : all) {
+                    if (b.isBestSeller() && suggestedBooks.size() < 3) suggestedBooks.add(b);
+                }
+            } else if (kbAnswer != null && !kbAnswer.trim().isEmpty()) {
+                reply = kbAnswer;
                 for (Book b : all) {
                     if (b.isBestSeller() && suggestedBooks.size() < 3) suggestedBooks.add(b);
                 }

@@ -804,17 +804,17 @@
                             <td>${v.endDate || '-'}</td>
                             <td><span class="status-badge ${statusBadgeClass}"><i class="fas fa-circle" style="font-size: 8px;"></i> ${v.statusText}</span></td>
                             <td style="text-align: center;">
-                                <div style="display: flex; gap: 4px; justify-content: center;">
-                                    <button class="btn-action btn-info" style="padding: 5px 8px;" onclick="viewVoucherDetail(${v.id})" title="Xem chi tiết">
+                                <div class="btn-actions-group">
+                                    <button class="btn-act btn-action-info" onclick="viewVoucherDetail(${v.id})" title="Xem chi tiết">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    <button class="btn-action btn-primary" style="padding: 5px 8px;" onclick="openEditVoucherModal(${v.id})" title="Chỉnh sửa">
+                                    <button class="btn-act btn-action-primary" onclick="openEditVoucherModal(${v.id})" title="Chỉnh sửa">
                                         <i class="fas fa-pen"></i>
                                     </button>
-                                    <button class="btn-action ${v.isActive ? 'btn-secondary' : 'btn-success'}" style="padding: 5px 8px;" onclick="toggleVoucherStatus(${v.id}, ${!v.isActive})" title="${v.isActive ? 'Tắt mã này' : 'Bật mã này'}">
+                                    <button class="btn-act ${v.isActive ? 'btn-action-amber' : 'btn-action-success'}" onclick="toggleVoucherStatus(${v.id}, ${!v.isActive})" title="${v.isActive ? 'Tắt mã này' : 'Bật mã này'}">
                                         <i class="fas ${v.isActive ? 'fa-power-off' : 'fa-check'}"></i>
                                     </button>
-                                    <button class="btn-action btn-danger" style="padding: 5px 8px;" onclick="confirmDeleteVoucher(${v.id}, '${v.code}')" title="Xóa mã này">
+                                    <button class="btn-act btn-action-danger" onclick="confirmDeleteVoucher(${v.id}, '${v.code}')" title="Xóa mã này">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>

@@ -3,6 +3,7 @@ package com.bookstore.data;
 import com.bookstore.model.Address;
 import com.bookstore.model.Book;
 import com.bookstore.model.Category;
+import com.bookstore.model.ChatbotContent;
 import com.bookstore.model.Order;
 import com.bookstore.model.OrderItem;
 import com.bookstore.model.PaymentMethod;
@@ -14,13 +15,17 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -2640,5 +2645,775 @@ public class DataStore {
             }
         } catch (SQLException ignored) {}
     }
+
+    // =========================================================================
+    // UC15: THỐNG KÊ VÀ BÁO CÁO (REPORTS & STATISTICS DATA PROVIDER)
+    // =========================================================================
+
+    public static class ReportResult {
+        public String reportType;
+        public String fromDate;
+        public String toDate;
+        public boolean isEmpty;
+        public String message;
+        public Map<String, Object> summary = new HashMap<>();
+        public List<Map<String, Object>> rows = new ArrayList<>();
+        public Map<String, Object> chartData = new HashMap<>();
+
+        public ReportResult() {}
+
+        public ReportResult(String reportType, String fromDate, String toDate) {
+            this.reportType = reportType;
+            this.fromDate = fromDate;
+            this.toDate = toDate;
+            this.isEmpty = false;
+            this.message = "Thành công";
+        }
+    }
+
+    /**
+     * Tổng hợp dữ liệu báo cáo thống kê theo loại báo cáo và khoảng thời gian (UC15)
+     */
+    public static ReportResult getReportData(String type, String fromDate, String toDate, String search) {
+        if (type == null || type.trim().isEmpty()) type = "REVENUE";
+        type = type.trim().toUpperCase();
+
+        if (fromDate == null || fromDate.trim().isEmpty()) {
+            fromDate = LocalDate.now().minusDays(30).toString();
+        } else {
+            fromDate = fromDate.trim();
+        }
+
+        if (toDate == null || toDate.trim().isEmpty()) {
+            toDate = LocalDate.now().toString();
+        } else {
+            toDate = toDate.trim();
+        }
+
+        ReportResult res = new ReportResult(type, fromDate, toDate);
+
+        // Validation 1: Ngày bắt đầu không được lớn hơn ngày kết thúc
+        if (fromDate.compareTo(toDate) > 0) {
+            res.isEmpty = true;
+            res.message = "Khoảng thời gian không hợp lệ.";
+            return res;
+        }
+
+        switch (type) {
+            case "ORDERS":
+                fetchOrdersReport(res, search);
+                break;
+            case "PRODUCTS":
+                fetchProductsReport(res, search);
+                break;
+            case "INVENTORY":
+                fetchInventoryReport(res, search);
+                break;
+            case "CUSTOMERS":
+                fetchCustomersReport(res, search);
+                break;
+            case "REVENUE":
+            default:
+                fetchRevenueReport(res, search);
+                break;
+        }
+
+        if (res.rows.isEmpty()) {
+            res.isEmpty = true;
+            res.message = "Không có dữ liệu thống kê";
+        }
+
+        return res;
+    }
+
+    private static void fetchRevenueReport(ReportResult res, String search) {
+        String sql = "SELECT DATE(created_at) AS rdate, COUNT(*) AS order_count, SUM(subtotal) AS total_subtotal, SUM(discount_amount) AS total_discount, SUM(shipping_fee) AS total_shipping, SUM(total_amount) AS total_net FROM don_hang WHERE DATE(created_at) >= ? AND DATE(created_at) <= ? AND UPPER(order_status) != 'DA_HUY' GROUP BY DATE(created_at) ORDER BY rdate ASC";
+
+        double grandTotalNet = 0;
+        long grandTotalOrders = 0;
+        double grandTotalDiscount = 0;
+        double grandTotalShipping = 0;
+
+        List<String> chartLabels = new ArrayList<>();
+        List<Double> chartValues = new ArrayList<>();
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, res.fromDate);
+            ps.setString(2, res.toDate);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String rdate = rs.getString("rdate");
+                    long cnt = rs.getLong("order_count");
+                    double sub = rs.getDouble("total_subtotal");
+                    double disc = rs.getDouble("total_discount");
+                    double ship = rs.getDouble("total_shipping");
+                    double net = rs.getDouble("total_net");
+
+                    grandTotalNet += net;
+                    grandTotalOrders += cnt;
+                    grandTotalDiscount += disc;
+                    grandTotalShipping += ship;
+
+                    Map<String, Object> row = new HashMap<>();
+                    row.put("date", rdate);
+                    row.put("orderCount", cnt);
+                    row.put("subtotal", sub);
+                    row.put("discountAmount", disc);
+                    row.put("shippingFee", ship);
+                    row.put("totalAmount", net);
+                    res.rows.add(row);
+
+                    chartLabels.add(rdate);
+                    chartValues.add(net);
+                }
+            }
+        } catch (SQLException e) {
+            // Memory fallback
+            Map<String, Map<String, Object>> dateMap = new TreeMap<>();
+            for (Order o : memoryOrders) {
+                if (o.getCreatedAt() != null && o.getCreatedAt().length() >= 10) {
+                    String d = o.getCreatedAt().substring(0, 10);
+                    if (d.compareTo(res.fromDate) >= 0 && d.compareTo(res.toDate) <= 0 && !"DA_HUY".equalsIgnoreCase(o.getOrderStatus())) {
+                        Map<String, Object> m = dateMap.computeIfAbsent(d, k -> {
+                            Map<String, Object> item = new HashMap<>();
+                            item.put("date", k);
+                            item.put("orderCount", 0L);
+                            item.put("subtotal", 0.0);
+                            item.put("discountAmount", 0.0);
+                            item.put("shippingFee", 0.0);
+                            item.put("totalAmount", 0.0);
+                            return item;
+                        });
+                        m.put("orderCount", ((Long)m.get("orderCount")) + 1);
+                        m.put("subtotal", ((Double)m.get("subtotal")) + o.getSubtotal());
+                        m.put("discountAmount", ((Double)m.get("discountAmount")) + o.getDiscountAmount());
+                        m.put("shippingFee", ((Double)m.get("shippingFee")) + o.getShippingFee());
+                        m.put("totalAmount", ((Double)m.get("totalAmount")) + o.getTotalAmount());
+                    }
+                }
+            }
+            for (Map<String, Object> m : dateMap.values()) {
+                res.rows.add(m);
+                double net = (Double) m.get("totalAmount");
+                grandTotalNet += net;
+                grandTotalOrders += (Long) m.get("orderCount");
+                grandTotalDiscount += (Double) m.get("discountAmount");
+                grandTotalShipping += (Double) m.get("shippingFee");
+                chartLabels.add((String) m.get("date"));
+                chartValues.add(net);
+            }
+        }
+
+        double avgOrderValue = grandTotalOrders > 0 ? grandTotalNet / grandTotalOrders : 0;
+        res.summary.put("totalRevenue", grandTotalNet);
+        res.summary.put("totalOrders", grandTotalOrders);
+        res.summary.put("avgOrderValue", Math.round(avgOrderValue));
+        res.summary.put("totalDiscount", grandTotalDiscount);
+        res.summary.put("totalShipping", grandTotalShipping);
+
+        res.chartData.put("labels", chartLabels);
+        res.chartData.put("values", chartValues);
+    }
+
+    private static void fetchOrdersReport(ReportResult res, String search) {
+        String sql = "SELECT id, order_code, username, recipient_name, recipient_phone, payment_method_name, order_status, subtotal, discount_amount, shipping_fee, total_amount, created_at FROM don_hang WHERE DATE(created_at) >= ? AND DATE(created_at) <= ? ORDER BY id DESC";
+
+        long completedCount = 0;
+        long processingCount = 0;
+        long cancelledCount = 0;
+        double totalOrderValue = 0;
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, res.fromDate);
+            ps.setString(2, res.toDate);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String status = rs.getString("order_status");
+                    String code = rs.getString("order_code");
+                    String user = rs.getString("username");
+                    String name = rs.getString("recipient_name");
+
+                    if (search != null && !search.trim().isEmpty()) {
+                        String s = search.trim().toLowerCase();
+                        boolean match = (code != null && code.toLowerCase().contains(s))
+                                || (user != null && user.toLowerCase().contains(s))
+                                || (name != null && name.toLowerCase().contains(s));
+                        if (!match) continue;
+                    }
+
+                    double total = rs.getDouble("total_amount");
+                    totalOrderValue += total;
+
+                    if ("HOAN_THANH".equalsIgnoreCase(status)) completedCount++;
+                    else if ("DA_HUY".equalsIgnoreCase(status)) cancelledCount++;
+                    else processingCount++;
+
+                    Map<String, Object> row = new HashMap<>();
+                    row.put("id", rs.getInt("id"));
+                    row.put("orderCode", code);
+                    row.put("username", user);
+                    row.put("recipientName", name);
+                    row.put("phone", rs.getString("recipient_phone"));
+                    row.put("paymentMethod", rs.getString("payment_method_name"));
+                    row.put("orderStatus", status);
+                    row.put("subtotal", rs.getDouble("subtotal"));
+                    row.put("discountAmount", rs.getDouble("discount_amount"));
+                    row.put("totalAmount", total);
+                    row.put("createdAt", rs.getString("created_at"));
+                    res.rows.add(row);
+                }
+            }
+        } catch (SQLException e) {
+            for (Order o : memoryOrders) {
+                if (o.getCreatedAt() != null && o.getCreatedAt().length() >= 10) {
+                    String d = o.getCreatedAt().substring(0, 10);
+                    if (d.compareTo(res.fromDate) >= 0 && d.compareTo(res.toDate) <= 0) {
+                        String status = o.getOrderStatus();
+                        if ("HOAN_THANH".equalsIgnoreCase(status)) completedCount++;
+                        else if ("DA_HUY".equalsIgnoreCase(status)) cancelledCount++;
+                        else processingCount++;
+                        totalOrderValue += o.getTotalAmount();
+
+                        Map<String, Object> row = new HashMap<>();
+                        row.put("id", o.getId());
+                        row.put("orderCode", o.getOrderCode());
+                        row.put("username", o.getUsername());
+                        row.put("recipientName", o.getRecipientName());
+                        row.put("phone", o.getRecipientPhone());
+                        row.put("paymentMethod", o.getPaymentMethodName());
+                        row.put("orderStatus", status);
+                        row.put("subtotal", o.getSubtotal());
+                        row.put("discountAmount", o.getDiscountAmount());
+                        row.put("totalAmount", o.getTotalAmount());
+                        row.put("createdAt", o.getCreatedAt());
+                        res.rows.add(row);
+                    }
+                }
+            }
+        }
+
+        res.summary.put("totalOrders", (long)res.rows.size());
+        res.summary.put("completedCount", completedCount);
+        res.summary.put("processingCount", processingCount);
+        res.summary.put("cancelledCount", cancelledCount);
+        res.summary.put("totalOrderValue", totalOrderValue);
+    }
+
+    private static void fetchProductsReport(ReportResult res, String search) {
+        String sql = "SELECT ct.book_id, ct.book_code, ct.book_title, COALESCE(NULLIF(b.category,''), 'Chưa phân loại') AS category, ct.price, SUM(ct.quantity) AS total_sold, SUM(ct.subtotal) AS total_revenue, COALESCE(b.stock, 0) AS current_stock FROM ct_don_hang ct JOIN don_hang dh ON ct.order_id = dh.id LEFT JOIN books b ON ct.book_id = b.id WHERE DATE(dh.created_at) >= ? AND DATE(dh.created_at) <= ? AND UPPER(dh.order_status) != 'DA_HUY' GROUP BY ct.book_id, ct.book_code, ct.book_title, category, ct.price, current_stock ORDER BY total_sold DESC";
+
+        long grandTotalUnits = 0;
+        double grandTotalRev = 0;
+        String topProductTitle = "—";
+        long topProductCount = 0;
+
+        List<String> chartLabels = new ArrayList<>();
+        List<Long> chartValues = new ArrayList<>();
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, res.fromDate);
+            ps.setString(2, res.toDate);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String title = rs.getString("book_title");
+                    String code = rs.getString("book_code");
+                    long sold = rs.getLong("total_sold");
+                    double rev = rs.getDouble("total_revenue");
+
+                    if (search != null && !search.trim().isEmpty()) {
+                        String s = search.trim().toLowerCase();
+                        boolean match = (title != null && title.toLowerCase().contains(s))
+                                || (code != null && code.toLowerCase().contains(s));
+                        if (!match) continue;
+                    }
+
+                    grandTotalUnits += sold;
+                    grandTotalRev += rev;
+
+                    if (sold > topProductCount) {
+                        topProductCount = sold;
+                        topProductTitle = title;
+                    }
+
+                    Map<String, Object> row = new HashMap<>();
+                    row.put("bookId", rs.getInt("book_id"));
+                    row.put("bookCode", code);
+                    row.put("bookTitle", title);
+                    row.put("category", rs.getString("category"));
+                    row.put("price", rs.getDouble("price"));
+                    row.put("totalSold", sold);
+                    row.put("totalRevenue", rev);
+                    row.put("currentStock", rs.getInt("current_stock"));
+                    res.rows.add(row);
+
+                    if (chartLabels.size() < 7) {
+                        chartLabels.add(title.length() > 20 ? title.substring(0, 18) + "..." : title);
+                        chartValues.add(sold);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            Map<Integer, Map<String, Object>> prodMap = new HashMap<>();
+            for (Order o : memoryOrders) {
+                if (o.getCreatedAt() != null && o.getCreatedAt().length() >= 10) {
+                    String d = o.getCreatedAt().substring(0, 10);
+                    if (d.compareTo(res.fromDate) >= 0 && d.compareTo(res.toDate) <= 0 && !"DA_HUY".equalsIgnoreCase(o.getOrderStatus())) {
+                        if (o.getItems() != null) {
+                            for (OrderItem item : o.getItems()) {
+                                Map<String, Object> m = prodMap.computeIfAbsent(item.getBookId(), k -> {
+                                    Map<String, Object> r = new HashMap<>();
+                                    r.put("bookId", k);
+                                    r.put("bookCode", item.getBookCode());
+                                    r.put("bookTitle", item.getBookTitle());
+                                    r.put("category", "Sách Bookora");
+                                    r.put("price", item.getPrice());
+                                    r.put("totalSold", 0L);
+                                    r.put("totalRevenue", 0.0);
+                                    r.put("currentStock", 20);
+                                    return r;
+                                });
+                                m.put("totalSold", ((Long)m.get("totalSold")) + item.getQuantity());
+                                m.put("totalRevenue", ((Double)m.get("totalRevenue")) + item.getSubtotal());
+                            }
+                        }
+                    }
+                }
+            }
+
+            for (Map<String, Object> m : prodMap.values()) {
+                long sold = (Long) m.get("totalSold");
+                double rev = (Double) m.get("totalRevenue");
+                grandTotalUnits += sold;
+                grandTotalRev += rev;
+                if (sold > topProductCount) {
+                    topProductCount = sold;
+                    topProductTitle = (String) m.get("bookTitle");
+                }
+                res.rows.add(m);
+            }
+        }
+
+        res.summary.put("totalUnitsSold", grandTotalUnits);
+        res.summary.put("totalProductRevenue", grandTotalRev);
+        res.summary.put("topProductTitle", topProductTitle);
+        res.summary.put("topProductCount", topProductCount);
+
+        res.chartData.put("labels", chartLabels);
+        res.chartData.put("values", chartValues);
+    }
+
+    private static void fetchInventoryReport(ReportResult res, String search) {
+        String sql = "SELECT b.id, b.code, b.title, b.author, b.publisher, b.category, b.price, b.stock, COALESCE(k.warehouse_location, 'Kho chính - Tầng 1') AS warehouse_location, COALESCE(k.status, IF(b.stock > 5, 'CON_HANG', IF(b.stock > 0, 'SAP_HET', 'HET_HANG'))) AS stock_status FROM books b LEFT JOIN kho k ON b.id = k.book_id ORDER BY b.stock ASC";
+
+        long totalBooksCount = 0;
+        double totalStockValue = 0;
+        long inStockCount = 0;
+        long lowStockCount = 0;
+        long outOfStockCount = 0;
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                String title = rs.getString("title");
+                String code = rs.getString("code");
+                int stock = rs.getInt("stock");
+                double price = rs.getDouble("price");
+
+                if (search != null && !search.trim().isEmpty()) {
+                    String s = search.trim().toLowerCase();
+                    boolean match = (title != null && title.toLowerCase().contains(s))
+                            || (code != null && code.toLowerCase().contains(s))
+                            || (rs.getString("category") != null && rs.getString("category").toLowerCase().contains(s));
+                    if (!match) continue;
+                }
+
+                totalBooksCount++;
+                totalStockValue += (stock * price);
+
+                if (stock > 5) inStockCount++;
+                else if (stock > 0) lowStockCount++;
+                else outOfStockCount++;
+
+                Map<String, Object> row = new HashMap<>();
+                row.put("id", rs.getInt("id"));
+                row.put("code", code);
+                row.put("title", title);
+                row.put("author", rs.getString("author"));
+                row.put("publisher", rs.getString("publisher"));
+                row.put("category", rs.getString("category"));
+                row.put("price", price);
+                row.put("stock", stock);
+                row.put("stockValue", stock * price);
+                row.put("warehouseLocation", rs.getString("warehouse_location"));
+                row.put("stockStatus", rs.getString("stock_status"));
+                res.rows.add(row);
+            }
+        } catch (SQLException e) {
+            for (Book b : memoryBooks) {
+                totalBooksCount++;
+                totalStockValue += (b.getStock() * b.getPrice());
+                if (b.getStock() > 5) inStockCount++;
+                else if (b.getStock() > 0) lowStockCount++;
+                else outOfStockCount++;
+
+                Map<String, Object> row = new HashMap<>();
+                row.put("id", b.getId());
+                row.put("code", b.getCode());
+                row.put("title", b.getTitle());
+                row.put("author", b.getAuthor());
+                row.put("publisher", b.getPublisher());
+                row.put("category", b.getCategory());
+                row.put("price", b.getPrice());
+                row.put("stock", b.getStock());
+                row.put("stockValue", b.getStock() * b.getPrice());
+                row.put("warehouseLocation", "Kho chính - Tầng 1");
+                row.put("stockStatus", b.getStock() > 5 ? "CON_HANG" : (b.getStock() > 0 ? "SAP_HET" : "HET_HANG"));
+                res.rows.add(row);
+            }
+        }
+
+        res.summary.put("totalBooksCount", totalBooksCount);
+        res.summary.put("totalStockValue", totalStockValue);
+        res.summary.put("inStockCount", inStockCount);
+        res.summary.put("lowStockCount", lowStockCount);
+        res.summary.put("outOfStockCount", outOfStockCount);
+    }
+
+    private static void fetchCustomersReport(ReportResult res, String search) {
+        String sql = "SELECT u.username, u.full_name, u.email, u.phone, u.status, u.created_at, COUNT(dh.id) AS order_count, COALESCE(SUM(IF(UPPER(dh.order_status) != 'DA_HUY', dh.total_amount, 0)), 0) AS total_spent FROM users u LEFT JOIN don_hang dh ON LOWER(u.username) = LOWER(dh.username) AND DATE(dh.created_at) >= ? AND DATE(dh.created_at) <= ? WHERE UPPER(u.role) = 'CUSTOMER' GROUP BY u.username, u.full_name, u.email, u.phone, u.status, u.created_at ORDER BY total_spent DESC";
+
+        long totalCustomers = 0;
+        long activeCustomers = 0;
+        long purchasingCustomers = 0;
+        double grandTotalSpent = 0;
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, res.fromDate);
+            ps.setString(2, res.toDate);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String user = rs.getString("username");
+                    String name = rs.getString("full_name");
+                    long orders = rs.getLong("order_count");
+                    double spent = rs.getDouble("total_spent");
+                    String status = rs.getString("status");
+
+                    if (search != null && !search.trim().isEmpty()) {
+                        String s = search.trim().toLowerCase();
+                        boolean match = (user != null && user.toLowerCase().contains(s))
+                                || (name != null && name.toLowerCase().contains(s))
+                                || (rs.getString("email") != null && rs.getString("email").toLowerCase().contains(s));
+                        if (!match) continue;
+                    }
+
+                    totalCustomers++;
+                    if (!"LOCKED".equalsIgnoreCase(status)) activeCustomers++;
+                    if (orders > 0) purchasingCustomers++;
+                    grandTotalSpent += spent;
+
+                    Map<String, Object> row = new HashMap<>();
+                    row.put("username", user);
+                    row.put("fullName", name);
+                    row.put("email", rs.getString("email"));
+                    row.put("phone", rs.getString("phone"));
+                    row.put("status", status != null ? status : "ACTIVE");
+                    row.put("orderCount", orders);
+                    row.put("totalSpent", spent);
+                    row.put("createdAt", rs.getString("created_at"));
+                    res.rows.add(row);
+                }
+            }
+        } catch (SQLException e) {
+            for (User u : memoryUsers.values()) {
+                if ("CUSTOMER".equalsIgnoreCase(u.getRole())) {
+                    totalCustomers++;
+                    if (!"LOCKED".equalsIgnoreCase(u.getStatus())) activeCustomers++;
+
+                    long orders = 0;
+                    double spent = 0;
+                    for (Order o : memoryOrders) {
+                        if (u.getUsername().equalsIgnoreCase(o.getUsername()) && !"DA_HUY".equalsIgnoreCase(o.getOrderStatus())) {
+                            orders++;
+                            spent += o.getTotalAmount();
+                        }
+                    }
+
+                    if (orders > 0) purchasingCustomers++;
+                    grandTotalSpent += spent;
+
+                    Map<String, Object> row = new HashMap<>();
+                    row.put("username", u.getUsername());
+                    row.put("fullName", u.getFullName());
+                    row.put("email", u.getEmail());
+                    row.put("phone", u.getPhone());
+                    row.put("status", u.getStatus() != null ? u.getStatus() : "ACTIVE");
+                    row.put("orderCount", orders);
+                    row.put("totalSpent", spent);
+                    row.put("createdAt", "2026-01-01");
+                    res.rows.add(row);
+                }
+            }
+        }
+
+        res.summary.put("totalCustomers", totalCustomers);
+        res.summary.put("activeCustomers", activeCustomers);
+        res.summary.put("purchasingCustomers", purchasingCustomers);
+        res.summary.put("grandTotalSpent", grandTotalSpent);
+    }
+
+    // =========================================================
+    // UC13 - QUẢN LÝ NỘI DUNG CHATBOT AI (CHATBOT_NOI_DUNG)
+    // =========================================================
+
+    private static final List<ChatbotContent> chatbotContentList = Collections.synchronizedList(new ArrayList<>());
+    private static boolean chatbotInitialized = false;
+
+    private static synchronized void ensureChatbotLoaded() {
+        if (chatbotInitialized) return;
+
+        List<ChatbotContent> list = new ArrayList<>();
+        String sql = "SELECT * FROM chatbot_noi_dung ORDER BY id ASC";
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                ChatbotContent item = new ChatbotContent(
+                    rs.getInt("id"),
+                    rs.getString("category_type"),
+                    rs.getString("title"),
+                    rs.getString("content"),
+                    rs.getString("keywords"),
+                    rs.getString("status"),
+                    rs.getString("created_at"),
+                    rs.getString("updated_at")
+                );
+                list.add(item);
+            }
+        } catch (Exception e) {
+            System.err.println("⚠️ Lỗi đọc chatbot_noi_dung từ MySQL: " + e.getMessage());
+        }
+
+        if (list.isEmpty()) {
+            // Seed default 5 items
+            list.add(new ChatbotContent(1, "CHINH_SACH_MUA_HANG", "Quy trình và điều kiện đặt hàng sách", "Quý khách có thể chọn sách, thêm vào giỏ hàng, chọn địa chỉ nhận hàng và phương thức thanh toán để hoàn tất đơn hàng. Bookora tiếp nhận đơn hàng 24/7 trên phạm vi toàn quốc.", "mua hàng, quy trình đặt hàng, làm sao đặt sách, hướng dẫn mua sách", "ACTIVE", "2026-01-01 00:00:00", "2026-01-01 00:00:00"));
+            list.add(new ChatbotContent(2, "CHINH_SACH_THANH_TOAN", "Phương thức thanh toán hỗ trợ", "Bookora hỗ trợ 2 phương thức thanh toán: 1) Thanh toán tiền mặt khi nhận hàng (COD). 2) Thanh toán trực tuyến chuyển khoản ngân hàng nhanh VietQR/MoMo 24/7 hoàn toàn không mất phí.", "thanh toán, cod, chuyển khoản, vietqr, momo, tiền mặt", "ACTIVE", "2026-01-01 00:00:00", "2026-01-01 00:00:00"));
+            list.add(new ChatbotContent(3, "CHINH_SACH_GIAO_HANG", "Phạm vi, thời gian và phí vận chuyển", "Phạm vi giao hàng: Toàn quốc. Phí giao hàng tiêu chuẩn là 30.000đ. Đơn hàng từ 250.000đ được MIỄN PHÍ VẬN CHUYỂN toàn quốc. Thời gian giao hàng từ 1 - 3 ngày làm việc.", "giao hàng, phí ship, bao lâu nhận được, miễn phí vận chuyển, freeship", "ACTIVE", "2026-01-01 00:00:00", "2026-01-01 00:00:00"));
+            list.add(new ChatbotContent(4, "CAU_HOI_THUONG_GAP", "Chính sách đổi trả và hoàn tiền", "Khách hàng được quyền yêu cầu đổi trả sách trong vòng 7 ngày kể từ khi nhận hàng nếu sách có lỗi kỹ thuật (rách bìa, thiếu trang, rách hỏng do vận chuyển). Liên hệ hotline 0988123456 để được hỗ trợ.", "đổi trả, hoàn tiền, rách sách, sách lỗi, chính sách trả hàng", "ACTIVE", "2026-01-01 00:00:00", "2026-01-01 00:00:00"));
+            list.add(new ChatbotContent(5, "THONG_TIN_SACH", "Giới thiệu danh mục sách bán chạy & khuyến mãi", "Bookora sở hữu bộ sưu tập sách phong phú gồm các thể loại: Văn học, Kỹ năng sống, Công nghệ & AI, Kinh tế, Tâm lý học. Nhiều chương trình ưu đãi giảm đến 25% kèm quà tặng bookmark độc quyền.", "sách bán chạy, danh mục sách, ưu đãi sách, giảm giá sách, thể loại sách", "ACTIVE", "2026-01-01 00:00:00", "2026-01-01 00:00:00"));
+        }
+
+        chatbotContentList.clear();
+        chatbotContentList.addAll(list);
+        chatbotInitialized = true;
+    }
+
+    public static List<ChatbotContent> getAllChatbotContents(String categoryType, String search) {
+        ensureChatbotLoaded();
+        List<ChatbotContent> result = new ArrayList<>();
+
+        String catFilter = categoryType != null ? categoryType.trim().toUpperCase() : "";
+        String searchFilter = search != null ? search.trim().toLowerCase() : "";
+
+        synchronized (chatbotContentList) {
+            for (ChatbotContent item : chatbotContentList) {
+                boolean matchCat = catFilter.isEmpty() || "ALL".equals(catFilter) || item.getCategoryType().toUpperCase().equals(catFilter);
+                boolean matchSearch = searchFilter.isEmpty()
+                    || item.getTitle().toLowerCase().contains(searchFilter)
+                    || item.getContent().toLowerCase().contains(searchFilter)
+                    || (item.getKeywords() != null && item.getKeywords().toLowerCase().contains(searchFilter));
+
+                if (matchCat && matchSearch) {
+                    result.add(item);
+                }
+            }
+        }
+        return result;
+    }
+
+    public static ChatbotContent getChatbotContentById(int id) {
+        ensureChatbotLoaded();
+        synchronized (chatbotContentList) {
+            for (ChatbotContent item : chatbotContentList) {
+                if (item.getId() == id) return item;
+            }
+        }
+        return null;
+    }
+
+    public static String addChatbotContent(ChatbotContent item) {
+        if (item == null) return "Dữ liệu nhập không hợp lệ.";
+        if (item.getTitle() == null || item.getTitle().trim().isEmpty()) {
+            return "Tiêu đề không được để trống.";
+        }
+        if (item.getContent() == null || item.getContent().trim().isEmpty()) {
+            return "Nội dung không được để trống.";
+        }
+        if (item.getCategoryType() == null || item.getCategoryType().trim().isEmpty()) {
+            return "Loại nội dung không được để trống.";
+        }
+
+        ensureChatbotLoaded();
+
+        String sql = "INSERT INTO chatbot_noi_dung (category_type, title, content, keywords, status) VALUES (?, ?, ?, ?, ?)";
+        int newId = 0;
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, item.getCategoryType().trim());
+            ps.setString(2, item.getTitle().trim());
+            ps.setString(3, item.getContent().trim());
+            ps.setString(4, item.getKeywords() != null ? item.getKeywords().trim() : "");
+            ps.setString(5, item.getStatus() != null ? item.getStatus() : "ACTIVE");
+
+            int affected = ps.executeUpdate();
+            if (affected > 0) {
+                try (ResultSet rs = ps.getGeneratedKeys()) {
+                    if (rs.next()) newId = rs.getInt(1);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("⚠️ Lỗi thêm chatbot_noi_dung vào DB: " + e.getMessage());
+        }
+
+        if (newId <= 0) {
+            // Auto generate ID for in-memory fallback
+            int maxId = 0;
+            synchronized (chatbotContentList) {
+                for (ChatbotContent c : chatbotContentList) {
+                    if (c.getId() > maxId) maxId = c.getId();
+                }
+            }
+            newId = maxId + 1;
+        }
+
+        item.setId(newId);
+        String nowStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        item.setCreatedAt(nowStr);
+        item.setUpdatedAt(nowStr);
+
+        synchronized (chatbotContentList) {
+            chatbotContentList.add(item);
+        }
+
+        return null; // success
+    }
+
+    public static String updateChatbotContent(ChatbotContent item) {
+        if (item == null) return "Dữ liệu nhập không hợp lệ.";
+        if (item.getTitle() == null || item.getTitle().trim().isEmpty()) {
+            return "Tiêu đề không được để trống.";
+        }
+        if (item.getContent() == null || item.getContent().trim().isEmpty()) {
+            return "Nội dung không được để trống.";
+        }
+        if (item.getCategoryType() == null || item.getCategoryType().trim().isEmpty()) {
+            return "Loại nội dung không được để trống.";
+        }
+
+        ensureChatbotLoaded();
+        ChatbotContent existing = getChatbotContentById(item.getId());
+        if (existing == null) {
+            return "Nội dung Chatbot không tồn tại!";
+        }
+
+        String sql = "UPDATE chatbot_noi_dung SET category_type = ?, title = ?, content = ?, keywords = ?, status = ? WHERE id = ?";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, item.getCategoryType().trim());
+            ps.setString(2, item.getTitle().trim());
+            ps.setString(3, item.getContent().trim());
+            ps.setString(4, item.getKeywords() != null ? item.getKeywords().trim() : "");
+            ps.setString(5, item.getStatus() != null ? item.getStatus() : "ACTIVE");
+            ps.setInt(6, item.getId());
+            ps.executeUpdate();
+        } catch (Exception e) {
+            System.err.println("⚠️ Lỗi cập nhật chatbot_noi_dung vào DB: " + e.getMessage());
+        }
+
+        existing.setCategoryType(item.getCategoryType().trim());
+        existing.setTitle(item.getTitle().trim());
+        existing.setContent(item.getContent().trim());
+        existing.setKeywords(item.getKeywords() != null ? item.getKeywords().trim() : "");
+        existing.setStatus(item.getStatus() != null ? item.getStatus() : "ACTIVE");
+        existing.setUpdatedAt(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+
+        return null; // success
+    }
+
+    public static boolean deleteChatbotContent(int id) {
+        ensureChatbotLoaded();
+        String sql = "DELETE FROM chatbot_noi_dung WHERE id = ?";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            ps.executeUpdate();
+        } catch (Exception e) {
+            System.err.println("⚠️ Lỗi xóa chatbot_noi_dung từ DB: " + e.getMessage());
+        }
+
+        synchronized (chatbotContentList) {
+            return chatbotContentList.removeIf(c -> c.getId() == id);
+        }
+    }
+
+    /**
+     * Tìm câu trả lời trong Tri thức Chatbot AI từ dữ liệu CHATBOT_NOI_DUNG
+     */
+    public static String findChatbotAnswer(String message) {
+        if (message == null || message.trim().isEmpty()) return null;
+        ensureChatbotLoaded();
+        String lowerMsg = message.trim().toLowerCase();
+
+        synchronized (chatbotContentList) {
+            for (ChatbotContent item : chatbotContentList) {
+                if (!"ACTIVE".equalsIgnoreCase(item.getStatus())) continue;
+
+                // Match keywords
+                if (item.getKeywords() != null && !item.getKeywords().isEmpty()) {
+                    String[] kw = item.getKeywords().split("[,;]");
+                    for (String k : kw) {
+                        String cleanK = k.trim().toLowerCase();
+                        if (!cleanK.isEmpty() && lowerMsg.contains(cleanK)) {
+                            return item.getContent();
+                        }
+                    }
+                }
+
+                // Match title
+                if (item.getTitle() != null && lowerMsg.contains(item.getTitle().toLowerCase())) {
+                    return item.getContent();
+                }
+
+                // Topic specific match
+                if ("CHINH_SACH_GIAO_HANG".equals(item.getCategoryType()) &&
+                    (lowerMsg.contains("giao hàng") || lowerMsg.contains("phí ship") || lowerMsg.contains("bao lâu nhận được") || lowerMsg.contains("freeship"))) {
+                    return item.getContent();
+                }
+
+                if ("CHINH_SACH_THANH_TOAN".equals(item.getCategoryType()) &&
+                    (lowerMsg.contains("thanh toán") || lowerMsg.contains("cod") || lowerMsg.contains("vietqr") || lowerMsg.contains("momo") || lowerMsg.contains("chuyển khoản"))) {
+                    return item.getContent();
+                }
+
+                if ("CHINH_SACH_MUA_HANG".equals(item.getCategoryType()) &&
+                    (lowerMsg.contains("mua hàng") || lowerMsg.contains("quy trình") || lowerMsg.contains("đặt sách"))) {
+                    return item.getContent();
+                }
+
+                if ("CAU_HOI_THUONG_GAP".equals(item.getCategoryType()) &&
+                    (lowerMsg.contains("đổi trả") || lowerMsg.contains("hoàn tiền") || lowerMsg.contains("rách") || lowerMsg.contains("lỗi"))) {
+                    return item.getContent();
+                }
+            }
+        }
+        return null;
+    }
 }
+
 

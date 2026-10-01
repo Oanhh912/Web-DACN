@@ -291,7 +291,28 @@ INSERT INTO `ct_don_hang` (`order_id`, `book_id`, `book_code`, `book_title`, `bo
 (103, 25, '8935278601425', 'Tháo Dây Oan Trái - Nghệ Thuật Chuyển Hóa Cảm Xúc', '/images/thao-day-oan-trai.jpg', 89000, 1, 89000),
 (104, 2, 'MS002', 'Đắc Nhân Tâm (How to Win Friends)', 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=500', 88000, 1, 88000);
 
+-- 12. BẢNG NỘI DUNG CHATBOT AI (CHATBOT_NOI_DUNG - Phục vụ UC13)
+DROP TABLE IF EXISTS `chatbot_noi_dung`;
+CREATE TABLE `chatbot_noi_dung` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `category_type` VARCHAR(50) NOT NULL,
+    `title` VARCHAR(255) NOT NULL,
+    `content` TEXT NOT NULL,
+    `keywords` VARCHAR(500),
+    `status` VARCHAR(20) DEFAULT 'ACTIVE',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `chatbot_noi_dung` (`id`, `category_type`, `title`, `content`, `keywords`, `status`) VALUES
+(1, 'CHINH_SACH_MUA_HANG', 'Quy trình và điều kiện đặt hàng sách', 'Quý khách có thể chọn sách, thêm vào giỏ hàng, chọn địa chỉ nhận hàng và phương thức thanh toán để hoàn tất đơn hàng. Bookora tiếp nhận đơn hàng 24/7 trên phạm vi toàn quốc.', 'mua hàng, quy trình đặt hàng, làm sao đặt sách, hướng dẫn mua sách', 'ACTIVE'),
+(2, 'CHINH_SACH_THANH_TOAN', 'Phương thức thanh toán hỗ trợ', 'Bookora hỗ trợ 2 phương thức thanh toán: 1) Thanh toán tiền mặt khi nhận hàng (COD). 2) Thanh toán trực tuyến chuyển khoản ngân hàng nhanh VietQR/MoMo 24/7 hoàn toàn không mất phí.', 'thanh toán, cod, chuyển khoản, vietqr, momo, tiền mặt', 'ACTIVE'),
+(3, 'CHINH_SACH_GIAO_HANG', 'Phạm vi, thời gian và phí vận chuyển', 'Phạm vi giao hàng: Toàn quốc. Phí giao hàng tiêu chuẩn là 30.000đ. Đơn hàng từ 250.000đ được MIỄN PHÍ VẬN CHUYỂN toàn quốc. Thời gian giao hàng từ 1 - 3 ngày làm việc.', 'giao hàng, phí ship, bao lâu nhận được, miễn phí vận chuyển, freeship', 'ACTIVE'),
+(4, 'CAU_HOI_THUONG_GAP', 'Chính sách đổi trả và hoàn tiền', 'Khách hàng được quyền yêu cầu đổi trả sách trong vòng 7 ngày kể từ khi nhận hàng nếu sách có lỗi kỹ thuật (rách bìa, thiếu trang, rách hỏng do vận chuyển). Liên hệ hotline 0988123456 để được hỗ trợ.', 'đổi trả, hoàn tiền, rách sách, sách lỗi, chính sách trả hàng', 'ACTIVE'),
+(5, 'THONG_TIN_SACH', 'Giới thiệu danh mục sách bán chạy & khuyến mãi', 'Bookora sở hữu bộ sưu tập sách phong phú gồm các thể loại: Văn học, Kỹ năng sống, Công nghệ & AI, Kinh tế, Tâm lý học. Nhiều chương trình ưu đãi giảm đến 25% kèm quà tặng bookmark độc quyền.', 'sách bán chạy, danh mục sách, ưu đãi sách, giảm giá sách, thể loại sách', 'ACTIVE');
+
 SET FOREIGN_KEY_CHECKS = 1;
+
 
 
 

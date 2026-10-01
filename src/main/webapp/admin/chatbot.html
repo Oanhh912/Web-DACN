@@ -3,12 +3,243 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản Lý Chatbot AI - Bookora Admin</title>
+    <title>Quản Lý Nội Dung Chatbot AI - Bookora Admin</title>
     <!-- FontAwesome 6 Icons & Google Fonts -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Admin Design System CSS -->
     <link rel="stylesheet" href="/admin/css/admin.css">
+    <style>
+        /* Custom styling for Chatbot AI content page */
+        .badge-cat {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+        .badge-cat-book { background: #e0f2fe; color: #0284c7; }
+        .badge-cat-buy { background: #fef3c7; color: #d97706; }
+        .badge-cat-pay { background: #dcfce7; color: #16a34a; }
+        .badge-cat-ship { background: #f3e8ff; color: #9333ea; }
+        .badge-cat-faq { background: #ffe4e6; color: #e11d48; }
+
+        .content-snippet {
+            max-width: 320px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #4b5563;
+            font-size: 0.88rem;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            background: #ffffff;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color, #e5e7eb);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-select, .filter-input {
+            padding: 8px 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .filter-select:focus, .filter-input:focus {
+            border-color: var(--primary, #2563eb);
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: #ffffff;
+            padding: 18px 20px;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+        }
+        .stat-icon-blue { background: #eff6ff; color: #2563eb; }
+        .stat-icon-green { background: #f0fdf4; color: #16a34a; }
+        .stat-icon-amber { background: #fffbeb; color: #d97706; }
+        .stat-icon-purple { background: #faf5ff; color: #9333ea; }
+
+        .stat-info h4 {
+            margin: 0;
+            font-size: 0.82rem;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .stat-info .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #111827;
+            margin-top: 2px;
+        }
+
+        /* Modal custom overlay & box */
+        .modal-backdrop {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.55);
+            backdrop-filter: blur(4px);
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-backdrop.active {
+            display: flex;
+        }
+        .modal-box {
+            background: #ffffff;
+            border-radius: 16px;
+            max-width: 650px;
+            width: 100%;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+            overflow: hidden;
+            animation: modalSlide 0.25s ease-out;
+        }
+        @keyframes modalSlide {
+            from { opacity: 0; transform: translateY(-15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-header-custom {
+            padding: 18px 24px;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .modal-title-custom {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .modal-close-custom {
+            background: transparent;
+            border: none;
+            font-size: 1.2rem;
+            color: #64748b;
+            cursor: pointer;
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .modal-close-custom:hover { background: #e2e8f0; color: #0f172a; }
+
+        .modal-body-custom {
+            padding: 24px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .modal-footer-custom {
+            padding: 16px 24px;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .form-label-custom {
+            font-weight: 600;
+            font-size: 0.88rem;
+            color: #334155;
+            margin-bottom: 6px;
+            display: block;
+        }
+        .form-control-custom {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 0.92rem;
+            outline: none;
+            box-sizing: border-box;
+            transition: all 0.2s;
+        }
+        .form-control-custom:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+        }
+
+        .alert-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            padding: 14px 20px;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            animation: toastIn 0.3s ease-out;
+        }
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .toast-success { background: #16a34a; }
+        .toast-error { background: #dc2626; }
+
+        .form-error-banner {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 0.88rem;
+            display: none;
+        }
+    </style>
 </head>
 <body>
 
@@ -42,7 +273,6 @@
                         <a href="/admin/books" class="sidebar-nav-link">
                             <i class="fas fa-book"></i>
                             <span>Quản lý sách & kho</span>
-                            <span class="sidebar-badge badge-danger">3</span>
                         </a>
                     </li>
                     <li class="sidebar-nav-item">
@@ -84,10 +314,10 @@
 
             <div class="sidebar-footer">
                 <div class="sidebar-user-card">
-                    <img src="${adminAvatar}" alt="Admin Avatar" class="sidebar-user-avatar" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150';">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150" alt="Admin Avatar" class="sidebar-user-avatar">
                     <div class="sidebar-user-info">
-                        <div class="sidebar-user-name">${adminFullName}</div>
-                        <div class="sidebar-user-role"><i class="fas fa-crown" style="color:#f59e0b;"></i> ${adminUsername} (ADMIN)</div>
+                        <div class="sidebar-user-name">Quản Trị Viên</div>
+                        <div class="sidebar-user-role"><i class="fas fa-crown" style="color:#f59e0b;"></i> admin (ADMIN)</div>
                     </div>
                 </div>
             </div>
@@ -99,7 +329,7 @@
             <header class="admin-header">
                 <div class="header-search-wrap">
                     <i class="fas fa-magnifying-glass header-search-icon"></i>
-                    <input type="text" class="header-search-input" placeholder="Tìm kiếm kịch bản, câu hỏi AI, tri thức tư vấn...">
+                    <input type="text" class="header-search-input" id="topSearchInput" placeholder="Tìm kiếm nội dung tri thức Chatbot AI..." onkeyup="if(event.key==='Enter') applyFilters()">
                 </div>
 
                 <div class="header-actions">
@@ -111,7 +341,7 @@
                         <i class="fas fa-globe" style="color:var(--primary);"></i>
                         <span class="header-user-title">Trang Khách Hàng</span>
                     </a>
-                    <a href="/logout" class="header-user-btn" style="border-color:#fca5a5; color:#dc2626;" title="Đăng xuất khỏi hệ thống">
+                    <a href="/logout" class="header-user-btn" style="border-color:#fca5a5; color:#dc2626;" title="Đăng xuất">
                         <i class="fas fa-right-from-bracket"></i>
                         <span class="header-user-title">Đăng xuất</span>
                     </a>
@@ -124,41 +354,113 @@
                 <div class="admin-breadcrumb">
                     <a href="/admin"><i class="fas fa-house"></i> Admin Portal</a>
                     <i class="fas fa-chevron-right"></i>
-                    <span>Quản lý Chatbot AI</span>
+                    <span>Quản lý nội dung Chatbot AI</span>
                 </div>
 
                 <div class="admin-page-header">
                     <div class="admin-page-title-wrap">
-                        <h1><i class="fas fa-robot" style="color:var(--primary);"></i> Quản Lý Tri Thức & Kịch Bản Chatbot AI</h1>
-                        <p class="admin-page-sub">Cấu hình dữ liệu tri thức tư vấn sách, kịch bản phản hồi tự động và cài đặt trợ lý AI.</p>
+                        <h1><i class="fas fa-robot" style="color:var(--primary);"></i> Quản lý nội dung Chatbot AI</h1>
+                        <p class="admin-page-sub">Cấu hình dữ liệu tri thức tư vấn sách, chính sách mua hàng, thanh toán, giao hàng và câu hỏi thường gặp (FAQ) cho Trợ lý AI.</p>
                     </div>
                     <div>
-                        <button class="btn-admin btn-admin-primary" disabled style="opacity: 0.8; cursor: not-allowed;">
+                        <button class="btn-admin btn-admin-primary" onclick="openAddModal()">
                             <i class="fas fa-plus"></i>
-                            <span>Thêm bộ tri thức AI (Khung giao diện)</span>
+                            <span>Thêm nội dung</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- CONTENT FRAME / PLACEHOLDER -->
+                <!-- STATS SUMMARY CARDS -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon stat-icon-blue"><i class="fas fa-brain"></i></div>
+                        <div class="stat-info">
+                            <h4>Tổng Tri Thức AI</h4>
+                            <div class="stat-value" id="statTotal">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon stat-icon-amber"><i class="fas fa-book"></i></div>
+                        <div class="stat-info">
+                            <h4>Thông Tin Sách</h4>
+                            <div class="stat-value" id="statBookInfo">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon stat-icon-green"><i class="fas fa-shield-halved"></i></div>
+                        <div class="stat-info">
+                            <h4>Chính Sách Bán Hàng</h4>
+                            <div class="stat-value" id="statPolicies">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon stat-icon-purple"><i class="fas fa-circle-question"></i></div>
+                        <div class="stat-info">
+                            <h4>Câu Hỏi FAQ</h4>
+                            <div class="stat-value" id="statFaq">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FILTER BAR -->
+                <div class="filter-bar">
+                    <div class="filter-group">
+                        <label for="filterCategory" style="font-weight:600; font-size:0.9rem; color:#475569;">Loại nội dung:</label>
+                        <select id="filterCategory" class="filter-select" onchange="applyFilters()">
+                            <option value="ALL">-- Tất cả loại nội dung --</option>
+                            <option value="THONG_TIN_SACH">Thông tin sách</option>
+                            <option value="CHINH_SACH_MUA_HANG">Chính sách mua hàng</option>
+                            <option value="CHINH_SACH_THANH_TOAN">Chính sách thanh toán</option>
+                            <option value="CHINH_SACH_GIAO_HANG">Chính sách giao hàng</option>
+                            <option value="CAU_HOI_THUONG_GAP">Câu hỏi thường gặp (FAQ)</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group" style="flex:1;">
+                        <input type="text" id="filterSearch" class="filter-input" style="width:100%;" placeholder="Nhập từ khóa hoặc tiêu đề cần tìm..." onkeyup="if(event.key==='Enter') applyFilters()">
+                    </div>
+
+                    <button class="btn-admin btn-admin-secondary" onclick="applyFilters()">
+                        <i class="fas fa-filter"></i> Lọc dữ liệu
+                    </button>
+
+                    <button class="btn-admin btn-admin-outline" onclick="syncKnowledgeBase()" title="Cập nhật nguồn tri thức AI cho Chatbot ngay">
+                        <i class="fas fa-rotate"></i> Đồng bộ Chatbot
+                    </button>
+                </div>
+
+                <!-- MAIN TABLE CARD -->
                 <div class="admin-card">
                     <div class="admin-card-header">
                         <h3 class="admin-card-title">
-                            <i class="fas fa-brain" style="color:var(--primary);"></i>
-                            Cấu Hình Dữ Liệu & Kịch Bản Chatbot
+                            <i class="fas fa-list-check" style="color:var(--primary);"></i>
+                            Danh sách nội dung tri thức Chatbot AI
                         </h3>
-                        <div style="display:flex; gap:10px;">
-                            <span class="badge-status badge-info"><i class="fas fa-info-circle"></i> Khung giao diện sẵn sàng</span>
-                        </div>
+                        <span class="badge-status badge-info" id="tableCountBadge">0 mục dữ liệu</span>
                     </div>
-                    
-                    <div class="placeholder-box">
-                        <div class="placeholder-icon"><i class="fas fa-comments"></i></div>
-                        <h3 class="placeholder-title">Khu vực Quản Lý Chatbot AI</h3>
-                        <p class="placeholder-desc">
-                            Giao diện khung đã hoàn tất kết nối route <code>/admin/chatbot</code>.<br>
-                            Khi có yêu cầu chi tiết (Quản lý câu hỏi/trả lời, cập nhật tri thức sản phẩm, cấu hình API AI), các chức năng nâng cao sẽ được xây dựng tại đây.
-                        </p>
+
+                    <div class="admin-table-wrap">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px; text-align: center;">STT</th>
+                                    <th>Tiêu đề tri thức</th>
+                                    <th style="width: 170px;">Loại nội dung</th>
+                                    <th>Nội dung tóm tắt</th>
+                                    <th style="width: 140px;">Ngày cập nhật</th>
+                                    <th style="width: 110px; text-align: center;">Trạng thái</th>
+                                    <th style="width: 160px; text-align: center;">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="chatbotContentTbody">
+                                <tr>
+                                    <td colspan="7" style="text-align: center; padding: 40px; color: #64748b;">
+                                        <i class="fas fa-spinner fa-spin fa-2x" style="color: var(--primary);"></i>
+                                        <p style="margin-top: 10px;">Đang tải danh sách tri thức Chatbot AI...</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -166,5 +468,458 @@
         </div>
     </div>
 
+    <!-- MODAL FORM THÊM / SỬA NỘI DUNG -->
+    <div class="modal-backdrop" id="contentModal">
+        <div class="modal-box">
+            <div class="modal-header-custom">
+                <div class="modal-title-custom" id="modalFormTitle">
+                    <i class="fas fa-plus-circle" style="color:var(--primary);"></i> Thêm nội dung Chatbot AI
+                </div>
+                <button type="button" class="modal-close-custom" onclick="closeContentModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body-custom">
+                <div class="form-error-banner" id="modalErrorMsg"></div>
+
+                <form id="contentForm" onsubmit="handleFormSubmit(event)">
+                    <input type="hidden" id="formId" value="0">
+
+                    <div style="margin-bottom: 16px;">
+                        <label class="form-label-custom" for="formCategoryType">Loại nội dung <span style="color:#ef4444;">*</span></label>
+                        <select id="formCategoryType" class="form-control-custom" required>
+                            <option value="">-- Chọn loại nội dung --</option>
+                            <option value="THONG_TIN_SACH">Thông tin sách</option>
+                            <option value="CHINH_SACH_MUA_HANG">Chính sách mua hàng</option>
+                            <option value="CHINH_SACH_THANH_TOAN">Chính sách thanh toán</option>
+                            <option value="CHINH_SACH_GIAO_HANG">Chính sách giao hàng</option>
+                            <option value="CAU_HOI_THUONG_GAP">Câu hỏi thường gặp (FAQ)</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <label class="form-label-custom" for="formTitle">Tiêu đề nội dung <span style="color:#ef4444;">*</span></label>
+                        <input type="text" id="formTitle" class="form-control-custom" placeholder="Ví dụ: Quy trình đặt hàng và thanh toán COD" required>
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <label class="form-label-custom" for="formContent">Nội dung trả lời của Chatbot <span style="color:#ef4444;">*</span></label>
+                        <textarea id="formContent" class="form-control-custom" rows="5" placeholder="Nhập nội dung chi tiết mà Trợ lý Chatbot AI sẽ trả lời cho khách hàng..." required></textarea>
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <label class="form-label-custom" for="formKeywords">Từ khóa gợi ý / kích hoạt (keywords)</label>
+                        <input type="text" id="formKeywords" class="form-control-custom" placeholder="Phân cách bằng dấu phẩy, VD: giao hàng, phí ship, bao lâu nhận">
+                        <small style="color:#64748b; font-size:0.8rem; margin-top:4px; display:block;">Khi câu hỏi khách hàng chứa các từ khóa này, AI Chatbot sẽ tự động phản hồi theo nội dung trên.</small>
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <label class="form-label-custom" for="formStatus">Trạng thái hoạt động</label>
+                        <select id="formStatus" class="form-control-custom">
+                            <option value="ACTIVE">Hoạt động (ACTIVE)</option>
+                            <option value="INACTIVE">Tạm khóa (INACTIVE)</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer-custom">
+                <button type="button" class="btn-admin btn-admin-secondary" onclick="closeContentModal()">Hủy</button>
+                <button type="button" class="btn-admin btn-admin-primary" onclick="handleFormSubmit(event)">
+                    <i class="fas fa-floppy-disk"></i> Lưu dữ liệu
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL XEM CHI TIẾT -->
+    <div class="modal-backdrop" id="viewModal">
+        <div class="modal-box">
+            <div class="modal-header-custom">
+                <div class="modal-title-custom">
+                    <i class="fas fa-eye" style="color:var(--primary);"></i> Chi tiết nội dung Chatbot AI
+                </div>
+                <button type="button" class="modal-close-custom" onclick="closeViewModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body-custom" id="viewModalBody">
+                <!-- Filled dynamically -->
+            </div>
+            <div class="modal-footer-custom">
+                <button type="button" class="btn-admin btn-admin-secondary" onclick="closeViewModal()">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL XÁC NHẬN XÓA -->
+    <div class="modal-backdrop" id="deleteModal">
+        <div class="modal-box" style="max-width: 480px;">
+            <div class="modal-header-custom" style="background:#fef2f2;">
+                <div class="modal-title-custom" style="color:#991b1b;">
+                    <i class="fas fa-triangle-exclamation" style="color:#ef4444;"></i> Xác nhận xóa nội dung
+                </div>
+                <button type="button" class="modal-close-custom" onclick="closeDeleteModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body-custom" style="text-align:center; padding: 30px 24px;">
+                <div style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin-bottom: 12px;">
+                    Bạn có chắc chắn muốn xóa nội dung này không?
+                </div>
+                <p style="color: #64748b; font-size: 0.9rem; margin: 0;" id="deleteItemTitle">
+                    Nội dung sẽ bị gỡ khỏi Nguồn tri thức Chatbot AI.
+                </p>
+            </div>
+            <div class="modal-footer-custom">
+                <button type="button" class="btn-admin btn-admin-secondary" onclick="closeDeleteModal()">Hủy</button>
+                <button type="button" class="btn-admin" style="background:#dc2626; color:#fff;" onclick="confirmDelete()">
+                    <i class="fas fa-trash-can"></i> Đồng ý Xóa
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT XỬ LÝ CHỨC NĂNG CHATBOT ADMIN -->
+    <script>
+        let chatbotItems = [];
+        let deletingId = 0;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadChatbotContent();
+        });
+
+        function showToast(msg, isSuccess = true) {
+            const toast = document.createElement('div');
+            toast.className = `alert-toast ${isSuccess ? 'toast-success' : 'toast-error'}`;
+            toast.innerHTML = `<i class="fas ${isSuccess ? 'fa-circle-check' : 'fa-circle-exclamation'}"></i> <span>${msg}</span>`;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(30px)';
+                toast.style.transition = 'all 0.3s ease-out';
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        async function loadChatbotContent() {
+            const cat = document.getElementById('filterCategory').value;
+            const search = document.getElementById('filterSearch').value.trim();
+
+            const tbody = document.getElementById('chatbotContentTbody');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 40px; color: #64748b;">
+                        <i class="fas fa-spinner fa-spin fa-2x" style="color: var(--primary);"></i>
+                        <p style="margin-top: 10px;">Đang tải danh sách tri thức Chatbot AI...</p>
+                    </td>
+                </tr>
+            `;
+
+            try {
+                const res = await fetch(`/api/admin/chatbot/content?category=${encodeURIComponent(cat)}&search=${encodeURIComponent(search)}`);
+                if (res.status === 403) {
+                    window.location.href = '/admin';
+                    return;
+                }
+                const data = await res.json();
+                if (data.success) {
+                    chatbotItems = data.items || [];
+                    renderTable(chatbotItems);
+                    updateStats(data.summary);
+                } else {
+                    showToast(data.message || 'Không thể tải dữ liệu thống kê. Vui lòng thử lại.', false);
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Không thể tải dữ liệu thống kê. Vui lòng thử lại.', false);
+            }
+        }
+
+        function updateStats(summary) {
+            if (!summary) return;
+            document.getElementById('statTotal').innerText = summary.total || 0;
+            document.getElementById('statBookInfo').innerText = summary.bookInfo || 0;
+            document.getElementById('statPolicies').innerText = (summary.buyPolicy || 0) + (summary.payPolicy || 0) + (summary.shipPolicy || 0);
+            document.getElementById('statFaq').innerText = summary.faq || 0;
+        }
+
+        function renderTable(items) {
+            const tbody = document.getElementById('chatbotContentTbody');
+            document.getElementById('tableCountBadge').innerText = `${items.length} mục dữ liệu`;
+
+            if (!items || items.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 40px; color: #94a3b8;">
+                            <i class="fas fa-folder-open fa-2x" style="margin-bottom: 8px;"></i>
+                            <p style="margin: 0; font-weight: 500;">Không có dữ liệu thống kê</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            let html = '';
+            items.forEach((item, index) => {
+                let catBadge = '';
+                switch (item.categoryType) {
+                    case 'THONG_TIN_SACH':
+                        catBadge = `<span class="badge-cat badge-cat-book"><i class="fas fa-book"></i> Thông tin sách</span>`;
+                        break;
+                    case 'CHINH_SACH_MUA_HANG':
+                        catBadge = `<span class="badge-cat badge-cat-buy"><i class="fas fa-cart-shopping"></i> Mua hàng</span>`;
+                        break;
+                    case 'CHINH_SACH_THANH_TOAN':
+                        catBadge = `<span class="badge-cat badge-cat-pay"><i class="fas fa-credit-card"></i> Thanh toán</span>`;
+                        break;
+                    case 'CHINH_SACH_GIAO_HANG':
+                        catBadge = `<span class="badge-cat badge-cat-ship"><i class="fas fa-truck-fast"></i> Giao hàng</span>`;
+                        break;
+                    case 'CAU_HOI_THUONG_GAP':
+                        catBadge = `<span class="badge-cat badge-cat-faq"><i class="fas fa-circle-question"></i> FAQ</span>`;
+                        break;
+                    default:
+                        catBadge = `<span class="badge-cat">${item.categoryTypeName}</span>`;
+                }
+
+                const statusBadge = item.status === 'ACTIVE'
+                    ? `<span class="badge-status badge-success">Hoạt động</span>`
+                    : `<span class="badge-status badge-danger">Tạm khóa</span>`;
+
+                html += `
+                    <tr>
+                        <td style="text-align: center; font-weight: 600;">${index + 1}</td>
+                        <td style="font-weight: 600; color: #1e293b;">${escapeHtml(item.title)}</td>
+                        <td>${catBadge}</td>
+                        <td><div class="content-snippet" title="${escapeHtml(item.content)}">${escapeHtml(item.content)}</div></td>
+                        <td style="font-size: 0.85rem; color: #64748b;">${item.updatedAt || item.createdAt || '-'}</td>
+                        <td style="text-align: center;">${statusBadge}</td>
+                        <td style="text-align: center;">
+                            <div class="btn-actions-group">
+                                <button class="btn-act btn-act-view" onclick="viewDetail(${item.id})" title="Xem chi tiết">
+                                    <i class="fas fa-eye"></i> Xem
+                                </button>
+                                <button class="btn-act btn-act-edit" onclick="openEditModal(${item.id})" title="Sửa nội dung">
+                                    <i class="fas fa-pen-to-square"></i> Sửa
+                                </button>
+                                <button class="btn-act btn-act-delete" onclick="openDeleteModal(${item.id}, '${escapeJsString(item.title)}')" title="Xóa nội dung">
+                                    <i class="fas fa-trash-can"></i> Xóa
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function applyFilters() {
+            const topSearch = document.getElementById('topSearchInput').value.trim();
+            if (topSearch) {
+                document.getElementById('filterSearch').value = topSearch;
+            }
+            loadChatbotContent();
+        }
+
+        function openAddModal() {
+            document.getElementById('modalFormTitle').innerHTML = `<i class="fas fa-plus-circle" style="color:var(--primary);"></i> Thêm nội dung Chatbot AI`;
+            document.getElementById('formId').value = "0";
+            document.getElementById('formCategoryType').value = "";
+            document.getElementById('formTitle').value = "";
+            document.getElementById('formContent').value = "";
+            document.getElementById('formKeywords').value = "";
+            document.getElementById('formStatus').value = "ACTIVE";
+            hideModalError();
+            document.getElementById('contentModal').classList.add('active');
+        }
+
+        function openEditModal(id) {
+            const item = chatbotItems.find(c => c.id === id);
+            if (!item) return;
+
+            document.getElementById('modalFormTitle').innerHTML = `<i class="fas fa-pen-to-square" style="color:var(--primary);"></i> Chỉnh sửa nội dung Chatbot AI`;
+            document.getElementById('formId').value = item.id;
+            document.getElementById('formCategoryType').value = item.categoryType;
+            document.getElementById('formTitle').value = item.title;
+            document.getElementById('formContent').value = item.content;
+            document.getElementById('formKeywords').value = item.keywords || "";
+            document.getElementById('formStatus').value = item.status || "ACTIVE";
+            hideModalError();
+            document.getElementById('contentModal').classList.add('active');
+        }
+
+        function closeContentModal() {
+            document.getElementById('contentModal').classList.remove('active');
+        }
+
+        function showModalError(msg) {
+            const errBox = document.getElementById('modalErrorMsg');
+            errBox.innerText = msg;
+            errBox.style.display = 'block';
+        }
+
+        function hideModalError() {
+            const errBox = document.getElementById('modalErrorMsg');
+            errBox.innerText = '';
+            errBox.style.display = 'none';
+        }
+
+        async function handleFormSubmit(event) {
+            if (event) event.preventDefault();
+
+            const id = parseInt(document.getElementById('formId').value) || 0;
+            const categoryType = document.getElementById('formCategoryType').value.trim();
+            const title = document.getElementById('formTitle').value.trim();
+            const content = document.getElementById('formContent').value.trim();
+            const keywords = document.getElementById('formKeywords').value.trim();
+            const status = document.getElementById('formStatus').value.trim();
+
+            // Client-side Validation (UC13 Branch 3a)
+            if (!title) {
+                showModalError('Tiêu đề không được để trống.');
+                return;
+            }
+            if (!content) {
+                showModalError('Nội dung không được để trống.');
+                return;
+            }
+            if (!categoryType) {
+                showModalError('Dữ liệu nhập không hợp lệ.');
+                return;
+            }
+
+            hideModalError();
+
+            const bodyParams = new URLSearchParams();
+            bodyParams.append('id', id);
+            bodyParams.append('categoryType', categoryType);
+            bodyParams.append('title', title);
+            bodyParams.append('content', content);
+            bodyParams.append('keywords', keywords);
+            bodyParams.append('status', status);
+
+            const endpoint = id > 0 ? '/api/admin/chatbot/content/edit' : '/api/admin/chatbot/content/add';
+
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                    body: bodyParams.toString()
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    closeContentModal();
+                    showToast('Cập nhật nội dung Chatbot thành công.', true);
+                    loadChatbotContent();
+                } else {
+                    showModalError(data.message || 'Dữ liệu nhập không hợp lệ.');
+                }
+            } catch (err) {
+                console.error(err);
+                showModalError('Cập nhật Chatbot thất bại.');
+            }
+        }
+
+        function viewDetail(id) {
+            const item = chatbotItems.find(c => c.id === id);
+            if (!item) return;
+
+            const body = document.getElementById('viewModalBody');
+            body.innerHTML = `
+                <div style="margin-bottom: 16px;">
+                    <span style="font-size: 0.8rem; font-weight:600; text-transform:uppercase; color:#64748b;">Loại nội dung:</span>
+                    <div style="margin-top:4px;">
+                        <span class="badge-cat badge-cat-book" style="font-size:0.9rem;">${escapeHtml(item.categoryTypeName)}</span>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <span style="font-size: 0.8rem; font-weight:600; text-transform:uppercase; color:#64748b;">Tiêu đề:</span>
+                    <div style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-top:4px;">${escapeHtml(item.title)}</div>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <span style="font-size: 0.8rem; font-weight:600; text-transform:uppercase; color:#64748b;">Nội dung phản hồi AI Chatbot:</span>
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; padding:14px; border-radius:10px; font-size:0.95rem; color:#334155; line-height:1.6; margin-top:4px; white-space:pre-wrap;">${escapeHtml(item.content)}</div>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <span style="font-size: 0.8rem; font-weight:600; text-transform:uppercase; color:#64748b;">Từ khóa kích hoạt (Keywords):</span>
+                    <div style="color:#0284c7; font-weight:600; margin-top:4px;">${escapeHtml(item.keywords || 'Không có')}</div>
+                </div>
+
+                <div style="display:flex; gap:20px; color:#64748b; font-size:0.85rem; border-top:1px solid #f1f5f9; padding-top:12px;">
+                    <div><strong>Ngày cập nhật:</strong> ${item.updatedAt || item.createdAt || '-'}</div>
+                    <div><strong>Trạng thái:</strong> ${item.status === 'ACTIVE' ? 'Hoạt động' : 'Tạm khóa'}</div>
+                </div>
+            `;
+
+            document.getElementById('viewModal').classList.add('active');
+        }
+
+        function closeViewModal() {
+            document.getElementById('viewModal').classList.remove('active');
+        }
+
+        function openDeleteModal(id, title) {
+            deletingId = id;
+            document.getElementById('deleteItemTitle').innerText = `Tiêu đề: "${title}"`;
+            document.getElementById('deleteModal').classList.add('active');
+        }
+
+        function closeDeleteModal() {
+            deletingId = 0;
+            document.getElementById('deleteModal').classList.remove('active');
+        }
+
+        async function confirmDelete() {
+            if (deletingId <= 0) return;
+
+            try {
+                const res = await fetch('/api/admin/chatbot/content/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                    body: `id=${deletingId}`
+                });
+
+                const data = await res.json();
+                closeDeleteModal();
+                if (data.success) {
+                    showToast('Cập nhật nội dung Chatbot thành công.', true);
+                    loadChatbotContent();
+                } else {
+                    showToast(data.message || 'Cập nhật Chatbot thất bại.', false);
+                }
+            } catch (err) {
+                console.error(err);
+                closeDeleteModal();
+                showToast('Cập nhật Chatbot thất bại.', false);
+            }
+        }
+
+        async function syncKnowledgeBase() {
+            try {
+                const res = await fetch('/api/admin/chatbot/content/sync', { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Cập nhật nội dung Chatbot thành công.', true);
+                } else {
+                    showToast('Cập nhật Chatbot thất bại.', false);
+                }
+            } catch (err) {
+                showToast('Cập nhật Chatbot thất bại.', false);
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function escapeJsString(str) {
+            if (!str) return '';
+            return String(str).replace(/'/g, "\\'").replace(/"/g, '\\"');
+        }
+    </script>
 </body>
 </html>

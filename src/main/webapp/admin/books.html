@@ -1032,12 +1032,12 @@
                             <span class="stock-indicator ${stockCls}">${b.stock}</span>
                         </td>
                         <td>${statusBadge}</td>
-                        <td>
-                            <div class="actions-group">
-                                <button type="button" class="btn-act" onclick="viewBookDetail(${b.id})" title="Xem chi tiết"><i class="fas fa-eye"></i> Xem</button>
-                                <button type="button" class="btn-act btn-act-edit" onclick="openEditBookModal(${b.id})" title="Chỉnh sửa"><i class="fas fa-pen-to-square"></i> Sửa</button>
-                                <button type="button" class="btn-act btn-act-stock" onclick="openStockModal(${b.id})" title="Cập nhật kho"><i class="fas fa-boxes-stacked"></i> Kho</button>
-                                <button type="button" class="btn-act btn-act-delete" onclick="openDeleteModal(${b.id}, '${escapeJsString(b.title)}')" title="Xóa sách"><i class="fas fa-trash-can"></i> Xóa</button>
+                        <td style="text-align: center;">
+                            <div class="btn-actions-group">
+                                <button type="button" class="btn-act btn-action-info" onclick="viewBookDetail(${b.id})" title="Xem chi tiết"><i class="fas fa-eye"></i></button>
+                                <button type="button" class="btn-act btn-action-primary" onclick="openEditBookModal(${b.id})" title="Chỉnh sửa"><i class="fas fa-pen"></i></button>
+                                <button type="button" class="btn-act btn-action-warning" onclick="openStockModal(${b.id})" title="Cập nhật tồn kho"><i class="fas fa-boxes-stacked"></i></button>
+                                <button type="button" class="btn-act btn-action-danger" onclick="openDeleteModal(${b.id}, '${escapeJsString(b.title)}')" title="Xóa sách"><i class="fas fa-trash"></i></button>
                             </div>
                         </td>
                     </tr>

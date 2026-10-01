@@ -7,8 +7,206 @@
     <!-- FontAwesome 6 Icons & Google Fonts -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js CDN for visual analytics charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Admin Design System CSS -->
     <link rel="stylesheet" href="/admin/css/admin.css">
+    <style>
+        .search-toolbar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            align-items: center;
+            background: #ffffff;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+            flex-wrap: wrap;
+        }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .filter-group label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .filter-select, .filter-input {
+            padding: 9px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            background: #fff;
+            color: #334155;
+            transition: border-color 0.2s;
+        }
+        .filter-select:focus, .filter-input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        /* Stats KPI grid */
+        .stats-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card-item {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 18px 20px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .stat-card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+        .icon-blue { background: #e0f2fe; color: #0284c7; }
+        .icon-green { background: #dcfce7; color: #15803d; }
+        .icon-amber { background: #fef3c7; color: #b45309; }
+        .icon-purple { background: #f3e8ff; color: #7e22ce; }
+        .icon-rose { background: #ffe4e6; color: #be123c; }
+
+        .stat-card-info {
+            display: flex;
+            flex-direction: column;
+        }
+        .stat-card-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #64748b;
+            margin-bottom: 2px;
+        }
+        .stat-card-value {
+            font-size: 22px;
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+        /* Chart card */
+        .chart-card {
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            display: none;
+        }
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .chart-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Table styles */
+        .table-responsive {
+            overflow-x: auto;
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 14px;
+        }
+        .admin-table th {
+            background: #f8fafc;
+            color: #475569;
+            font-weight: 600;
+            padding: 14px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            white-space: nowrap;
+        }
+        .admin-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+            color: #1e293b;
+        }
+        .admin-table tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        /* Empty state placeholder */
+        .empty-state-box {
+            text-align: center;
+            padding: 60px 20px;
+            background: #ffffff;
+            border-radius: 12px;
+            border: 2px dashed #cbd5e1;
+            margin: 20px 0;
+        }
+        .empty-state-icon {
+            font-size: 48px;
+            color: #94a3b8;
+            margin-bottom: 14px;
+        }
+        .empty-state-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 6px;
+        }
+        .empty-state-desc {
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        /* Toast notification */
+        .toast-notification {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 14px 20px;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: 600;
+            font-size: 14px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        .toast-notification.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        .toast-success { background: #15803d; }
+        .toast-error { background: #dc2626; }
+    </style>
 </head>
 <body>
 
@@ -42,7 +240,6 @@
                         <a href="/admin/books" class="sidebar-nav-link">
                             <i class="fas fa-book"></i>
                             <span>Quản lý sách & kho</span>
-                            <span class="sidebar-badge badge-danger">3</span>
                         </a>
                     </li>
                     <li class="sidebar-nav-item">
@@ -99,7 +296,7 @@
             <header class="admin-header">
                 <div class="header-search-wrap">
                     <i class="fas fa-magnifying-glass header-search-icon"></i>
-                    <input type="text" class="header-search-input" placeholder="Tìm kiếm dữ liệu báo cáo...">
+                    <input type="text" id="globalHeaderSearch" class="header-search-input" placeholder="Tìm kiếm dữ liệu báo cáo..." onkeyup="handleSearchInput(event)">
                 </div>
 
                 <div class="header-actions">
@@ -130,35 +327,78 @@
                 <div class="admin-page-header">
                     <div class="admin-page-title-wrap">
                         <h1><i class="fas fa-chart-line" style="color:var(--primary);"></i> Thống Kê & Báo Cáo Kinh Doanh</h1>
-                        <p class="admin-page-sub">Phân tích doanh thu, sản lượng sách bán chạy và chỉ số tăng trưởng người dùng.</p>
+                        <p class="admin-page-sub">Lựa chọn loại báo cáo và khoảng thời gian để tổng hợp dữ liệu thực tế từ hệ thống.</p>
                     </div>
-                    <div>
-                        <button class="btn-admin btn-admin-secondary" disabled style="opacity: 0.8; cursor: not-allowed;">
-                            <i class="fas fa-file-export"></i>
-                            <span>Xuất báo cáo Excel (Khung giao diện)</span>
+                </div>
+
+                <!-- 3. SEARCH & FILTER TOOLBAR -->
+                <div class="search-toolbar">
+                    <div class="filter-group">
+                        <label>Loại báo cáo</label>
+                        <select id="reportTypeSelect" class="filter-select" onchange="generateReport()">
+                            <option value="REVENUE">Báo cáo doanh thu</option>
+                            <option value="ORDERS">Báo cáo đơn hàng</option>
+                            <option value="PRODUCTS">Báo cáo sản phẩm bán chạy</option>
+                            <option value="INVENTORY">Báo cáo tồn kho</option>
+                            <option value="CUSTOMERS">Báo cáo khách hàng</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label>Từ ngày</label>
+                        <input type="date" id="fromDateInput" class="filter-input">
+                    </div>
+
+                    <div class="filter-group">
+                        <label>Đến ngày</label>
+                        <input type="date" id="toDateInput" class="filter-input">
+                    </div>
+
+                    <div class="filter-group" style="flex:1; min-width: 180px;">
+                        <label>Từ khóa tìm kiếm</label>
+                        <input type="text" id="searchInput" class="filter-input" placeholder="Mã sách, khách hàng, đơn hàng..." onkeyup="if(event.key==='Enter') generateReport()">
+                    </div>
+
+                    <div class="filter-group" style="flex-direction:row; align-items:flex-end; gap:8px;">
+                        <button type="button" class="btn-action btn-primary" onclick="generateReport()">
+                            <i class="fas fa-chart-column"></i> Thống kê
+                        </button>
+                        <button type="button" class="btn-action btn-success" onclick="exportReport()">
+                            <i class="fas fa-file-excel"></i> Xuất báo cáo
                         </button>
                     </div>
                 </div>
 
-                <!-- CONTENT FRAME / PLACEHOLDER -->
+                <!-- 4. SUMMARY KPI CARDS CONTAINER -->
+                <div id="statsSummaryContainer" class="stats-summary-grid">
+                    <!-- Populated by JS -->
+                </div>
+
+                <!-- 5. VISUAL CHART CARD CONTAINER -->
+                <div class="chart-card" id="chartCardContainer">
+                    <div class="chart-header">
+                        <div class="chart-title" id="chartTitleText">
+                            <i class="fas fa-chart-area" style="color:#2563eb;"></i> Biểu Đồ Thống Kê Phân Tích
+                        </div>
+                    </div>
+                    <div style="height: 300px; position: relative;">
+                        <canvas id="reportChartCanvas"></canvas>
+                    </div>
+                </div>
+
+                <!-- 6. DATA TABLE REPORT CARD -->
                 <div class="admin-card">
                     <div class="admin-card-header">
-                        <h3 class="admin-card-title">
-                            <i class="fas fa-chart-column" style="color:var(--primary);"></i>
-                            Biểu Đồ & Báo Cáo Tổng Hợp
+                        <h3 class="admin-card-title" id="tableTitleText">
+                            <i class="fas fa-table" style="color:var(--primary);"></i> Dữ Liệu Báo Cáo Chi Tiết
                         </h3>
-                        <div style="display:flex; gap:10px;">
-                            <span class="badge-status badge-info"><i class="fas fa-info-circle"></i> Khung giao diện sẵn sàng</span>
+                        <div id="recordCountBadge" class="badge-status badge-info">
+                            <i class="fas fa-list"></i> Đang tải...
                         </div>
                     </div>
                     
-                    <div class="placeholder-box">
-                        <div class="placeholder-icon"><i class="fas fa-chart-area"></i></div>
-                        <h3 class="placeholder-title">Khu vực Thống Kê & Báo Cáo</h3>
-                        <p class="placeholder-desc">
-                            Giao diện khung đã hoàn tất kết nối route <code>/admin/reports</code>.<br>
-                            Khi có yêu cầu chi tiết (Doanh thu theo ngày/tháng, Thống kê sách bán chạy, Phân tích tăng trưởng), hệ thống biểu đồ và báo cáo sẽ được triển khai tại đây.
-                        </p>
+                    <div id="reportTableContainer" class="table-responsive">
+                        <!-- Table rendered by JS -->
                     </div>
                 </div>
 
@@ -166,5 +406,569 @@
         </div>
     </div>
 
+    <!-- TOAST NOTIFICATION -->
+    <div id="toastNotification" class="toast-notification toast-success">
+        <i class="fas fa-circle-info"></i> <span id="toastText">Thông báo!</span>
+    </div>
+
+    <!-- FRONTEND JAVASCRIPT LOGIC -->
+    <script>
+        let currentReportData = null;
+        let chartInstance = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set default date range: 30 days ago to today
+            const today = new Date();
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+
+            document.getElementById('fromDateInput').value = thirtyDaysAgo.toISOString().split('T')[0];
+            document.getElementById('toDateInput').value = today.toISOString().split('T')[0];
+
+            generateReport();
+        });
+
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toastNotification');
+            const toastText = document.getElementById('toastText');
+            toastText.textContent = msg;
+            toast.className = 'toast-notification ' + (isError ? 'toast-error' : 'toast-success');
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3500);
+        }
+
+        function formatCurrency(val) {
+            return new Intl.NumberFormat('vi-VN').format(val) + 'đ';
+        }
+
+        function handleSearchInput(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('searchInput').value = e.target.value;
+                generateReport();
+            }
+        }
+
+        async function generateReport() {
+            const type = document.getElementById('reportTypeSelect').value;
+            const fromDate = document.getElementById('fromDateInput').value;
+            const toDate = document.getElementById('toDateInput').value;
+            const search = document.getElementById('searchInput').value.trim();
+
+            if (!fromDate || !toDate) {
+                showToast('Vui lòng chọn đầy đủ ngày bắt đầu và kết thúc!', true);
+                return;
+            }
+
+            if (fromDate > toDate) {
+                showToast('Khoảng thời gian không hợp lệ.', true);
+                renderEmptyState('Khoảng thời gian không hợp lệ.', 'Ngày bắt đầu không được lớn hơn ngày kết thúc. Vui lòng chọn lại.');
+                return;
+            }
+
+            const tableContainer = document.getElementById('reportTableContainer');
+            tableContainer.innerHTML = `
+                <div style="text-align: center; padding: 50px; color: #64748b;">
+                    <i class="fas fa-spinner fa-spin fa-2x" style="color: #2563eb;"></i>
+                    <p style="margin-top: 12px; font-weight: 500;">Đang tổng hợp dữ liệu thống kê từ database...</p>
+                </div>
+            `;
+
+            try {
+                const url = `/api/admin/reports?type=${encodeURIComponent(type)}&fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}&search=${encodeURIComponent(search)}`;
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (!res.ok) {
+                    if (data.message === 'Khoảng thời gian không hợp lệ.') {
+                        showToast('Khoảng thời gian không hợp lệ.', true);
+                        renderEmptyState('Khoảng thời gian không hợp lệ.', 'Ngày bắt đầu không được lớn hơn ngày kết thúc.');
+                        return;
+                    }
+                    showToast(data.message || 'Không thể tải dữ liệu thống kê. Vui lòng thử lại.', true);
+                    renderEmptyState('Không thể tải dữ liệu thống kê. Vui lòng thử lại.', 'Hệ thống không thể truy vấn dữ liệu báo cáo lúc này.');
+                    return;
+                }
+
+                if (!data.success) {
+                    showToast(data.message || 'Không thể tải dữ liệu thống kê. Vui lòng thử lại.', true);
+                    renderEmptyState(data.message || 'Không thể tải dữ liệu thống kê. Vui lòng thử lại.', '');
+                    return;
+                }
+
+                currentReportData = data;
+
+                if (data.isEmpty || !data.rows || data.rows.length === 0) {
+                    renderEmptyState('Không có dữ liệu thống kê', 'Không có giao dịch hoặc dữ liệu phát sinh trong khoảng thời gian đã chọn.');
+                    return;
+                }
+
+                // Render valid report results
+                renderReportSummary(data);
+                renderReportChart(data);
+                renderReportTable(data);
+            } catch (err) {
+                console.error(err);
+                showToast('Không thể tải dữ liệu thống kê. Vui lòng thử lại.', true);
+                renderEmptyState('Không thể tải dữ liệu thống kê. Vui lòng thử lại.', 'Lỗi kết nối máy chủ backend.');
+            }
+        }
+
+        function renderEmptyState(title, desc) {
+            document.getElementById('statsSummaryContainer').innerHTML = '';
+            document.getElementById('chartCardContainer').style.display = 'none';
+            document.getElementById('recordCountBadge').innerHTML = `<i class="fas fa-triangle-exclamation"></i> 0 dữ liệu`;
+
+            const tableContainer = document.getElementById('reportTableContainer');
+            tableContainer.innerHTML = `
+                <div class="empty-state-box">
+                    <div class="empty-state-icon"><i class="fas fa-folder-open"></i></div>
+                    <h3 class="empty-state-title">${title}</h3>
+                    <p class="empty-state-desc">${desc || 'Vui lòng chọn khoảng thời gian khác và thực hiện thống kê lại.'}</p>
+                </div>
+            `;
+        }
+
+        function renderReportSummary(data) {
+            const container = document.getElementById('statsSummaryContainer');
+            const summary = data.summary || {};
+            let html = '';
+
+            if (data.reportType === 'REVENUE') {
+                html = `
+                    <div class="stat-card-item">
+                        <div class="stat-card-icon icon-green"><i class="fas fa-sack-dollar"></i></div>
+                        <div class="stat-card-info">
+                            <span class="stat-card-label">Tổng doanh thu thực tế</span>
+                            <span class="stat-card-value">${formatCurrency(summary.totalRevenue || 0)}</span>
+                        </div>
+                    </div>
+                    <div class="stat-card-item">
+                        <div class="stat-card-icon icon-blue"><i class="fas fa-receipt"></i></div>
+                        <div class="stat-card-info">
+                            <span class="stat-card-label">Tổng số đơn hàng</span>
+                            <span class="stat-card-value">${summary.totalOrders || 0} đơn</span>
+                        </div>
+                    </div>
+                    <div class="stat-card-item">
+                        <div class="stat-card-icon icon-purple"><i class="fas fa-chart-line"></i></div>
+                        <div class="stat-card-info">
+                            <span class="stat-card-label">Giá trị trung bình/đơn</span>
+                            <span class="stat-card-value">${formatCurrency(summary.avgOrderValue || 0)}</span>
+                        </div>
+                    </div>
+                    <div class="stat-card-item">
+                        <div class="stat-card-icon icon-amber"><i class="fas fa-ticket"></i></div>
+                        <div class="stat-card-info">
+                            <span class="stat-card-label">Tổng giảm giá voucher</span>
+                            <span class="stat-card-value">${formatCurrency(summary.totalDiscount || 0)}</span>
+                        </div>
+                    </div>
+                `;
+            } else if (data.reportType === 'ORDERS') {
+                html = `
+                    <div class="stat-card-item">
+                        <div class="stat-card-icon icon-blue"><i class="fas fa-boxes-packing"></i></div>
+                        <div class="stat-card-info">
+                            <span class="stat-card-label">Tổng đơn hàng phát sinh</span>
+                            <span class="stat-card-value">${summary.totalOrders || 0} đơn</span>
+                        </div>
+                    </div>
+                    <div class="stat-card-item">
+                        <div class="stat-card-icon icon-green"><i class="fas fa-circle-check"></i></div>
+                        <div class="stat-card-info">
+                            <span class="stat-card-label">Đơn hàng hoàn thành</span>
+                            <span class="stat-card-value">${summary.completedCount || 0} đơn</span>
+                        </div>
+                    </div>
+                    <div class="stat-card-item">
+                        <div class="stat-card-icon icon-amber"><i class="fas fa-clock"></i></div>
+                        <div class="stat-card-info">
+                            <span class="stat-card-label">Đơn hàng đang xử lý</span>
+                            <span class="stat-card-value">${summary.processingCount || 0} đơn</span>
+                        </div>
+                    </div>
+                    <div class="stat-card-item">
+                        <div class="stat-card-icon icon-rose"><i class="fas fa-circle-xmark"></i></div>
+                        <div class="stat-card-info">
+                            <span class="stat-card-label">Đơn hàng đã hủy</span>
+                            <span class="stat-card-value">${summary.cancelledCount || 0} đơn</span>
+                        </div>
+                    </div>
+                `;
+            } else if (data.reportType === 'PRODUCTS') {
+                html = `
+                    <div class="stat-card-item">
+                        <div class="stat-card-icon icon-purple"><i class="fas fa-book-open"></i></div>
+                        <div class="stat-card-info">
+                            <span class="stat-card-label">Tổng số sản phẩm đã bán</span>
+                            <span class="stat-card-value">${summary.totalUnitsSold || 0} cuốn</span>
+                        </div>
+                    </div>
+                    <div class="stat-card-item">
+                        <div class="stat-card-icon icon-green"><i class="fas fa-dollar-sign"></i></div>
+                        <div class="stat-card-info">
+                            <span class="stat-card-label">Tổng doanh thu bán ra</span>
+                            <span class="stat-card-value">${formatCurrency(summary.totalProductRevenue || 0)}</span>
+                        </div>
+                    </div>
+                    <div class="stat-card-item" style="grid-column: span 2;">
+                        <div class="stat-card-icon icon-amber"><i class="fas fa-crown"></i></div>
+                        <div class="stat-card-info">
+                            <span class="stat-card-label">Sách bán chạy nhất</span>
+                            <span class="stat-card-value" style="font-size: 16px;">${summary.topProductTitle || '—'} (${summary.topProductCount || 0} cuốn)</span>
+                        </div>
+                    </div>
+                `;
+            } else if (data.reportType === 'INVENTORY') {
+                html = `
+                    <div class="stat-card-item">
+                        <div class="stat-card-icon icon-blue"><i class="fas fa-cubes"></i></div>
+                        <div class="stat-card-info">
+                            <span class="stat-card-label">Tổng số đầu sách</span>
+                            <span class="stat-card-value">${summary.totalBooksCount || 0} loại</span>
+                        </div>
+                    </div>
+                    <div class="stat-card-item">
+                        <div class="stat-card-icon icon-green"><i class="fas fa-vault"></i></div>
+                        <div class="stat-card-info">
+                            <span class="stat-card-label">Tổng giá trị tồn kho</span>
+                            <span class="stat-card-value">${formatCurrency(summary.totalStockValue || 0)}</span>
+                        </div>
+                    </div>
+                    <div class="stat-card-item">
+                        <div class="stat-card-icon icon-amber"><i class="fas fa-triangle-exclamation"></i></div>
+                        <div class="stat-card-info">
+                            <span class="stat-card-label">Sách sắp hết hàng (<=5)</span>
+                            <span class="stat-card-value">${summary.lowStockCount || 0} loại</span>
+                        </div>
+                    </div>
+                    <div class="stat-card-item">
+                        <div class="stat-card-icon icon-rose"><i class="fas fa-ban"></i></div>
+                        <div class="stat-card-info">
+                            <span class="stat-card-label">Sách đã hết hàng (0)</span>
+                            <span class="stat-card-value">${summary.outOfStockCount || 0} loại</span>
+                        </div>
+                    </div>
+                `;
+            } else if (data.reportType === 'CUSTOMERS') {
+                html = `
+                    <div class="stat-card-item">
+                        <div class="stat-card-icon icon-blue"><i class="fas fa-users"></i></div>
+                        <div class="stat-card-info">
+                            <span class="stat-card-label">Tổng số khách hàng</span>
+                            <span class="stat-card-value">${summary.totalCustomers || 0} người</span>
+                        </div>
+                    </div>
+                    <div class="stat-card-item">
+                        <div class="stat-card-icon icon-green"><i class="fas fa-user-check"></i></div>
+                        <div class="stat-card-info">
+                            <span class="stat-card-label">Tài khoản đang hoạt động</span>
+                            <span class="stat-card-value">${summary.activeCustomers || 0} người</span>
+                        </div>
+                    </div>
+                    <div class="stat-card-item">
+                        <div class="stat-card-icon icon-purple"><i class="fas fa-cart-shopping"></i></div>
+                        <div class="stat-card-info">
+                            <span class="stat-card-label">Khách hàng đã phát sinh đơn</span>
+                            <span class="stat-card-value">${summary.purchasingCustomers || 0} người</span>
+                        </div>
+                    </div>
+                    <div class="stat-card-item">
+                        <div class="stat-card-icon icon-amber"><i class="fas fa-coins"></i></div>
+                        <div class="stat-card-info">
+                            <span class="stat-card-label">Tổng giá trị mua hàng</span>
+                            <span class="stat-card-value">${formatCurrency(summary.grandTotalSpent || 0)}</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+        }
+
+        function renderReportChart(data) {
+            const chartCard = document.getElementById('chartCardContainer');
+            const titleText = document.getElementById('chartTitleText');
+            const chartData = data.chartData || {};
+
+            if (!chartData.labels || chartData.labels.length === 0) {
+                chartCard.style.display = 'none';
+                return;
+            }
+
+            chartCard.style.display = 'block';
+
+            if (data.reportType === 'REVENUE') {
+                titleText.innerHTML = '<i class="fas fa-chart-line" style="color:#2563eb;"></i> Biểu Đồ Doanh Thu Thực Tế Theo Thời Gian (VNĐ)';
+            } else if (data.reportType === 'PRODUCTS') {
+                titleText.innerHTML = '<i class="fas fa-chart-bar" style="color:#9333ea;"></i> Top Sản Phẩm Bán Chạy Nhất (Số Lượng Cuốn)';
+            } else {
+                chartCard.style.display = 'none';
+                return;
+            }
+
+            const ctx = document.getElementById('reportChartCanvas').getContext('2d');
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            const isLine = data.reportType === 'REVENUE';
+            chartInstance = new Chart(ctx, {
+                type: isLine ? 'line' : 'bar',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        label: isLine ? 'Doanh thu (VNĐ)' : 'Số lượng bán',
+                        data: chartData.values,
+                        borderColor: isLine ? '#2563eb' : '#9333ea',
+                        backgroundColor: isLine ? 'rgba(37, 99, 235, 0.1)' : 'rgba(147, 51, 234, 0.7)',
+                        borderWidth: 2,
+                        fill: isLine,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(val) {
+                                    return isLine ? (val >= 1000 ? (val/1000) + 'k' : val) : val;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderReportTable(data) {
+            const tableContainer = document.getElementById('reportTableContainer');
+            const countBadge = document.getElementById('recordCountBadge');
+            const titleText = document.getElementById('tableTitleText');
+
+            countBadge.innerHTML = `<i class="fas fa-check-circle"></i> ${data.rows.length} bản ghi`;
+
+            let tableHeader = '';
+            let tableRows = '';
+
+            if (data.reportType === 'REVENUE') {
+                titleText.innerHTML = '<i class="fas fa-money-bill-trend-up" style="color:#16a34a;"></i> Bảng Thống Kê Doanh Thu Theo Ngày';
+                tableHeader = `
+                    <tr>
+                        <th style="width: 50px; text-align: center;">STT</th>
+                        <th>Ngày thống kê</th>
+                        <th style="text-align: center;">Số đơn hàng</th>
+                        <th style="text-align: right;">Tiền hàng</th>
+                        <th style="text-align: right;">Giảm giá Voucher</th>
+                        <th style="text-align: right;">Phí vận chuyển</th>
+                        <th style="text-align: right; color:#16a34a;">Doanh thu thực tế</th>
+                    </tr>
+                `;
+                data.rows.forEach((r, i) => {
+                    tableRows += `
+                        <tr>
+                            <td style="text-align: center; font-weight: 600; color: #64748b;">${i + 1}</td>
+                            <td><strong style="color:#0f172a;">${r.date}</strong></td>
+                            <td style="text-align: center; font-weight: 600;">${r.orderCount} đơn</td>
+                            <td style="text-align: right;">${formatCurrency(r.subtotal)}</td>
+                            <td style="text-align: right; color:#dc2626;">-${formatCurrency(r.discountAmount)}</td>
+                            <td style="text-align: right;">${formatCurrency(r.shippingFee)}</td>
+                            <td style="text-align: right; font-weight: 800; color:#16a34a;">${formatCurrency(r.totalAmount)}</td>
+                        </tr>
+                    `;
+                });
+            } else if (data.reportType === 'ORDERS') {
+                titleText.innerHTML = '<i class="fas fa-receipt" style="color:#2563eb;"></i> Báo Cáo Chi Tiết Đơn Hàng Phát Sinh';
+                tableHeader = `
+                    <tr>
+                        <th style="width: 50px; text-align: center;">STT</th>
+                        <th>Mã đơn hàng</th>
+                        <th>Khách hàng</th>
+                        <th>Số điện thoại</th>
+                        <th>Phương thức thanh toán</th>
+                        <th>Trạng thái</th>
+                        <th style="text-align: right;">Tiền hàng</th>
+                        <th style="text-align: right;">Giảm giá</th>
+                        <th style="text-align: right;">Tổng thanh toán</th>
+                        <th>Thời gian đặt</th>
+                    </tr>
+                `;
+                data.rows.forEach((r, i) => {
+                    let statusBadgeClass = 'badge-info';
+                    let statusText = r.orderStatus;
+                    if (r.orderStatus === 'HOAN_THANH') { statusBadgeClass = 'badge-success'; statusText = 'Hoàn thành'; }
+                    else if (r.orderStatus === 'DA_HUY') { statusBadgeClass = 'badge-danger'; statusText = 'Đã hủy'; }
+                    else if (r.orderStatus === 'CHO_XAC_NHAN') { statusBadgeClass = 'badge-warning'; statusText = 'Chờ xác nhận'; }
+
+                    tableRows += `
+                        <tr>
+                            <td style="text-align: center; font-weight: 600; color: #64748b;">${i + 1}</td>
+                            <td><strong style="color:#2563eb;">${r.orderCode}</strong></td>
+                            <td>${r.username} (${r.recipientName || 'Khách'})</td>
+                            <td>${r.phone || '—'}</td>
+                            <td><span style="font-size:12px; font-weight:600;">${r.paymentMethod || 'COD'}</span></td>
+                            <td><span class="badge-status ${statusBadgeClass}">${statusText}</span></td>
+                            <td style="text-align: right;">${formatCurrency(r.subtotal)}</td>
+                            <td style="text-align: right; color:#dc2626;">-${formatCurrency(r.discountAmount)}</td>
+                            <td style="text-align: right; font-weight: 800; color:#0f172a;">${formatCurrency(r.totalAmount)}</td>
+                            <td style="font-size:13px; color:#64748b;">${r.createdAt}</td>
+                        </tr>
+                    `;
+                });
+            } else if (data.reportType === 'PRODUCTS') {
+                titleText.innerHTML = '<i class="fas fa-fire" style="color:#d97706;"></i> Báo Cáo Sản Phẩm Bán Chạy & Doanh Thu Sản Phẩm';
+                tableHeader = `
+                    <tr>
+                        <th style="width: 50px; text-align: center;">STT</th>
+                        <th>Mã sách</th>
+                        <th>Tên sách</th>
+                        <th>Danh mục</th>
+                        <th style="text-align: right;">Đơn giá</th>
+                        <th style="text-align: center;">Đã bán (Cuốn)</th>
+                        <th style="text-align: right; color:#16a34a;">Tổng doanh thu</th>
+                        <th style="text-align: center;">Tồn kho hiện tại</th>
+                    </tr>
+                `;
+                data.rows.forEach((r, i) => {
+                    tableRows += `
+                        <tr>
+                            <td style="text-align: center; font-weight: 600; color: #64748b;">${i + 1}</td>
+                            <td><code style="background:#f1f5f9; padding:2px 6px; border-radius:4px; font-weight:700;">${r.bookCode}</code></td>
+                            <td><strong style="color:#0f172a;">${r.bookTitle}</strong></td>
+                            <td><span class="badge-status badge-info">${r.category}</span></td>
+                            <td style="text-align: right;">${formatCurrency(r.price)}</td>
+                            <td style="text-align: center; font-weight: 800; color:#2563eb; font-size:15px;">${r.totalSold}</td>
+                            <td style="text-align: right; font-weight: 800; color:#16a34a;">${formatCurrency(r.totalRevenue)}</td>
+                            <td style="text-align: center; font-weight: 600;">${r.currentStock} cuốn</td>
+                        </tr>
+                    `;
+                });
+            } else if (data.reportType === 'INVENTORY') {
+                titleText.innerHTML = '<i class="fas fa-boxes-stacked" style="color:#0284c7;"></i> Báo Cáo Thống Kê Tồn Kho Hàng Hóa';
+                tableHeader = `
+                    <tr>
+                        <th style="width: 50px; text-align: center;">STT</th>
+                        <th>Mã sách</th>
+                        <th>Tên sách</th>
+                        <th>Tác giả</th>
+                        <th>Danh mục</th>
+                        <th style="text-align: right;">Đơn giá</th>
+                        <th style="text-align: center;">Tồn kho</th>
+                        <th style="text-align: right;">Giá trị vốn tồn</th>
+                        <th>Trạng thái kho</th>
+                    </tr>
+                `;
+                data.rows.forEach((r, i) => {
+                    let stockBadge = '<span class="badge-status badge-success">Còn hàng</span>';
+                    if (r.stock === 0) stockBadge = '<span class="badge-status badge-danger">Hết hàng</span>';
+                    else if (r.stock <= 5) stockBadge = '<span class="badge-status badge-warning">Sắp hết hàng</span>';
+
+                    tableRows += `
+                        <tr>
+                            <td style="text-align: center; font-weight: 600; color: #64748b;">${i + 1}</td>
+                            <td><code style="background:#f1f5f9; padding:2px 6px; border-radius:4px; font-weight:700;">${r.code}</code></td>
+                            <td><strong style="color:#0f172a;">${r.title}</strong></td>
+                            <td>${r.author}</td>
+                            <td><span class="badge-status badge-info">${r.category}</span></td>
+                            <td style="text-align: right;">${formatCurrency(r.price)}</td>
+                            <td style="text-align: center; font-weight: 800; font-size:15px; color:${r.stock === 0 ? '#dc2626' : (r.stock <= 5 ? '#d97706' : '#16a34a')}">${r.stock}</td>
+                            <td style="text-align: right; font-weight: 700;">${formatCurrency(r.stockValue)}</td>
+                            <td>${stockBadge}</td>
+                        </tr>
+                    `;
+                });
+            } else if (data.reportType === 'CUSTOMERS') {
+                titleText.innerHTML = '<i class="fas fa-users" style="color:#7e22ce;"></i> Báo Cáo Hoạt Động Khách Hàng';
+                tableHeader = `
+                    <tr>
+                        <th style="width: 50px; text-align: center;">STT</th>
+                        <th>Tài khoản</th>
+                        <th>Họ và tên</th>
+                        <th>Email</th>
+                        <th>Số điện thoại</th>
+                        <th style="text-align: center;">Số đơn đã đặt</th>
+                        <th style="text-align: right; color:#16a34a;">Tổng tiền đã chi</th>
+                        <th style="text-align: center;">Trạng thái tài khoản</th>
+                    </tr>
+                `;
+                data.rows.forEach((r, i) => {
+                    const isLocked = r.status === 'LOCKED';
+                    const statusBadge = isLocked
+                        ? '<span class="badge-status badge-danger"><i class="fas fa-lock"></i> Đã khóa</span>'
+                        : '<span class="badge-status badge-success"><i class="fas fa-check"></i> Hoạt động</span>';
+
+                    tableRows += `
+                        <tr>
+                            <td style="text-align: center; font-weight: 600; color: #64748b;">${i + 1}</td>
+                            <td><strong style="color:#2563eb;">${r.username}</strong></td>
+                            <td><strong>${r.fullName || 'Khách hàng'}</strong></td>
+                            <td>${r.email || '—'}</td>
+                            <td>${r.phone || '—'}</td>
+                            <td style="text-align: center; font-weight: 700;">${r.orderCount} đơn</td>
+                            <td style="text-align: right; font-weight: 800; color:#16a34a;">${formatCurrency(r.totalSpent)}</td>
+                            <td style="text-align: center;">${statusBadge}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            tableContainer.innerHTML = `
+                <table class="admin-table">
+                    <thead>${tableHeader}</thead>
+                    <tbody>${tableRows}</tbody>
+                </table>
+            `;
+        }
+
+        async function exportReport() {
+            const type = document.getElementById('reportTypeSelect').value;
+            const fromDate = document.getElementById('fromDateInput').value;
+            const toDate = document.getElementById('toDateInput').value;
+            const search = document.getElementById('searchInput').value.trim();
+
+            if (fromDate > toDate) {
+                showToast('Khoảng thời gian không hợp lệ.', true);
+                return;
+            }
+
+            if (!currentReportData || currentReportData.isEmpty || !currentReportData.rows || currentReportData.rows.length === 0) {
+                showToast('Không thể tạo file báo cáo.', true);
+                return;
+            }
+
+            try {
+                const url = `/api/admin/reports/export?type=${encodeURIComponent(type)}&fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}&search=${encodeURIComponent(search)}`;
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    showToast('Không thể tạo file báo cáo.', true);
+                    return;
+                }
+
+                const blob = await response.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = `Bao_Cao_${type}_${fromDate}_Den_${toDate}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(downloadUrl);
+
+                showToast('Xuất báo cáo thành công!');
+            } catch (err) {
+                console.error(err);
+                showToast('Không thể tạo file báo cáo.', true);
+            }
+        }
+    </script>
 </body>
 </html>
