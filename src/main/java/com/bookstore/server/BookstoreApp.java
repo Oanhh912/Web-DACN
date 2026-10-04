@@ -4358,6 +4358,12 @@ public class BookstoreApp {
         String apiKey = System.getenv("GEMINI_API_KEY");
         if (apiKey == null || apiKey.trim().isEmpty()) apiKey = System.getProperty("GEMINI_API_KEY", "");
         if (apiKey == null || apiKey.trim().isEmpty()) apiKey = System.getProperty("gemini.api.key", "");
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            try {
+                Path keyFile = Paths.get("gemini.key");
+                if (Files.exists(keyFile)) apiKey = new String(Files.readAllBytes(keyFile), StandardCharsets.UTF_8).trim();
+            } catch (Exception ignored) { }
+        }
 
         String systemPrompt = "Bạn là Trợ lý AI tư vấn sách thông minh của Nhà sách Bookora.\n"
                 + "Nhiệm vụ: Trả lời thân thiện, đúng trọng tâm và gợi ý các cuốn sách phù hợp từ danh sách sách của Bookora.\n\n"
