@@ -624,7 +624,7 @@ button, input {
 /* Search Bar (Phong cách hiện đại, nút Tìm kiếm nền đen chuẩn mẫu) */
 .search-form {
     flex: 1;
-    max-width: 580px;
+    max-width: none;
     position: relative;
 }
 .search-input-wrap {
@@ -9915,3 +9915,37 @@ button, input {
 .wishlist-item-actions button.wl-remove:hover { background: #ef4444; color: white; }
 .wishlist-empty { text-align: center; padding: 26px 10px; color: #94a3b8; font-size: 13.5px; }
 .wishlist-empty i { font-size: 34px; color: #fecaca; margin-bottom: 10px; display: block; }
+
+/* Typing indicator: 3 chấm nhảy lần lượt */
+.typing-dots {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 2px;
+}
+.typing-dots span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #94a3b8;
+    animation: typingBounce 1.2s infinite ease-in-out;
+}
+.typing-dots span:nth-child(2) { animation-delay: 0.18s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.36s; }
+@keyframes typingBounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+    30% { transform: translateY(-7px); opacity: 1; background: var(--primary-light, #6366f1); }
+}
+
+/* Chatbot FAB dùng mascot cú xanh */
+.chatbot-fab { background: #ffffff !important; padding: 0; border: 2px solid #c7d2fe; }
+.chatbot-fab .chatbot-fab-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    transform: scale(1.18);
+}
+
+/* Ẩn nhãn vai trò (CUSTOMER) cạnh tên tài khoản trên header */
+.user-role-tag { display: none !important; }

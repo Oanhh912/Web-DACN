@@ -1181,7 +1181,7 @@ async function sendChatbotMessage() {
     const loadingBubble = document.createElement('div');
     loadingBubble.id = loadingId;
     loadingBubble.className = 'chat-bubble chat-bubble-ai';
-    loadingBubble.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Trợ lý AI đang tra cứu sách và khuyến mãi...';
+    loadingBubble.innerHTML = '<span class="typing-dots" aria-label="Trợ lý AI đang trả lời"><span></span><span></span><span></span></span>';
     messagesContainer.appendChild(loadingBubble);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
