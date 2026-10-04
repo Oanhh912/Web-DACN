@@ -152,22 +152,60 @@
         </nav>
     </header>
 
-    <!-- 2. HERO BANNER -->
-    <section class="hero-section">
-        <div class="hero-card">
-            <div class="hero-content">
-                <span class="hero-tag"><i class="fas fa-sparkles"></i> Sự Kiện Văn Hóa Đọc 2026</span>
-                <h2 class="hero-title">Khám Phá Tri Thức,<br><span>Nâng Tầm Tương Lai</span></h2>
-                <p class="hero-desc">
-                    Tuyển tập hơn 100 tác phẩm kinh điển và hiện đại được độc giả yêu thích nhất. Ưu đãi đến 30% cùng quà tặng sổ tay độc quyền dành cho <!-- ${HERO_GREETING} -->.
-                </p>
-                <a href="#catalog" class="hero-cta">
-                    <span>Xem Ngay Bộ Sưu Tập</span>
-                    <i class="fas fa-arrow-down"></i>
-                </a>
+    <!-- 2. HERO BANNER SECTION (CHUẨN FORM FAHASA: SLIDER CHÍNH 71% + 2 SUB BANNER NỔI 29%) -->
+    <section class="banner-hero-section">
+        <div class="banner-hero-container">
+            <!-- Cột trái: Dynamic Slider Banner (71% Width) -->
+            <div class="banner-slider-container" id="mainBannerSlider">
+                <div class="banner-slider-wrapper">
+                    <!-- Banner 1: Halloween & Autumn Deal -->
+                    <div class="banner-slide" onclick="location.href='promotions.html'" title="Săn Deal Tháng 10 Ma Mị - Giảm đến 30%">
+                        <img src="/images/banners/banner1.jpg" alt="Tháng 10 Ma Mị - Săn Deal Mê Lý" class="banner-img">
+                    </div>
+                    <!-- Banner 2: Tủ Sách Nói & Thiếu Nhi -->
+                    <div class="banner-slide" onclick="location.href='category.html?type=K%E1%BB%B9%20n%C4%83ng%20s%E1%BB%91ng'" title="Tủ Sách Nói & Thiếu Nhi - Khơi Mở Tri Thức">
+                        <img src="/images/banners/banner2.jpg" alt="Tủ Sách Nói & Thiếu Nhi - Khơi Mở Tri Thức Qua Âm Thanh" class="banner-img">
+                    </div>
+                    <!-- Banner 3: Cẩm Nang Lập Trình & Công Nghệ -->
+                    <div class="banner-slide" onclick="location.href='category.html?type=C%C3%B4ng%20ngh%E1%BB%87'" title="Cẩm Nang Lập Trình & Công Nghệ 2026 - Ưu Đãi 25%">
+                        <img src="/images/banners/banner3.jpg" alt="Cẩm Nang Lập Trình & Công Nghệ 2026" class="banner-img">
+                    </div>
+                    <!-- Banner 4: Top Sách Bán Chạy -->
+                    <div class="banner-slide" onclick="location.href='category.html?type=T%E1%BA%A5t%20c%E1%BA%A3'" title="Top Sách Bán Chạy 2026 - Giảm giá tới 35%">
+                        <img src="/images/banners/banner4.jpg" alt="Top Sách Bán Chạy 2026" class="banner-img">
+                    </div>
+                    <!-- Banner 5: Kỹ Năng Sống & Tâm Lý Học -->
+                    <div class="banner-slide" onclick="location.href='category.html?type=T%C3%A2m%20l%C3%BD%20h%E1%BB%8Dc'" title="Kỹ Năng Sống & Tâm Lý Học - Mua 2 Tặng 1 Bookmark">
+                        <img src="/images/banners/banner5.jpg" alt="Sách Kỹ Năng Sống & Tâm Lý Học" class="banner-img">
+                    </div>
+                </div>
+
+                <!-- Arrow Navigation Buttons -->
+                <button type="button" class="banner-nav-btn banner-prev-btn" onclick="moveBannerSlide(-1)" aria-label="Banner trước">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button type="button" class="banner-nav-btn banner-next-btn" onclick="moveBannerSlide(1)" aria-label="Banner tiếp theo">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+
+                <!-- Pagination Dots with Active Pill Effect -->
+                <div class="banner-pagination-dots" id="bannerDots">
+                    <span class="banner-dot active" onclick="goToBannerSlide(0)"></span>
+                    <span class="banner-dot" onclick="goToBannerSlide(1)"></span>
+                    <span class="banner-dot" onclick="goToBannerSlide(2)"></span>
+                    <span class="banner-dot" onclick="goToBannerSlide(3)"></span>
+                    <span class="banner-dot" onclick="goToBannerSlide(4)"></span>
+                </div>
             </div>
-            <div class="hero-illustration">
-                <i class="fas fa-book-open-reader"></i>
+
+            <!-- Cột phải: 2 Sub Banner tĩnh xếp chồng (29% Width - Chuẩn mẫu Fahasa) -->
+            <div class="banner-side-column">
+                <div class="side-banner-card side-banner-top" onclick="location.href='promotions.html'" title="Giảm ngay 50K cho đơn hàng từ 300K">
+                    <img src="/images/banners/sub_banner1.jpg" alt="Voucher 50K Bookora" class="side-banner-img">
+                </div>
+                <div class="side-banner-card side-banner-bottom" onclick="location.href='promotions.html'" title="Giảm 20.000đ khi thanh toán qua ShopeePay / VietQR">
+                    <img src="/images/banners/sub_banner2.jpg" alt="Khuyến mãi ShopeePay 20K" class="side-banner-img">
+                </div>
             </div>
         </div>
     </section>

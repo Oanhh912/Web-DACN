@@ -604,15 +604,15 @@
                 const st = normalizeStatus(o.orderStatus);
                 let statusBadgeHtml = '';
                 if (st === 'DANG_GIAO') {
-                    statusBadgeHtml = `<span class="order-card-status-badge status-badge-shipping">[ ĐANG GIAO HÀNG ]</span>`;
+                    statusBadgeHtml = `<span class="order-card-status-badge status-badge-shipping">ĐANG GIAO HÀNG</span>`;
                 } else if (st === 'CHO_XAC_NHAN') {
-                    statusBadgeHtml = `<span class="order-card-status-badge status-badge-pending">[ CHỜ XÁC NHẬN ]</span>`;
+                    statusBadgeHtml = `<span class="order-card-status-badge status-badge-pending">CHỜ XÁC NHẬN</span>`;
                 } else if (st === 'HOAN_THANH') {
-                    statusBadgeHtml = `<span class="order-card-status-badge status-badge-delivered">[ GIAO THÀNH CÔNG ]</span>`;
+                    statusBadgeHtml = `<span class="order-card-status-badge status-badge-delivered">GIAO THÀNH CÔNG</span>`;
                 } else if (st === 'DA_HUY') {
-                    statusBadgeHtml = `<span class="order-card-status-badge status-badge-cancelled">[ ĐÃ HỦY ]</span>`;
+                    statusBadgeHtml = `<span class="order-card-status-badge status-badge-cancelled">ĐÃ HỦY</span>`;
                 } else {
-                    statusBadgeHtml = `<span class="order-card-status-badge status-badge-pending">[ ${escHtml(o.orderStatus)} ]</span>`;
+                    statusBadgeHtml = `<span class="order-card-status-badge status-badge-pending">${escHtml(o.orderStatus)}</span>`;
                 }
 
                 // Render items
@@ -623,6 +623,11 @@
                         totalItemsCount += (item.quantity || 1);
                         const imgSrc = item.bookImage ? item.bookImage : 'images/default-book.jpg';
                         const formattedPrice = new Intl.NumberFormat('vi-VN').format(item.price || 0) + ' đ';
+                        const reviewBtnHtml = (st === 'HOAN_THANH') ? `
+                            <button type="button" class="btn-review-item" onclick="openReviewModalForItem(${item.bookId}, '${escHtml(item.bookTitle)}', '${escHtml(o.orderCode)}')" style="margin-top: 6px; background: #0284c7; color: white; border: none; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                                <i class="fas fa-star" style="color: #f59e0b;"></i> Đánh giá
+                            </button>
+                        ` : '';
                         itemsHtml += `
                             <div class="order-item-row">
                                 <img src="${escHtml(imgSrc)}" alt="${escHtml(item.bookTitle)}" class="order-item-img" onerror="this.src='images/default-book.jpg'">
@@ -633,6 +638,7 @@
                                 <div class="order-item-qty-price">
                                     <div class="order-item-qty">x ${item.quantity || 1}</div>
                                     <div class="order-item-price">${formattedPrice}</div>
+                                    ${reviewBtnHtml}
                                 </div>
                             </div>`;
                     });
@@ -656,23 +662,23 @@
                 let actionBtnsHtml = '';
                 if (st === 'DANG_GIAO') {
                     actionBtnsHtml = `
-                        <a href="order-success?code=${encodeURIComponent(o.orderCode)}" class="btn-order-outline" target="_blank">[ Xem chi tiết ]</a>
-                        <button type="button" class="btn-order-primary" onclick="confirmReceivedOrder('${escHtml(o.orderCode)}')">[ Đã nhận được hàng ]</button>`;
+                        <a href="order-success?code=${encodeURIComponent(o.orderCode)}" class="btn-order-outline" target="_blank">Xem chi tiết</a>
+                        <button type="button" class="btn-order-primary" onclick="confirmReceivedOrder('${escHtml(o.orderCode)}')">Đã nhận được hàng</button>`;
                 } else if (st === 'CHO_XAC_NHAN') {
                     actionBtnsHtml = `
-                        <a href="order-success?code=${encodeURIComponent(o.orderCode)}" class="btn-order-outline" target="_blank">[ Xem chi tiết ]</a>
-                        <button type="button" class="btn-order-danger" onclick="cancelOrderModal('${escHtml(o.orderCode)}')">[ Hủy đơn hàng ]</button>`;
+                        <a href="order-success?code=${encodeURIComponent(o.orderCode)}" class="btn-order-outline" target="_blank">Xem chi tiết</a>
+                        <button type="button" class="btn-order-danger" onclick="cancelOrderModal('${escHtml(o.orderCode)}')">Hủy đơn hàng</button>`;
                 } else if (st === 'HOAN_THANH') {
                     actionBtnsHtml = `
-                        <button type="button" class="btn-order-outline" onclick="buyAgainOrder('${escHtml(o.orderCode)}')">[ Mua lại ]</button>
-                        <button type="button" class="btn-order-primary" onclick="openReviewModal('${escHtml(o.orderCode)}')">[ Đánh giá (5★) ]</button>
-                        <a href="order-success?code=${encodeURIComponent(o.orderCode)}" class="btn-order-outline" target="_blank">[ Xem chi tiết ]</a>`;
+                        <button type="button" class="btn-order-outline" onclick="buyAgainOrder('${escHtml(o.orderCode)}')">Mua lại</button>
+                        <button type="button" class="btn-order-primary" onclick="openReviewModal('${escHtml(o.orderCode)}')">Đánh giá</button>
+                        <a href="order-success?code=${encodeURIComponent(o.orderCode)}" class="btn-order-outline" target="_blank">Xem chi tiết</a>`;
                 } else if (st === 'DA_HUY') {
                     actionBtnsHtml = `
-                        <button type="button" class="btn-order-primary" onclick="buyAgainOrder('${escHtml(o.orderCode)}')">[ Mua lại ]</button>
-                        <a href="order-success?code=${encodeURIComponent(o.orderCode)}" class="btn-order-outline" target="_blank">[ Xem chi tiết ]</a>`;
+                        <button type="button" class="btn-order-primary" onclick="buyAgainOrder('${escHtml(o.orderCode)}')">Mua lại</button>
+                        <a href="order-success?code=${encodeURIComponent(o.orderCode)}" class="btn-order-outline" target="_blank">Xem chi tiết</a>`;
                 } else {
-                    actionBtnsHtml = `<a href="order-success?code=${encodeURIComponent(o.orderCode)}" class="btn-order-outline" target="_blank">[ Xem chi tiết ]</a>`;
+                    actionBtnsHtml = `<a href="order-success?code=${encodeURIComponent(o.orderCode)}" class="btn-order-outline" target="_blank">Xem chi tiết</a>`;
                 }
 
                 html += `
@@ -735,10 +741,6 @@
         function buyAgainOrder(code) {
             alert(`Đã thêm lại các sản phẩm trong đơn hàng #${code} vào Giỏ hàng!`);
             window.location.href = 'cart.html';
-        }
-
-        function openReviewModal(code) {
-            alert(`Cảm ơn bạn! Hãy để lại đánh giá 5 sao cho đơn hàng #${code}.`);
         }
 
         function escHtml(str) {
@@ -851,6 +853,257 @@
                 msg.style.color = '#ef4444';
                 msg.innerHTML = '<i class="fas fa-circle-exclamation"></i> Mật khẩu xác nhận chưa trùng khớp!';
             }
+        }
+    </script>
+    <!-- MODAL GỬI ĐÁNH GIÁ SÁCH TẠI ĐƠN HÀNG CỦA TÔI -->
+    <div class="review-modal-backdrop" id="profileReviewModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); z-index: 99999; justify-content: center; align-items: center; padding: 16px;">
+        <div class="review-modal-card" style="background: white; border-radius: 16px; width: 100%; max-width: 540px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.25); position: relative; animation: modalPop 0.25s ease;">
+            <button type="button" class="btn-modal-close" onclick="closeProfileReviewModal()" style="position: absolute; top: 16px; right: 16px; background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; color: #64748b; font-size: 14px;"><i class="fas fa-times"></i></button>
+
+            <h3 style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">
+                <i class="fas fa-star" style="color: #f59e0b; margin-right: 6px;"></i> Đánh giá sản phẩm
+            </h3>
+            <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;" id="profileReviewOrderMeta">Đơn hàng: #ORD-20260925-1001</p>
+
+            <!-- Thông báo cảnh báo / lỗi (Nội dung bị chặn từ cấm...) -->
+            <div id="profileReviewAlertBox" style="display: none; padding: 12px 16px; border-radius: 8px; font-size: 13.5px; font-weight: 500; margin-bottom: 16px; line-height: 1.4;"></div>
+
+            <form id="profileReviewSubmitForm" onsubmit="submitProfileBookReview(event)">
+                <!-- Chọn sách trong đơn hàng -->
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 13.5px; font-weight: 600; color: #334155; margin-bottom: 6px;">Sản phẩm cần đánh giá:</label>
+                    <select id="profileReviewBookSelect" style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; color: #1e293b; outline: none; background: #f8fafc;" onchange="onProfileReviewBookChange()">
+                        <!-- Options Javascript render -->
+                    </select>
+                </div>
+
+                <!-- Rating Chọn sao -->
+                <div style="margin-bottom: 18px; text-align: center; background: #f8fafc; padding: 16px; border-radius: 10px; border: 1px solid #e2e8f0;">
+                    <label style="display: block; font-size: 14px; font-weight: 600; color: #334155; margin-bottom: 8px;">Chọn mức độ hài lòng của bạn:</label>
+                    <div class="interactive-star-rating" style="display: inline-flex; gap: 8px; font-size: 32px; color: #f59e0b; cursor: pointer;">
+                        <i class="fas fa-star prof-star" data-rating="1" onclick="selectProfReviewStar(1)" onmouseover="hoverProfReviewStar(1)" onmouseleave="resetProfReviewStars()"></i>
+                        <i class="fas fa-star prof-star" data-rating="2" onclick="selectProfReviewStar(2)" onmouseover="hoverProfReviewStar(2)" onmouseleave="resetProfReviewStars()"></i>
+                        <i class="fas fa-star prof-star" data-rating="3" onclick="selectProfReviewStar(3)" onmouseover="hoverProfReviewStar(3)" onmouseleave="resetProfReviewStars()"></i>
+                        <i class="fas fa-star prof-star" data-rating="4" onclick="selectProfReviewStar(4)" onmouseover="hoverProfReviewStar(4)" onmouseleave="resetProfReviewStars()"></i>
+                        <i class="fas fa-star prof-star" data-rating="5" onclick="selectProfReviewStar(5)" onmouseover="hoverProfReviewStar(5)" onmouseleave="resetProfReviewStars()"></i>
+                    </div>
+                    <input type="hidden" id="profSelectedStarRating" value="5">
+                    <div id="profStarTextLabel" style="font-size: 13px; font-weight: 600; color: #f59e0b; margin-top: 6px;">Rất tuyệt vời (5 sao)</div>
+                </div>
+
+                <!-- Ô nhập nội dung -->
+                <div style="margin-bottom: 20px;">
+                    <label for="profReviewContentInput" style="display: block; font-size: 14px; font-weight: 600; color: #334155; margin-bottom: 6px;">Nội dung đánh giá <span style="color: #ef4444;">*</span></label>
+                    <textarea id="profReviewContentInput" rows="4" placeholder="Hãy chia sẻ cảm nhận của bạn về cuốn sách này (chất lượng nội dung, hình thức in ấn, thái độ đóng gói...)" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: inherit; font-size: 14px; outline: none; resize: vertical;" required></textarea>
+                </div>
+
+                <!-- Nút gửi -->
+                <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                    <button type="button" onclick="closeProfileReviewModal()" style="padding: 10px 18px; border: 1px solid #cbd5e1; background: white; color: #475569; border-radius: 8px; font-weight: 600; cursor: pointer;">Hủy bỏ</button>
+                    <button type="submit" id="btnSubmitProfReview" style="padding: 10px 22px; border: none; background: #0284c7; color: white; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-paper-plane"></i> Gửi đánh giá
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentProfOrderCode = null;
+        let currentProfBookId = null;
+
+        function openReviewModalForItem(bookId, bookTitle, orderCode) {
+            currentProfOrderCode = orderCode;
+            currentProfBookId = bookId;
+
+            const modal = document.getElementById('profileReviewModal');
+            const meta = document.getElementById('profileReviewOrderMeta');
+            const alertBox = document.getElementById('profileReviewAlertBox');
+            const select = document.getElementById('profileReviewBookSelect');
+
+            if (alertBox) alertBox.style.display = 'none';
+            if (meta) meta.textContent = `Đơn hàng: #${orderCode}`;
+
+            if (select) {
+                select.innerHTML = `<option value="${bookId}">${escHtml(bookTitle)}</option>`;
+                select.value = bookId;
+            }
+
+            selectProfReviewStar(5);
+            const contentInput = document.getElementById('profReviewContentInput');
+            if (contentInput) contentInput.value = '';
+
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function openReviewModal(code) {
+            currentProfOrderCode = code;
+            const ord = allOrdersList.find(o => o.orderCode === code);
+            if (!ord) return;
+
+            const modal = document.getElementById('profileReviewModal');
+            const meta = document.getElementById('profileReviewOrderMeta');
+            const alertBox = document.getElementById('profileReviewAlertBox');
+            const select = document.getElementById('profileReviewBookSelect');
+
+            if (alertBox) alertBox.style.display = 'none';
+            if (meta) meta.textContent = `Đơn hàng: #${code}`;
+
+            if (select) {
+                select.innerHTML = '';
+                if (ord.items && ord.items.length > 0) {
+                    ord.items.forEach(item => {
+                        const opt = document.createElement('option');
+                        opt.value = item.bookId;
+                        opt.textContent = item.bookTitle || `Sách #${item.bookId}`;
+                        select.appendChild(opt);
+                    });
+                    currentProfBookId = ord.items[0].bookId;
+                } else {
+                    const opt = document.createElement('option');
+                    opt.value = 1;
+                    opt.textContent = `Sách theo đơn #${code}`;
+                    select.appendChild(opt);
+                    currentProfBookId = 1;
+                }
+            }
+
+            selectProfReviewStar(5);
+            const contentInput = document.getElementById('profReviewContentInput');
+            if (contentInput) contentInput.value = '';
+
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function closeProfileReviewModal() {
+            const modal = document.getElementById('profileReviewModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function onProfileReviewBookChange() {
+            const select = document.getElementById('profileReviewBookSelect');
+            if (select) {
+                currentProfBookId = parseInt(select.value) || 0;
+            }
+        }
+
+        function selectProfReviewStar(star) {
+            const starInput = document.getElementById('profSelectedStarRating');
+            if (starInput) starInput.value = star;
+
+            const stars = document.querySelectorAll('.prof-star');
+            stars.forEach((s, idx) => {
+                if (idx < star) {
+                    s.style.color = '#f59e0b';
+                } else {
+                    s.style.color = '#cbd5e1';
+                }
+            });
+
+            const labels = ["", "Rất không hài lòng (1 sao)", "Không hài lòng (2 sao)", "Bình thường (3 sao)", "Hài lòng (4 sao)", "Rất tuyệt vời (5 sao)"];
+            const labelEl = document.getElementById('profStarTextLabel');
+            if (labelEl) labelEl.textContent = labels[star] || `${star} sao`;
+        }
+
+        function hoverProfReviewStar(star) {
+            const stars = document.querySelectorAll('.prof-star');
+            stars.forEach((s, idx) => {
+                if (idx < star) {
+                    s.style.color = '#fcd34d';
+                } else {
+                    s.style.color = '#cbd5e1';
+                }
+            });
+        }
+
+        function resetProfReviewStars() {
+            const currentStar = parseInt(document.getElementById('profSelectedStarRating')?.value || '5');
+            selectProfReviewStar(currentStar);
+        }
+
+        function submitProfileBookReview(e) {
+            if (e) e.preventDefault();
+
+            const bookId = currentProfBookId || parseInt(document.getElementById('profileReviewBookSelect')?.value || '0');
+            const rating = parseInt(document.getElementById('profSelectedStarRating')?.value || '5');
+            const content = document.getElementById('profReviewContentInput')?.value?.trim() || '';
+            const alertBox = document.getElementById('profileReviewAlertBox');
+            const btnSubmit = document.getElementById('btnSubmitProfReview');
+
+            if (bookId <= 0) {
+                if (alertBox) {
+                    alertBox.style.display = 'block';
+                    alertBox.style.background = '#fef2f2';
+                    alertBox.style.color = '#991b1b';
+                    alertBox.style.border = '1px solid #fecaca';
+                    alertBox.innerHTML = '<i class="fas fa-circle-exclamation"></i> Vui lòng chọn sản phẩm cần đánh giá!';
+                }
+                return;
+            }
+
+            if (!content) {
+                if (alertBox) {
+                    alertBox.style.display = 'block';
+                    alertBox.style.background = '#fef2f2';
+                    alertBox.style.color = '#991b1b';
+                    alertBox.style.border = '1px solid #fecaca';
+                    alertBox.innerHTML = '<i class="fas fa-circle-exclamation"></i> Vui lòng nhập nội dung đánh giá (không chỉ chứa khoảng trắng).';
+                }
+                return;
+            }
+
+            if (btnSubmit) {
+                btnSubmit.disabled = true;
+                btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang gửi...';
+            }
+
+            const formData = new URLSearchParams();
+            formData.append('bookId', bookId);
+            formData.append('rating', rating);
+            formData.append('content', content);
+
+            fetch('/api/reviews', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                },
+                body: formData.toString()
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (btnSubmit) {
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerHTML = '<i class="fas fa-paper-plane"></i> Gửi đánh giá';
+                }
+
+                if (data.blocked || !data.success) {
+                    // TỰ ĐỘNG CHẶN NỘI DUNG VÀ HIỂN THỊ THÔNG BÁO CHO KHÁCH HÀNG
+                    if (alertBox) {
+                        alertBox.style.display = 'block';
+                        alertBox.style.background = '#fff1f2';
+                        alertBox.style.color = '#be123c';
+                        alertBox.style.border = '1px solid #fecdd3';
+                        alertBox.innerHTML = `<i class="fas fa-shield-cat" style="font-size:16px; margin-right:6px;"></i> ${data.message}`;
+                    }
+                } else {
+                    closeProfileReviewModal();
+                    alert(`✅ ${data.message || 'Đánh giá của bạn đã được gửi thành công.'}`);
+                }
+            })
+            .catch(err => {
+                console.error("Lỗi gửi đánh giá:", err);
+                if (btnSubmit) {
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerHTML = '<i class="fas fa-paper-plane"></i> Gửi đánh giá';
+                }
+                if (alertBox) {
+                    alertBox.style.display = 'block';
+                    alertBox.style.background = '#fef2f2';
+                    alertBox.style.color = '#991b1b';
+                    alertBox.style.border = '1px solid #fecaca';
+                    alertBox.innerHTML = '<i class="fas fa-circle-exclamation"></i> Đã xảy ra lỗi hệ thống khi kết nối. Vui lòng thử lại sau!';
+                }
+            });
         }
     </script>
 </body>

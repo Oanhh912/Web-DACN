@@ -8,14 +8,18 @@ import com.bookstore.model.ChatbotContent;
 import com.bookstore.model.Order;
 import com.bookstore.model.OrderItem;
 import com.bookstore.model.PaymentMethod;
+import com.bookstore.model.Review;
 import com.bookstore.model.User;
 import com.bookstore.model.Voucher;
+import com.bookstore.service.ContentFilterService;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
 import java.io.*;
+import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
+import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -84,6 +88,13 @@ public class BookstoreApp {
         server.createContext("/api/orders/detail", new ApiGetOrderDetailHandler());
         server.createContext("/api/orders/my-orders", new ApiMyOrdersHandler());
         server.createContext("/api/upload-avatar", new ApiUploadAvatarHandler());
+
+        // API Đánh giá & Phản hồi Sách (Book Reviews & Rating)
+        server.createContext("/api/reviews", new ApiReviewsHandler());
+        server.createContext("/api/reviews/eligible", new ApiReviewEligibilityHandler());
+        server.createContext("/api/admin/reviews", new ApiAdminReviewsHandler());
+        server.createContext("/api/admin/reviews/status", new ApiAdminReviewStatusHandler());
+
         server.createContext("/api/admin/books", new ApiAdminBooksHandler());
         server.createContext("/api/admin/books/detail", new ApiAdminBookDetailHandler());
         server.createContext("/api/admin/books/add", new ApiAdminBookAddHandler());
@@ -1347,6 +1358,307 @@ public class BookstoreApp {
             sb.append("]}");
 
             sendResponse(exchange, 200, "application/json; charset=UTF-8", sb.toString());
+        }
+    }
+
+    // =========================================================================
+    // API CHỨC NĂNG ĐÁNH GIÁ SÁCH (BOOK REVIEWS & RATINGS)
+    // =========================================================================
+
+    /**
+     * API Đánh giá Sách (/api/reviews)
+     * GET: Lấy danh sách đánh giá hợp lệ (HIEN_THI) cho sách theo bookId
+     * POST: Gửi đánh giá mới hoặc cập nhật đánh giá cũ
+     */
+    static class ApiReviewsHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            String method = exchange.getRequestMethod();
+
+            if ("GET".equalsIgnoreCase(method)) {
+                String query = exchange.getRequestURI().getQuery();
+                Map<String, String> qp = parseQueryString(query);
+                int bookId = 0;
+                try {
+                    bookId = Integer.parseInt(qp.getOrDefault("bookId", "0"));
+                } catch (NumberFormatException ignored) {}
+
+                if (bookId <= 0) {
+                    sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Thiếu bookId hợp lệ!\"}");
+                    return;
+                }
+
+                Book book = DataStore.getBookById(bookId);
+                List<Review> reviews = DataStore.getReviewsForBook(bookId);
+
+                int count5 = 0, count4 = 0, count3 = 0, count2 = 0, count1 = 0;
+                for (Review r : reviews) {
+                    int star = r.getRating();
+                    if (star == 5) count5++;
+                    else if (star == 4) count4++;
+                    else if (star == 3) count3++;
+                    else if (star == 2) count2++;
+                    else if (star == 1) count1++;
+                }
+
+                double avgRating = (book != null) ? book.getRating() : 5.0;
+                int totalCount = (book != null) ? book.getReviewCount() : reviews.size();
+
+                StringBuilder json = new StringBuilder();
+                json.append("{");
+                json.append("\"success\":true,");
+                json.append("\"bookId\":").append(bookId).append(",");
+                json.append("\"averageRating\":").append(String.format(Locale.US, "%.1f", avgRating)).append(",");
+                json.append("\"reviewCount\":").append(totalCount).append(",");
+                json.append("\"ratingCounts\":{");
+                json.append("\"5\":").append(count5).append(",");
+                json.append("\"4\":").append(count4).append(",");
+                json.append("\"3\":").append(count3).append(",");
+                json.append("\"2\":").append(count2).append(",");
+                json.append("\"1\":").append(count1);
+                json.append("},");
+                json.append("\"reviews\":[");
+
+                for (int i = 0; i < reviews.size(); i++) {
+                    Review r = reviews.get(i);
+                    if (i > 0) json.append(",");
+                    json.append("{");
+                    json.append("\"id\":").append(r.getId()).append(",");
+                    json.append("\"username\":").append(escapeJson(r.getUsername())).append(",");
+                    json.append("\"fullName\":").append(escapeJson(r.getFullName())).append(",");
+                    json.append("\"avatar\":").append(escapeJson(r.getAvatar())).append(",");
+                    json.append("\"rating\":").append(r.getRating()).append(",");
+                    json.append("\"content\":").append(escapeJson(r.getContent())).append(",");
+                    json.append("\"createdAt\":").append(escapeJson(r.getCreatedAt() != null ? r.getCreatedAt().toString() : "Vừa xong"));
+                    json.append("}");
+                }
+                json.append("]");
+                json.append("}");
+
+                sendResponse(exchange, 200, "application/json; charset=UTF-8", json.toString());
+
+            } else if ("POST".equalsIgnoreCase(method)) {
+                // 1. Authenticate user
+                User user = getAuthenticatedUser(exchange);
+                if (user == null) {
+                    sendResponse(exchange, 401, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Vui lòng đăng nhập để gửi đánh giá sản phẩm!\"}");
+                    return;
+                }
+
+                Map<String, String> params = parseFormData(exchange);
+                int bookId = 0;
+                int rating = 0;
+                Integer orderId = null;
+                try {
+                    bookId = Integer.parseInt(params.getOrDefault("bookId", "0"));
+                } catch (NumberFormatException ignored) {}
+
+                try {
+                    rating = Integer.parseInt(params.getOrDefault("rating", "0"));
+                } catch (NumberFormatException ignored) {}
+
+                try {
+                    if (params.containsKey("orderId") && !params.get("orderId").isEmpty()) {
+                        orderId = Integer.parseInt(params.get("orderId"));
+                    }
+                } catch (NumberFormatException ignored) {}
+
+                String content = params.getOrDefault("content", "").trim();
+
+                // 2. Kiểm tra sách tồn tại
+                Book book = DataStore.getBookById(bookId);
+                if (book == null) {
+                    sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Sách không tồn tại trong hệ thống!\"}");
+                    return;
+                }
+
+                // 3. Backend Kiểm tra điều kiện mua hàng & đơn hàng đã giao
+                DataStore.ReviewEligibilityResult eligibility = DataStore.checkReviewEligibility(user.getUsername(), bookId);
+                if (eligibility == DataStore.ReviewEligibilityResult.NOT_PURCHASED) {
+                    sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Bạn chỉ có thể đánh giá sách đã mua.\"}");
+                    return;
+                } else if (eligibility == DataStore.ReviewEligibilityResult.ORDER_NOT_DELIVERED) {
+                    sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Bạn chưa thể đánh giá vì đơn hàng chưa được giao.\"}");
+                    return;
+                }
+
+                // 4. Validate dữ liệu nhập
+                if (rating < 1 || rating > 5) {
+                    sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Số sao bắt buộc và chỉ nhận từ 1 đến 5 sao.\"}");
+                    return;
+                }
+
+                if (content.isEmpty()) {
+                    sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Nội dung đánh giá không được để trống!\"}");
+                    return;
+                }
+
+                // 5. TỰ ĐỘNG KIỂM TRA NỘI DUNG ĐÁNH GIÁ (PROFANITY / ABUSE FILTER)
+                ContentFilterService.FilterResult filterRes = ContentFilterService.checkContent(content);
+
+                Review review = new Review();
+                review.setUsername(user.getUsername());
+                review.setFullName(user.getFullName());
+                review.setAvatar(user.getAvatar());
+                review.setBookId(bookId);
+                review.setBookTitle(book.getTitle());
+                review.setOrderId(orderId);
+                review.setRating(rating);
+                review.setContent(content);
+
+                if (filterRes.isBlocked()) {
+                    // Chặn / Ẩn ngay lập tức nếu chứa từ ngữ không phù hợp
+                    review.setStatus("DA_CHAN");
+                    review.setBlockReason(filterRes.getReason());
+                    DataStore.saveReview(review); // Đánh giá DA_CHAN không được hiển thị & không tính điểm trung bình
+
+                    sendResponse(exchange, 200, "application/json; charset=UTF-8", 
+                        "{\"success\":false,\"blocked\":true,\"message\":\"Nội dung đánh giá chứa từ ngữ không phù hợp. Vui lòng chỉnh sửa và gửi lại.\"}");
+                } else {
+                    // Nội dung hợp lệ -> Lưu và HIỂN THỊ NGAY, tính vào điểm trung bình
+                    review.setStatus("HIEN_THI");
+                    review.setBlockReason(null);
+                    DataStore.saveReview(review);
+
+                    sendResponse(exchange, 200, "application/json; charset=UTF-8", 
+                        "{\"success\":true,\"message\":\"Đánh giá của bạn đã được gửi thành công.\"}");
+                }
+
+            } else {
+                sendResponse(exchange, 405, "text/plain", "Method Not Allowed");
+            }
+        }
+    }
+
+    /**
+     * API Kiểm tra điều kiện đánh giá sách (/api/reviews/eligible?bookId=...)
+     */
+    static class ApiReviewEligibilityHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            String query = exchange.getRequestURI().getQuery();
+            Map<String, String> qp = parseQueryString(query);
+            int bookId = 0;
+            try {
+                bookId = Integer.parseInt(qp.getOrDefault("bookId", "0"));
+            } catch (NumberFormatException ignored) {}
+
+            User user = getAuthenticatedUser(exchange);
+            if (user == null) {
+                sendResponse(exchange, 200, "application/json; charset=UTF-8", 
+                    "{\"loggedIn\":false,\"eligible\":false,\"message\":\"Vui lòng đăng nhập để đánh giá sản phẩm.\"}");
+                return;
+            }
+
+            DataStore.ReviewEligibilityResult eligibility = DataStore.checkReviewEligibility(user.getUsername(), bookId);
+            Review existingReview = DataStore.getExistingUserReview(user.getUsername(), bookId);
+
+            boolean eligible = (eligibility == DataStore.ReviewEligibilityResult.ELIGIBLE);
+            String message = "";
+            if (eligibility == DataStore.ReviewEligibilityResult.NOT_PURCHASED) {
+                message = "Bạn chỉ có thể đánh giá sách đã mua.";
+            } else if (eligibility == DataStore.ReviewEligibilityResult.ORDER_NOT_DELIVERED) {
+                message = "Bạn chưa thể đánh giá vì đơn hàng chưa được giao.";
+            } else {
+                message = "Bạn đủ điều kiện đánh giá sản phẩm này.";
+            }
+
+            StringBuilder json = new StringBuilder();
+            json.append("{");
+            json.append("\"loggedIn\":true,");
+            json.append("\"eligible\":").append(eligible).append(",");
+            json.append("\"status\":\"").append(eligibility.name()).append("\",");
+            json.append("\"message\":").append(escapeJson(message)).append(",");
+            json.append("\"hasReviewed\":").append(existingReview != null).append(",");
+            if (existingReview != null) {
+                json.append("\"existingReview\":{");
+                json.append("\"rating\":").append(existingReview.getRating()).append(",");
+                json.append("\"content\":").append(escapeJson(existingReview.getContent())).append(",");
+                json.append("\"status\":").append(escapeJson(existingReview.getStatus()));
+                json.append("}");
+            } else {
+                json.append("\"existingReview\":null");
+            }
+            json.append("}");
+
+            sendResponse(exchange, 200, "application/json; charset=UTF-8", json.toString());
+        }
+    }
+
+    /**
+     * API Admin Xem danh sách đánh giá (/api/admin/reviews)
+     */
+    static class ApiAdminReviewsHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            User user = getAuthenticatedUser(exchange);
+            if (user == null || !"ADMIN".equalsIgnoreCase(user.getRole())) {
+                sendResponse(exchange, 403, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Access Denied\"}");
+                return;
+            }
+
+            String query = exchange.getRequestURI().getQuery();
+            Map<String, String> qp = parseQueryString(query);
+            String statusFilter = qp.getOrDefault("status", "ALL");
+
+            List<Review> reviews = DataStore.getAllReviewsForAdmin(statusFilter);
+
+            StringBuilder json = new StringBuilder();
+            json.append("{\"success\":true,\"reviews\":[");
+            for (int i = 0; i < reviews.size(); i++) {
+                Review r = reviews.get(i);
+                if (i > 0) json.append(",");
+                json.append("{");
+                json.append("\"id\":").append(r.getId()).append(",");
+                json.append("\"username\":").append(escapeJson(r.getUsername())).append(",");
+                json.append("\"fullName\":").append(escapeJson(r.getFullName())).append(",");
+                json.append("\"bookId\":").append(r.getBookId()).append(",");
+                json.append("\"bookTitle\":").append(escapeJson(r.getBookTitle() != null ? r.getBookTitle() : ("Sách #" + r.getBookId()))).append(",");
+                json.append("\"rating\":").append(r.getRating()).append(",");
+                json.append("\"content\":").append(escapeJson(r.getContent())).append(",");
+                json.append("\"status\":").append(escapeJson(r.getStatus())).append(",");
+                json.append("\"blockReason\":").append(escapeJson(r.getBlockReason() != null ? r.getBlockReason() : "")).append(",");
+                json.append("\"createdAt\":").append(escapeJson(r.getCreatedAt() != null ? r.getCreatedAt().toString() : ""));
+                json.append("}");
+            }
+            json.append("]}");
+
+            sendResponse(exchange, 200, "application/json; charset=UTF-8", json.toString());
+        }
+    }
+
+    /**
+     * API Admin Cập nhật trạng thái đánh giá (/api/admin/reviews/status)
+     */
+    static class ApiAdminReviewStatusHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            User user = getAuthenticatedUser(exchange);
+            if (user == null || !"ADMIN".equalsIgnoreCase(user.getRole())) {
+                sendResponse(exchange, 403, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Access Denied\"}");
+                return;
+            }
+
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendResponse(exchange, 405, "text/plain", "Method Not Allowed");
+                return;
+            }
+
+            Map<String, String> params = parseFormData(exchange);
+            int reviewId = 0;
+            try {
+                reviewId = Integer.parseInt(params.getOrDefault("reviewId", "0"));
+            } catch (NumberFormatException ignored) {}
+
+            String status = params.getOrDefault("status", "HIEN_THI").trim().toUpperCase();
+
+            if (reviewId <= 0) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Invalid reviewId\"}");
+                return;
+            }
+
+            DataStore.updateReviewStatus(reviewId, status);
+            sendResponse(exchange, 200, "application/json; charset=UTF-8", "{\"success\":true,\"message\":\"Cập nhật trạng thái thành công!\"}");
         }
     }
 
@@ -4042,6 +4354,101 @@ public class BookstoreApp {
         }
     }
 
+    private static String callGeminiAPI(String userMsg, String kbContext) {
+        String apiKey = System.getenv("GEMINI_API_KEY");
+        if (apiKey == null || apiKey.trim().isEmpty()) apiKey = System.getProperty("GEMINI_API_KEY", "");
+        if (apiKey == null || apiKey.trim().isEmpty()) apiKey = System.getProperty("gemini.api.key", "");
+
+        String systemPrompt = "Bạn là Trợ lý AI tư vấn sách thông minh của Nhà sách Bookora.\n"
+                + "Nhiệm vụ: Trả lời thân thiện, đúng trọng tâm và gợi ý các cuốn sách phù hợp từ danh sách sách của Bookora.\n\n"
+                + "QUY TẮC ĐỊNH DẠNG NGHIÊM NGẶT (BẮT BUỘC):\n"
+                + "1. Trả lời NGẮN GỌN, súc tích (tối đa 3-4 câu hoặc 2-3 gạch đầu dòng). Tuyệt đối KHÔNG viết một đoạn dài lê thê.\n"
+                + "2. Sử dụng định dạng Markdown RÕ RÀNG:\n"
+                + "   - Dùng **in đậm** cho từ khóa quan trọng và TÊN SÁCH (ví dụ: **Nhà Giả Kim**, **Thói Quen Nguyên Tử**).\n"
+                + "   - Dùng dấu gạch ngang (-) ở đầu dòng cho danh sách các ý hoặc các cuốn sách gợi ý.\n"
+                + "   - Phân chia câu/đoạn bằng dấu xuống dòng để văn bản thoáng và đẹp mắt.\n"
+                + "3. Ưu tiên đề xuất các tác phẩm có trong danh sách sách Bookora bên dưới.\n\n"
+                + "DỮ LIỆU TRI THỨC BOOKORA:\n"
+                + kbContext + "\n\n"
+                + "Câu hỏi của khách hàng: " + userMsg;
+
+        String payload = "{\"contents\":[{\"parts\":[{\"text\":" + escapeJson(systemPrompt) + "}]}],\"generationConfig\":{\"temperature\":0.5,\"maxOutputTokens\":800}}";
+
+        for (int attempt = 1; attempt <= 2; attempt++) {
+            try {
+                String endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=" + apiKey.trim();
+                URL url = new URL(endpoint);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+                conn.setConnectTimeout(8000);
+                conn.setReadTimeout(12000);
+                conn.setDoOutput(true);
+
+                try (OutputStream os = conn.getOutputStream()) {
+                    os.write(payload.getBytes(StandardCharsets.UTF_8));
+                }
+
+                int respCode = conn.getResponseCode();
+                if (respCode == 200) {
+                    try (InputStream is = conn.getInputStream();
+                         BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+                        StringBuilder sb = new StringBuilder();
+                        String line;
+                        while ((line = reader.readLine()) != null) sb.append(line);
+
+                        String resJson = sb.toString();
+                        int textKey = resJson.indexOf("\"text\":");
+                        if (textKey != -1) {
+                            int start = resJson.indexOf("\"", textKey + 7);
+                            if (start != -1) {
+                                start += 1;
+                                StringBuilder ansSb = new StringBuilder();
+                                boolean escaped = false;
+                                for (int i = start; i < resJson.length(); i++) {
+                                    char c = resJson.charAt(i);
+                                    if (escaped) {
+                                        if (c == 'n') ansSb.append('\n');
+                                        else if (c == 'r') ansSb.append('\r');
+                                        else if (c == 't') ansSb.append('\t');
+                                        else if (c == '\"') ansSb.append('\"');
+                                        else if (c == '\\') ansSb.append('\\');
+                                        else ansSb.append(c);
+                                        escaped = false;
+                                    } else if (c == '\\') {
+                                        escaped = true;
+                                    } else if (c == '"') {
+                                        break;
+                                    } else {
+                                        ansSb.append(c);
+                                    }
+                                }
+                                String ans = ansSb.toString().trim();
+                                if (!ans.isEmpty()) return ans;
+                            }
+                        }
+                    }
+                } else {
+                    try (InputStream err = conn.getErrorStream();
+                         BufferedReader reader = new BufferedReader(new InputStreamReader(err, StandardCharsets.UTF_8))) {
+                        StringBuilder errSb = new StringBuilder();
+                        String line;
+                        while ((line = reader.readLine()) != null) errSb.append(line);
+                        System.err.println("⚠️ Gemini API Error [Code " + respCode + "]: " + errSb.toString());
+                    }
+                    if (respCode == 503 || respCode == 429) {
+                        Thread.sleep(500 * attempt);
+                    } else {
+                        break;
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("⚠️ Call Gemini API attempt " + attempt + " failed: " + e.getMessage());
+            }
+        }
+        return null;
+    }
+
     /**
      * API Chatbot AI tư vấn sách thông minh theo Use Case Luồng rẽ nhánh (2a.2)
      */
@@ -4062,67 +4469,61 @@ public class BookstoreApp {
             }
 
             String lowerMsg = message.toLowerCase();
-            String reply;
+            String reply = null;
             List<Book> suggestedBooks = new ArrayList<>();
             List<Book> all = DataStore.getAllBooks();
 
-            String kbAnswer = DataStore.findChatbotAnswer(message);
+            boolean isPureGreeting = lowerMsg.isEmpty() || lowerMsg.equals("chào") || lowerMsg.equals("hello")
+                    || lowerMsg.equals("hi") || lowerMsg.equals("xin chào") || lowerMsg.equals("hi bạn")
+                    || lowerMsg.startsWith("chào bạn") || lowerMsg.startsWith("xin chào bạn");
 
-            if (lowerMsg.isEmpty() || lowerMsg.contains("chào") || lowerMsg.contains("hello") || lowerMsg.contains("hi")) {
-                reply = "Xin chào bạn! Tôi là Trợ lý AI Bookora 📚. Tôi có thể giúp bạn tìm kiếm sách theo sở thích, giải đáp chính sách giao hàng, thanh toán, đổi trả hoặc giới thiệu các tác phẩm nổi bật. Bạn cần hỗ trợ gì hôm nay?";
+            // Attempt calling Gemini API if not a pure greeting
+            if (!isPureGreeting) {
+                StringBuilder kbContext = new StringBuilder();
+                kbContext.append("--- THÔNG TIN CHÍNH SÁCH VÀ FAQ BOOKORA ---\n");
+                List<ChatbotContent> kbItems = DataStore.getAllChatbotContents("ALL", "");
+                for (ChatbotContent c : kbItems) {
+                    kbContext.append("- [").append(c.getCategoryTypeName()).append("] ").append(c.getTitle()).append(": ").append(c.getContent()).append("\n");
+                }
+                kbContext.append("\n--- DANH SÁCH TẤT CẢ SÁCH TRÊN KỆ BOOKORA ---\n");
+                for (Book b : all) {
+                    kbContext.append("- ID ").append(b.getId()).append(": ").append(b.getTitle())
+                             .append(" (Tác giả: ").append(b.getAuthor())
+                             .append(", Thể loại: ").append(b.getCategory())
+                             .append(", Giá: ").append(b.getPrice()).append("đ")
+                             .append(b.getDescription() != null && !b.getDescription().isEmpty() ? ", Mô tả: " + b.getDescription() : "")
+                             .append(")\n");
+                }
+                reply = callGeminiAPI(message, kbContext.toString());
+            }
+
+            if (reply != null && !reply.trim().isEmpty()) {
+                // Gemini API answered intelligently
+                for (Book b : all) {
+                    String titleLower = b.getTitle().toLowerCase();
+                    String simpleTitle = titleLower.replaceAll("\\(.*?\\)", "").trim();
+                    if (reply.toLowerCase().contains(titleLower) || (!simpleTitle.isEmpty() && reply.toLowerCase().contains(simpleTitle))) {
+                        if (!suggestedBooks.contains(b) && suggestedBooks.size() < 3) {
+                            suggestedBooks.add(b);
+                        }
+                    }
+                }
+            } else if (isPureGreeting) {
+                reply = "Xin chào bạn! Tôi là **Trợ lý AI Bookora** 📚.\n\nTôi có thể giúp bạn:\n- Tìm kiếm sách theo sở thích và tâm trạng\n- Giải đáp chính sách giao hàng, đổi trả và ưu đãi\n- Gợi ý những cuốn sách bán chạy nhất hôm nay!";
                 for (Book b : all) {
                     if (b.isBestSeller() && suggestedBooks.size() < 3) suggestedBooks.add(b);
-                }
-            } else if (kbAnswer != null && !kbAnswer.trim().isEmpty()) {
-                reply = kbAnswer;
-                for (Book b : all) {
-                    if (b.isBestSeller() && suggestedBooks.size() < 3) suggestedBooks.add(b);
-                }
-            } else if (lowerMsg.contains("lập trình") || lowerMsg.contains("công nghệ") || lowerMsg.contains("code") || lowerMsg.contains("software")) {
-                reply = "Dành cho dân công nghệ & lập trình viên, Bookora có các cẩm nang kinh điển của Uncle Bob và các bậc thầy thế giới! Đặc biệt tháng này đang có ưu đãi 25% cho danh mục Công nghệ:";
-                for (Book b : all) {
-                    if ("Công nghệ".equalsIgnoreCase(b.getCategory()) && suggestedBooks.size() < 3) suggestedBooks.add(b);
-                }
-            } else if (lowerMsg.contains("kinh tế") || lowerMsg.contains("tài chính") || lowerMsg.contains("làm giàu") || lowerMsg.contains("tiền")) {
-                reply = "Nếu bạn muốn nâng cao tư duy tài chính độc lập và phương pháp quản trị doanh nghiệp, đây là các tác phẩm được hàng triệu độc giả đánh giá cao nhất:";
-                for (Book b : all) {
-                    if ("Kinh tế".equalsIgnoreCase(b.getCategory()) && suggestedBooks.size() < 3) suggestedBooks.add(b);
-                }
-            } else if (lowerMsg.contains("văn học") || lowerMsg.contains("tiểu thuyết") || lowerMsg.contains("truyện")) {
-                reply = "Về mảng Văn học, Bookora tuyển chọn những kiệt tác văn chương lay động lòng người, với ưu đãi giảm 20% mùa thu này:";
-                for (Book b : all) {
-                    if ("Văn học".equalsIgnoreCase(b.getCategory()) && suggestedBooks.size() < 3) suggestedBooks.add(b);
-                }
-            } else if (lowerMsg.contains("kỹ năng") || lowerMsg.contains("thói quen") || lowerMsg.contains("phát triển bản thân")) {
-                reply = "Để phát triển bản thân và rèn luyện thói quen tích cực mỗi ngày, tôi đặc biệt gợi ý cho bạn những cuốn sách gối đầu giường sau:";
-                for (Book b : all) {
-                    if ("Kỹ năng sống".equalsIgnoreCase(b.getCategory()) && suggestedBooks.size() < 3) suggestedBooks.add(b);
-                }
-            } else if (lowerMsg.contains("tâm lý") || lowerMsg.contains("tư duy")) {
-                reply = "Khám phá chiều sâu nội tâm và cách vận hành của tư duy con người qua những cuốn sách tâm lý học xuất sắc:";
-                for (Book b : all) {
-                    if ("Tâm lý học".equalsIgnoreCase(b.getCategory()) && suggestedBooks.size() < 3) suggestedBooks.add(b);
-                }
-            } else if (lowerMsg.contains("hết hàng") || lowerMsg.contains("tồn kho") || lowerMsg.contains("kho")) {
-                reply = "Hệ thống Bookora kiểm tra kho hàng theo thời gian thực (Real-time Inventory). Nếu cuốn sách hiển thị nhãn 'Hết hàng', bạn có thể bấm 'Xem chi tiết' để theo dõi hoặc nhận thông báo ngay khi sách được tái bản về kho!";
-                for (Book b : all) {
-                    if (b.isOutOfStock() && suggestedBooks.size() < 3) suggestedBooks.add(b);
-                }
-            } else if (lowerMsg.contains("khuyến mãi") || lowerMsg.contains("giảm giá") || lowerMsg.contains("voucher") || lowerMsg.contains("freeship")) {
-                reply = "Hiện tại Bookora đang áp dụng các chương trình ưu đãi nổi bật: Giảm 20% sách Văn học (KM_VANHOC), Ưu đãi 25% sách Công nghệ (KM_TECH2026), và Miễn phí vận chuyển cho đơn hàng từ 250.000 đ!";
-                for (Book b : all) {
-                    if (b.getDiscountPercent() > 0 && suggestedBooks.size() < 3) suggestedBooks.add(b);
                 }
             } else {
-                // Tìm kiếm theo từ khóa người dùng nhập vào
-                List<Book> matches = DataStore.searchBooks(message, "Tất cả");
-                if (!matches.isEmpty()) {
-                    reply = "Tôi đã tìm thấy " + matches.size() + " cuốn sách phù hợp với yêu cầu '" + message + "' của bạn:";
-                    for (int i = 0; i < Math.min(3, matches.size()); i++) {
-                        suggestedBooks.add(matches.get(i));
+                String kbAnswer = DataStore.findChatbotAnswer(message);
+                if (kbAnswer != null && !kbAnswer.trim().isEmpty()) {
+                    reply = kbAnswer;
+                } else if (lowerMsg.contains("stress") || lowerMsg.contains("học tập") || lowerMsg.contains("áp lực") || lowerMsg.contains("mệt mỏi") || lowerMsg.contains("thư giãn")) {
+                    reply = "Để giúp bạn **giải tỏa stress và áp lực trong học tập**, Bookora đề xuất 3 cuốn sách tuyệt vời giúp rèn luyện tư duy và giải tỏa tâm trí:\n- **Nhà Giả Kim**: Truyền cảm hứng theo đuổi ước mơ và bình thản trước khó khăn.\n- **Thói Quen Nguyên Tử**: Xây dựng lộ trình học tập khoa học, nhẹ nhàng mà hiệu quả.\n- **Dám Bị Ghét**: Giải phóng lo âu, giúp bạn tự tin và giảm áp lực kỳ vọng.";
+                    for (Book b : all) {
+                        if ((b.getId() == 1 || b.getId() == 9 || b.getId() == 15) && suggestedBooks.size() < 3) suggestedBooks.add(b);
                     }
                 } else {
-                    reply = "Rất tiếc tôi chưa tìm thấy đầu sách nào khớp hoàn toàn với '" + message + "'. Tuy nhiên, bạn có thể tham khảo một số tác phẩm kinh điển đang được bạn đọc săn đón nhiều nhất tại Bookora:";
+                    reply = "Cảm ơn bạn đã nhắn tin cho Bookora! Tôi là Trợ lý AI, tôi có thể giải đáp thắc mắc về chính sách mua hàng, thanh toán, giao hàng hoặc tìm kiếm các tựa sách phù hợp nhất với nhu cầu của bạn.";
                     for (Book b : all) {
                         if (b.isBestSeller() && suggestedBooks.size() < 3) suggestedBooks.add(b);
                     }

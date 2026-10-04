@@ -7,6 +7,7 @@ import com.bookstore.model.ChatbotContent;
 import com.bookstore.model.Order;
 import com.bookstore.model.OrderItem;
 import com.bookstore.model.PaymentMethod;
+import com.bookstore.model.Review;
 import com.bookstore.model.User;
 import com.bookstore.model.Voucher;
 
@@ -15,6 +16,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -41,6 +43,7 @@ public class DataStore {
     private static final List<PaymentMethod> memoryPaymentMethods = Collections.synchronizedList(new ArrayList<>());
     private static final List<Order> memoryOrders = Collections.synchronizedList(new ArrayList<>());
     private static final List<Category> memoryCategories = Collections.synchronizedList(new ArrayList<>());
+    private static final List<Review> memoryReviews = Collections.synchronizedList(new ArrayList<>());
     private static final ConcurrentHashMap<String, List<OrderItem>> memoryCarts = new ConcurrentHashMap<>();
     private static int nextAddressId = 100;
     private static int nextOrderId = 100;
@@ -50,6 +53,7 @@ public class DataStore {
         ensureBookTableSchema();
         ensureUserTableSchema();
         ensureCategoryTableSchema();
+        ensureReviewTableSchema();
     }
 
     public static void ensureCategoryTableSchema() {
@@ -3413,6 +3417,410 @@ public class DataStore {
             }
         }
         return null;
+    }
+
+    // =========================================================================
+    // HỆ THỐNG ĐÁNH GIÁ SÁCH (BOOK REVIEWS & RATINGS)
+    // =========================================================================
+
+    public static void ensureReviewTableSchema() {
+        String sqlCreate = "CREATE TABLE IF NOT EXISTS danh_gia ("
+                + "id INT AUTO_INCREMENT PRIMARY KEY, "
+                + "username VARCHAR(50) NOT NULL, "
+                + "book_id INT NOT NULL, "
+                + "order_id INT DEFAULT NULL, "
+                + "rating INT NOT NULL, "
+                + "content TEXT NOT NULL, "
+                + "status VARCHAR(20) DEFAULT 'HIEN_THI', "
+                + "block_reason VARCHAR(255) DEFAULT NULL, "
+                + "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, "
+                + "updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, "
+                + "FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE, "
+                + "FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE"
+                + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+        try (Connection conn = DBContext.getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.executeUpdate(sqlCreate);
+
+            try (ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM danh_gia")) {
+                if (rs.next() && rs.getInt(1) == 0) {
+                    String[] seedReviews = {
+                        "INSERT INTO danh_gia (username, book_id, order_id, rating, content, status, created_at) VALUES ('khachhang', 1, 101, 5, 'Sách hay tuyệt vời, giấy in nét và bọc cẩn thận. Đáng mua!', 'HIEN_THI', NOW())",
+                        "INSERT INTO danh_gia (username, book_id, order_id, rating, content, status, created_at) VALUES ('oanh', 1, 101, 5, 'Nội dung rất triết lý và truyền cảm hứng. Giao hàng cực nhanh!', 'HIEN_THI', NOW())",
+                        "INSERT INTO danh_gia (username, book_id, order_id, rating, content, status, created_at) VALUES ('khachhang', 2, 104, 5, 'Đắc Nhân Tâm cuốn sách kinh điển mọi người nên đọc ít nhất một lần.', 'HIEN_THI', NOW())"
+                    };
+                    for (String sql : seedReviews) {
+                        try { stmt.executeUpdate(sql); } catch (SQLException ignored) {}
+                    }
+                }
+            }
+        } catch (SQLException ignored) {}
+    }
+
+    public enum ReviewEligibilityResult {
+        ELIGIBLE,              // Đủ điều kiện đánh giá (Đã mua + Đã giao)
+        NOT_PURCHASED,         // Chưa mua sách
+        ORDER_NOT_DELIVERED    // Đã mua nhưng đơn chưa giao
+    }
+
+    public static boolean isOrderDelivered(String status) {
+        if (status == null) return false;
+        String s = status.trim().toUpperCase();
+        return "HOAN_THANH".equals(s) || "DA_GIAO".equals(s) || "DELIVERED".equals(s) 
+            || "ĐÃ GIAO".equalsIgnoreCase(status) || "ĐÃ HOÀN THÀNH".equalsIgnoreCase(status);
+    }
+
+    public static ReviewEligibilityResult checkReviewEligibility(String username, int bookId) {
+        if (username == null || username.trim().isEmpty()) {
+            return ReviewEligibilityResult.NOT_PURCHASED;
+        }
+
+        String sql = "SELECT dh.order_status FROM ct_don_hang ct "
+                   + "JOIN don_hang dh ON ct.order_id = dh.id "
+                   + "WHERE LOWER(dh.username) = ? AND ct.book_id = ?";
+
+        boolean hasPurchasedAny = false;
+        boolean hasDeliveredOrder = false;
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, username.trim().toLowerCase());
+            ps.setInt(2, bookId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    hasPurchasedAny = true;
+                    String status = rs.getString("order_status");
+                    if (isOrderDelivered(status)) {
+                        hasDeliveredOrder = true;
+                        break;
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("⚠️ Error checking review eligibility: " + e.getMessage());
+        }
+
+        // Memory fallback search if MySQL returned false or DB disconnected
+        if (!hasDeliveredOrder) {
+            for (Order o : memoryOrders) {
+                if (username.equalsIgnoreCase(o.getUsername())) {
+                    boolean containsBook = false;
+                    if (o.getItems() != null) {
+                        for (OrderItem item : o.getItems()) {
+                            if (item.getBookId() == bookId) {
+                                containsBook = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (containsBook) {
+                        hasPurchasedAny = true;
+                        if (isOrderDelivered(o.getOrderStatus())) {
+                            hasDeliveredOrder = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (hasDeliveredOrder) {
+            return ReviewEligibilityResult.ELIGIBLE;
+        } else if (hasPurchasedAny) {
+            return ReviewEligibilityResult.ORDER_NOT_DELIVERED;
+        } else {
+            return ReviewEligibilityResult.NOT_PURCHASED;
+        }
+    }
+
+    public static Review getExistingUserReview(String username, int bookId) {
+        if (username == null || username.trim().isEmpty()) return null;
+        String sql = "SELECT r.*, u.full_name, u.avatar FROM danh_gia r "
+                   + "LEFT JOIN users u ON r.username = u.username "
+                   + "WHERE LOWER(r.username) = ? AND r.book_id = ? ORDER BY r.id DESC LIMIT 1";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, username.trim().toLowerCase());
+            ps.setInt(2, bookId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Review r = new Review();
+                    r.setId(rs.getInt("id"));
+                    r.setUsername(rs.getString("username"));
+                    r.setFullName(rs.getString("full_name") != null ? rs.getString("full_name") : rs.getString("username"));
+                    r.setAvatar(rs.getString("avatar"));
+                    r.setBookId(rs.getInt("book_id"));
+                    r.setOrderId((Integer) rs.getObject("order_id"));
+                    r.setRating(rs.getInt("rating"));
+                    r.setContent(rs.getString("content"));
+                    r.setStatus(rs.getString("status"));
+                    r.setBlockReason(rs.getString("block_reason"));
+                    r.setCreatedAt(rs.getTimestamp("created_at"));
+                    return r;
+                }
+            }
+        } catch (SQLException ignored) {}
+
+        for (Review r : memoryReviews) {
+            if (username.equalsIgnoreCase(r.getUsername()) && r.getBookId() == bookId) {
+                return r;
+            }
+        }
+        return null;
+    }
+
+    public static boolean saveReview(Review review) {
+        if (review == null) return false;
+
+        String checkExistSql = "SELECT id FROM danh_gia WHERE LOWER(username) = ? AND book_id = ?";
+        Integer existingId = null;
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(checkExistSql)) {
+            ps.setString(1, review.getUsername().trim().toLowerCase());
+            ps.setInt(2, review.getBookId());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    existingId = rs.getInt("id");
+                }
+            }
+        } catch (SQLException ignored) {}
+
+        if (existingId != null) {
+            review.setId(existingId);
+            String updateSql = "UPDATE danh_gia SET rating = ?, content = ?, status = ?, block_reason = ?, updated_at = NOW() WHERE id = ?";
+            try (Connection conn = DBContext.getConnection();
+                 PreparedStatement ps = conn.prepareStatement(updateSql)) {
+                ps.setInt(1, review.getRating());
+                ps.setString(2, review.getContent());
+                ps.setString(3, review.getStatus());
+                ps.setString(4, review.getBlockReason());
+                ps.setInt(5, existingId);
+                ps.executeUpdate();
+            } catch (SQLException e) {
+                System.err.println("⚠️ MySQL updateReview error: " + e.getMessage());
+            }
+        } else {
+            String insertSql = "INSERT INTO danh_gia (username, book_id, order_id, rating, content, status, block_reason, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
+            try (Connection conn = DBContext.getConnection();
+                 PreparedStatement ps = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
+                ps.setString(1, review.getUsername().trim().toLowerCase());
+                ps.setInt(2, review.getBookId());
+                if (review.getOrderId() != null) {
+                    ps.setInt(3, review.getOrderId());
+                } else {
+                    ps.setNull(3, java.sql.Types.INTEGER);
+                }
+                ps.setInt(4, review.getRating());
+                ps.setString(5, review.getContent());
+                ps.setString(6, review.getStatus());
+                ps.setString(7, review.getBlockReason());
+                ps.executeUpdate();
+                try (ResultSet rs = ps.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        review.setId(rs.getInt(1));
+                    }
+                }
+            } catch (SQLException e) {
+                System.err.println("⚠️ MySQL saveReview error: " + e.getMessage());
+            }
+        }
+
+        memoryReviews.removeIf(r -> r.getUsername().equalsIgnoreCase(review.getUsername()) && r.getBookId() == review.getBookId());
+        if (review.getCreatedAt() == null) {
+            review.setCreatedAt(new Timestamp(System.currentTimeMillis()));
+        }
+        memoryReviews.add(review);
+
+        // Chỉ tính toán lại điểm số nếu trạng thái là HIEN_THI (Hợp lệ)
+        recalculateBookRating(review.getBookId());
+        return true;
+    }
+
+    public static void recalculateBookRating(int bookId) {
+        String sql = "SELECT COUNT(*) as cnt, AVG(rating) as avg_rating FROM danh_gia WHERE book_id = ? AND status = 'HIEN_THI'";
+        int totalReviews = 0;
+        double avgRating = 5.0;
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, bookId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    totalReviews = rs.getInt("cnt");
+                    if (totalReviews > 0) {
+                        avgRating = rs.getDouble("avg_rating");
+                        avgRating = Math.round(avgRating * 10.0) / 10.0;
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("⚠️ Error recalculating rating: " + e.getMessage());
+        }
+
+        if (totalReviews == 0) {
+            int memCount = 0;
+            double memSum = 0;
+            for (Review r : memoryReviews) {
+                if (r.getBookId() == bookId && "HIEN_THI".equalsIgnoreCase(r.getStatus())) {
+                    memCount++;
+                    memSum += r.getRating();
+                }
+            }
+            if (memCount > 0) {
+                totalReviews = memCount;
+                avgRating = Math.round((memSum / memCount) * 10.0) / 10.0;
+            }
+        }
+
+        String updateBookSql = "UPDATE books SET rating = ?, review_count = ? WHERE id = ?";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(updateBookSql)) {
+            ps.setDouble(1, avgRating);
+            ps.setInt(2, totalReviews);
+            ps.setInt(3, bookId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("⚠️ Error updating book rating in DB: " + e.getMessage());
+        }
+
+        Book b = getBookById(bookId);
+        if (b != null) {
+            b.setRating(avgRating);
+            b.setReviewCount(totalReviews);
+        }
+    }
+
+    public static List<Review> getReviewsForBook(int bookId) {
+        List<Review> list = new ArrayList<>();
+        String sql = "SELECT r.*, u.full_name, u.avatar FROM danh_gia r "
+                   + "LEFT JOIN users u ON r.username = u.username "
+                   + "WHERE r.book_id = ? AND r.status = 'HIEN_THI' "
+                   + "ORDER BY r.created_at DESC";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, bookId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Review r = new Review();
+                    r.setId(rs.getInt("id"));
+                    r.setUsername(rs.getString("username"));
+                    r.setFullName(rs.getString("full_name") != null ? rs.getString("full_name") : rs.getString("username"));
+                    r.setAvatar(rs.getString("avatar") != null ? rs.getString("avatar") : "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150");
+                    r.setBookId(rs.getInt("book_id"));
+                    r.setOrderId((Integer) rs.getObject("order_id"));
+                    r.setRating(rs.getInt("rating"));
+                    r.setContent(rs.getString("content"));
+                    r.setStatus(rs.getString("status"));
+                    r.setBlockReason(rs.getString("block_reason"));
+                    r.setCreatedAt(rs.getTimestamp("created_at"));
+                    list.add(r);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("⚠️ Error getting reviews for book: " + e.getMessage());
+        }
+
+        if (list.isEmpty()) {
+            for (Review r : memoryReviews) {
+                if (r.getBookId() == bookId && "HIEN_THI".equalsIgnoreCase(r.getStatus())) {
+                    if (r.getFullName() == null) {
+                        User u = findUser(r.getUsername());
+                        if (u != null) {
+                            r.setFullName(u.getFullName());
+                            r.setAvatar(u.getAvatar());
+                        } else {
+                            r.setFullName(r.getUsername());
+                        }
+                    }
+                    list.add(r);
+                }
+            }
+        }
+        return list;
+    }
+
+    public static List<Review> getAllReviewsForAdmin(String statusFilter) {
+        List<Review> list = new ArrayList<>();
+        StringBuilder sql = new StringBuilder("SELECT r.*, u.full_name, u.avatar, b.title as book_title FROM danh_gia r ")
+                   .append("LEFT JOIN users u ON r.username = u.username ")
+                   .append("LEFT JOIN books b ON r.book_id = b.id WHERE 1=1 ");
+
+        if (statusFilter != null && !statusFilter.trim().isEmpty() && !"ALL".equalsIgnoreCase(statusFilter)) {
+            sql.append("AND r.status = ? ");
+        }
+        sql.append("ORDER BY r.created_at DESC");
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            if (statusFilter != null && !statusFilter.trim().isEmpty() && !"ALL".equalsIgnoreCase(statusFilter)) {
+                ps.setString(1, statusFilter.trim().toUpperCase());
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Review r = new Review();
+                    r.setId(rs.getInt("id"));
+                    r.setUsername(rs.getString("username"));
+                    r.setFullName(rs.getString("full_name") != null ? rs.getString("full_name") : rs.getString("username"));
+                    r.setAvatar(rs.getString("avatar") != null ? rs.getString("avatar") : "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150");
+                    r.setBookId(rs.getInt("book_id"));
+                    r.setBookTitle(rs.getString("book_title"));
+                    r.setOrderId((Integer) rs.getObject("order_id"));
+                    r.setRating(rs.getInt("rating"));
+                    r.setContent(rs.getString("content"));
+                    r.setStatus(rs.getString("status"));
+                    r.setBlockReason(rs.getString("block_reason"));
+                    r.setCreatedAt(rs.getTimestamp("created_at"));
+                    list.add(r);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("⚠️ Error getting admin reviews: " + e.getMessage());
+        }
+
+        if (list.isEmpty()) {
+            for (Review r : memoryReviews) {
+                if (statusFilter == null || "ALL".equalsIgnoreCase(statusFilter) || r.getStatus().equalsIgnoreCase(statusFilter)) {
+                    list.add(r);
+                }
+            }
+        }
+        return list;
+    }
+
+    public static boolean updateReviewStatus(int reviewId, String newStatus) {
+        String sql = "UPDATE danh_gia SET status = ? WHERE id = ?";
+        int bookId = 0;
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, newStatus);
+            ps.setInt(2, reviewId);
+            ps.executeUpdate();
+
+            try (PreparedStatement ps2 = conn.prepareStatement("SELECT book_id FROM danh_gia WHERE id = ?")) {
+                ps2.setInt(1, reviewId);
+                try (ResultSet rs = ps2.executeQuery()) {
+                    if (rs.next()) {
+                        bookId = rs.getInt("book_id");
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("⚠️ Error updating review status: " + e.getMessage());
+        }
+
+        for (Review r : memoryReviews) {
+            if (r.getId() == reviewId) {
+                r.setStatus(newStatus);
+                bookId = r.getBookId();
+                break;
+            }
+        }
+
+        if (bookId > 0) {
+            recalculateBookRating(bookId);
+        }
+        return true;
     }
 }
 
