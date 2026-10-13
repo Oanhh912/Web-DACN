@@ -54,6 +54,7 @@ public class DataStore {
         ensureUserTableSchema();
         ensureCategoryTableSchema();
         ensureReviewTableSchema();
+        ensureChatbotConversationTables();
     }
 
     public static void ensureCategoryTableSchema() {
@@ -3417,6 +3418,89 @@ public class DataStore {
             }
         }
         return null;
+    }
+
+    public static void ensureChatbotConversationTables() {
+        String sqlHoiThoai = "CREATE TABLE IF NOT EXISTS chatbot_hoi_thoai ("
+                + "HoiThoaiID INT AUTO_INCREMENT PRIMARY KEY, "
+                + "KhachHangID INT NOT NULL, "
+                + "ThoiGianBatDau DATETIME DEFAULT CURRENT_TIMESTAMP, "
+                + "TrangThai VARCHAR(20) DEFAULT 'DANG_HOAT_DONG', "
+                + "FOREIGN KEY (KhachHangID) REFERENCES users(id) ON DELETE CASCADE"
+                + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+
+        String sqlTinNhan = "CREATE TABLE IF NOT EXISTS chatbot_tin_nhan ("
+                + "TinNhanID INT AUTO_INCREMENT PRIMARY KEY, "
+                + "NoiDung TEXT NOT NULL, "
+                + "NguoiGui VARCHAR(20) NOT NULL, "
+                + "ThoiGian DATETIME DEFAULT CURRENT_TIMESTAMP, "
+                + "HoiThoaiID INT NOT NULL, "
+                + "KhachHangID INT NOT NULL, "
+                + "FOREIGN KEY (HoiThoaiID) REFERENCES chatbot_hoi_thoai(HoiThoaiID) ON DELETE CASCADE, "
+                + "FOREIGN KEY (KhachHangID) REFERENCES users(id) ON DELETE CASCADE"
+                + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+
+        try (Connection conn = DBContext.getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.executeUpdate(sqlHoiThoai);
+            stmt.executeUpdate(sqlTinNhan);
+        } catch (SQLException ignored) {}
+    }
+
+    public static int getOrCreateChatbotConversation(int userId) {
+        String selectSql = "SELECT HoiThoaiID FROM chatbot_hoi_thoai WHERE KhachHangID = ? AND TrangThai = 'DANG_HOAT_DONG' ORDER BY HoiThoaiID DESC LIMIT 1";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(selectSql)) {
+            ps.setInt(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("HoiThoaiID");
+                }
+            }
+        } catch (SQLException ignored) {}
+
+        String insertSql = "INSERT INTO chatbot_hoi_thoai (KhachHangID, ThoiGianBatDau, TrangThai) VALUES (?, NOW(), 'DANG_HOAT_DONG')";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setInt(1, userId);
+            ps.executeUpdate();
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException ignored) {}
+        return 1;
+    }
+
+    public static void saveChatbotMessage(int conversationId, int userId, String sender, String content) {
+        if (content == null || content.trim().isEmpty()) return;
+        String insertSql = "INSERT INTO chatbot_tin_nhan (NoiDung, NguoiGui, ThoiGian, HoiThoaiID, KhachHangID) VALUES (?, ?, NOW(), ?, ?)";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(insertSql)) {
+            ps.setString(1, content.trim());
+            ps.setString(2, sender);
+            ps.setInt(3, conversationId);
+            ps.setInt(4, userId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("⚠️ Lỗi lưu chatbot_tin_nhan vào DB: " + e.getMessage());
+        }
+    }
+
+    public static int getUserIdByUsername(String username) {
+        if (username == null || username.trim().isEmpty()) return 2; // Mặc định oanh (ID=2)
+        String sql = "SELECT id FROM users WHERE LOWER(username) = ?";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, username.trim().toLowerCase());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("id");
+                }
+            }
+        } catch (SQLException ignored) {}
+        return 2;
     }
 
     // =========================================================================

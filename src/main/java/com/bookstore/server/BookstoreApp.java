@@ -4580,6 +4580,19 @@ public class BookstoreApp {
             }
             sb.append("]}");
 
+            // Tự động lưu hội thoại và tin nhắn vào MySQL (CHATBOT_HOI_THOAI & CHATBOT_TIN_NHAN)
+            try {
+                User authUser = getAuthenticatedUser(exchange);
+                int userId = (authUser != null) ? DataStore.getUserIdByUsername(authUser.getUsername()) : 2;
+                int convId = DataStore.getOrCreateChatbotConversation(userId);
+                if (!message.isEmpty()) {
+                    DataStore.saveChatbotMessage(convId, userId, "KHACH_HANG", message);
+                }
+                if (reply != null && !reply.isEmpty()) {
+                    DataStore.saveChatbotMessage(convId, userId, "CHATBOT", reply);
+                }
+            } catch (Exception ignored) {}
+
             sendResponse(exchange, 200, "application/json; charset=UTF-8", sb.toString());
         }
     }

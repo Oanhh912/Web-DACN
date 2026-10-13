@@ -311,6 +311,63 @@ INSERT INTO `chatbot_noi_dung` (`id`, `category_type`, `title`, `content`, `keyw
 (4, 'CAU_HOI_THUONG_GAP', 'Chính sách đổi trả và hoàn tiền', 'Khách hàng được quyền yêu cầu đổi trả sách trong vòng 7 ngày kể từ khi nhận hàng nếu sách có lỗi kỹ thuật (rách bìa, thiếu trang, rách hỏng do vận chuyển). Liên hệ hotline 0988123456 để được hỗ trợ.', 'đổi trả, hoàn tiền, rách sách, sách lỗi, chính sách trả hàng', 'ACTIVE'),
 (5, 'THONG_TIN_SACH', 'Giới thiệu danh mục sách bán chạy & khuyến mãi', 'Bookora sở hữu bộ sưu tập sách phong phú gồm các thể loại: Văn học, Kỹ năng sống, Công nghệ & AI, Kinh tế, Tâm lý học. Nhiều chương trình ưu đãi giảm đến 25% kèm quà tặng bookmark độc quyền.', 'sách bán chạy, danh mục sách, ưu đãi sách, giảm giá sách, thể loại sách', 'ACTIVE');
 
+-- 13. BẢNG ĐÁNH GIÁ SÁCH (DANH_GIA)
+DROP TABLE IF EXISTS `danh_gia`;
+CREATE TABLE `danh_gia` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `username` VARCHAR(50) NOT NULL,
+    `book_id` INT NOT NULL,
+    `order_id` INT DEFAULT NULL,
+    `rating` INT NOT NULL,
+    `content` TEXT NOT NULL,
+    `status` VARCHAR(20) DEFAULT 'HIEN_THI',
+    `block_reason` VARCHAR(255) DEFAULT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (`username`) REFERENCES `users`(`username`) ON DELETE CASCADE,
+    FOREIGN KEY (`book_id`) REFERENCES `books`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `danh_gia` (`username`, `book_id`, `order_id`, `rating`, `content`, `status`, `created_at`) VALUES
+('khachhang', 1, 101, 5, 'Sách hay tuyệt vời, giấy in nét và bọc cẩn thận. Đáng mua!', 'HIEN_THI', NOW()),
+('oanh', 1, 101, 5, 'Nội dung rất triết lý và truyền cảm hứng. Giao hàng cực nhanh!', 'HIEN_THI', NOW()),
+('khachhang', 2, 104, 5, 'Đắc Nhân Tâm cuốn sách kinh điển mọi người nên đọc ít nhất một lần.', 'HIEN_THI', NOW());
+
+-- 14. BẢNG HỘI THOẠI CHATBOT (CHATBOT_HOI_THOAI)
+DROP TABLE IF EXISTS `chatbot_tin_nhan`;
+DROP TABLE IF EXISTS `chatbot_hoi_thoai`;
+CREATE TABLE `chatbot_hoi_thoai` (
+    `HoiThoaiID` INT AUTO_INCREMENT PRIMARY KEY,
+    `KhachHangID` INT NOT NULL,
+    `ThoiGianBatDau` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `TrangThai` VARCHAR(20) DEFAULT 'DANG_HOAT_DONG',
+    FOREIGN KEY (`KhachHangID`) REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 15. BẢNG TIN NHẮN CHATBOT (CHATBOT_TIN_NHAN)
+CREATE TABLE `chatbot_tin_nhan` (
+    `TinNhanID` INT AUTO_INCREMENT PRIMARY KEY,
+    `NoiDung` TEXT NOT NULL,
+    `NguoiGui` VARCHAR(20) NOT NULL, -- 'KHACH_HANG' hoặc 'CHATBOT'
+    `ThoiGian` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `HoiThoaiID` INT NOT NULL,
+    `KhachHangID` INT NOT NULL,
+    FOREIGN KEY (`HoiThoaiID`) REFERENCES `chatbot_hoi_thoai`(`HoiThoaiID`) ON DELETE CASCADE,
+    FOREIGN KEY (`KhachHangID`) REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `chatbot_hoi_thoai` (`HoiThoaiID`, `KhachHangID`, `ThoiGianBatDau`, `TrangThai`) VALUES
+(1, 2, '2026-10-10 09:15:00', 'HOAN_THANH'),
+(2, 3, '2026-10-11 14:30:00', 'DANG_HOAT_DONG');
+
+INSERT INTO `chatbot_tin_nhan` (`TinNhanID`, `NoiDung`, `NguoiGui`, `ThoiGian`, `HoiThoaiID`, `KhachHangID`) VALUES
+(1, 'Xin chào, shop có sách Nhà Giả Kim không?', 'KHACH_HANG', '2026-10-10 09:15:02', 1, 2),
+(2, 'Chào bạn! Bookora hiện có sẵn sách Nhà Giả Kim với giá 79.000đ và đang được ưu đãi giảm 20% tặng kèm bookmark bạn nhé!', 'CHATBOT', '2026-10-10 09:15:05', 1, 2),
+(3, 'Shop giao hàng bao lâu thì tới Hà Nội ạ?', 'KHACH_HANG', '2026-10-10 09:15:40', 1, 2),
+(4, 'Đơn hàng giao tới Hà Nội thường mất từ 1 - 3 ngày làm việc. Đơn từ 250.000đ được miễn phí vận chuyển toàn quốc bạn nhé!', 'CHATBOT', '2026-10-10 09:15:43', 1, 2),
+(5, 'Tư vấn giúp tôi sách học lập trình cho người mới bắt đầu', 'KHACH_HANG', '2026-10-11 14:30:10', 2, 3),
+(6, 'Dạ chào bạn! Để bắt đầu học lập trình, bạn có thể tham khảo cuốn "Clean Code" hoặc "The Pragmatic Programmer" trên kệ sách Công nghệ của Bookora nhé!', 'CHATBOT', '2026-10-11 14:30:15', 2, 3);
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 
