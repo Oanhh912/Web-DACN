@@ -46,28 +46,49 @@ public class EmailService {
     }
 
     /**
-     * Gửi email mã OTP thực tế đến hòm thư người nhận
-     * @param toEmail Địa chỉ email người nhận (ví dụ: nguyenoanhh0912@gmail.com)
-     * @param otpCode Mã OTP gồm 6 chữ số
-     * @param fullName Họ tên người nhận
-     * @return true nếu gửi thành công vào hòm thư thật, false nếu thất bại hoặc chưa cấu hình
+     * Gửi email mã OTP đăng ký tài khoản
      */
     public static boolean sendOtpEmail(String toEmail, String otpCode, String fullName) {
-        if (toEmail == null || toEmail.trim().isEmpty()) {
+        if (toEmail == null || toEmail.trim().isEmpty() || !EmailValidator.isValid(toEmail)) {
+            System.err.println("❌ Email người nhận không hợp lệ hoặc sai định dạng: " + toEmail);
             return false;
         }
 
+        String subject = "[Bookora] Mã xác thực OTP đăng ký tài khoản: " + otpCode;
+        String htmlBody = buildOtpEmailHtml(fullName, otpCode);
+        return sendSmtpEmail(toEmail, subject, htmlBody, false, otpCode);
+    }
+
+    /**
+     * Gửi email mã OTP đặt lại mật khẩu (hiệu lực 5 phút, bảo mật tuyệt đối không log mã)
+     */
+    public static boolean sendPasswordResetOtpEmail(String toEmail, String otpCode, String fullName) {
+        if (toEmail == null || toEmail.trim().isEmpty() || !EmailValidator.isValid(toEmail)) {
+            System.err.println("❌ Email người nhận không hợp lệ hoặc sai định dạng: " + toEmail);
+            return false;
+        }
+
+        String subject = "[Bookora] Mã xác thực đặt lại mật khẩu: " + otpCode;
+        String htmlBody = buildPasswordResetEmailHtml(fullName, otpCode);
+        return sendSmtpEmail(toEmail, subject, htmlBody, true, null);
+    }
+
+    /**
+     * Thực hiện gửi mail qua giao thức SMTP SSL Socket 465
+     */
+    private static boolean sendSmtpEmail(String toEmail, String subject, String htmlBody, boolean isSensitive, String logOtp) {
         loadConfig();
         if (!isConfigured()) {
             System.out.println("===============================================================");
             System.out.println("ℹ️ [EMAIL THẬT CHƯA CẤU HÌNH TÀI KHOẢN GMAIL GỬI]");
-            System.out.println("   Hòm thư người nhận: " + toEmail);
-            System.out.println("   Mã OTP: " + otpCode);
+            System.out.println("   Hòm thư người nhận: " + maskEmail(toEmail));
+            if (!isSensitive && logOtp != null) {
+                System.out.println("   Mã OTP: " + logOtp);
+            }
             System.out.println("   👉 Để email gửi THẬT 100% đến hòm thư Gmail của bạn:");
             System.out.println("      Hãy mở file 'email_config.properties' và điền:");
             System.out.println("      EMAIL_SENDER=dia_chi_gmail_cua_ban@gmail.com");
             System.out.println("      EMAIL_APP_PASSWORD=16_ky_tu_mat_khau_ung_dung");
-            System.out.println("      (Tạo mật khẩu ứng dụng tại: https://myaccount.google.com/apppasswords)");
             System.out.println("===============================================================");
             return false;
         }
@@ -81,9 +102,6 @@ public class EmailService {
         String sender = config.getProperty("EMAIL_SENDER", "").trim();
         String appPassword = config.getProperty("EMAIL_APP_PASSWORD", "").trim().replace(" ", "");
         String fromName = config.getProperty("EMAIL_FROM_NAME", "Bookora - Tiệm Sách Tri Thức").trim();
-
-        String subject = "[Bookora] Mã xác thực OTP đăng ký tài khoản: " + otpCode;
-        String htmlBody = buildOtpEmailHtml(fullName, otpCode);
 
         try {
             SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
@@ -182,9 +200,13 @@ public class EmailService {
                 line = reader.readLine();
                 if (line != null && line.startsWith("250")) {
                     System.out.println("===============================================================");
-                    System.out.println("✅ [GMAIL SMTP THẬT] ĐÃ GỬI THÀNH CÔNG EMAIL THỰC TẾ!");
-                    System.out.println("   Đến hòm thư: " + toEmail);
-                    System.out.println("   Mã OTP: " + otpCode);
+                    System.out.println("✅ [GMAIL SMTP THẬT] ĐÃ GỬI THÀNH CÔNG EMAIL!");
+                    System.out.println("   Đến hòm thư: " + maskEmail(toEmail));
+                    if (!isSensitive && logOtp != null) {
+                        System.out.println("   Mã OTP: " + logOtp);
+                    } else {
+                        System.out.println("   (Mã OTP bảo mật được mã hóa, không xuất log theo chuẩn bảo mật)");
+                    }
                     System.out.println("===============================================================");
 
                     writer.print("QUIT\r\n");
@@ -199,6 +221,17 @@ public class EmailService {
             System.err.println("❌ [EMAIL SMTP EXCEPTION]: " + e.getMessage());
             return false;
         }
+    }
+
+    public static String maskEmail(String email) {
+        if (email == null || email.trim().isEmpty()) return "";
+        String em = email.trim();
+        int atIdx = em.indexOf('@');
+        if (atIdx <= 2) return em;
+        String userPart = em.substring(0, atIdx);
+        String domainPart = em.substring(atIdx);
+        String maskedUser = userPart.charAt(0) + "***" + userPart.charAt(userPart.length() - 1);
+        return maskedUser + domainPart;
     }
 
     private static String buildOtpEmailHtml(String name, String otp) {
@@ -231,28 +264,33 @@ public class EmailService {
                 + "</html>";
     }
 
-    public static void main(String[] args) {
-        System.out.println("===============================================================");
-        System.out.println("🔍 KIỂM TRA CẤU HÌNH GỬI EMAIL THỰC TẾ GMAIL SMTP");
-        System.out.println("===============================================================");
-        loadConfig();
-        String sender = config.getProperty("EMAIL_SENDER", "").trim();
-        String target = args.length > 0 ? args[0] : (sender.isEmpty() ? "nguyenoanhh0912@gmail.com" : sender);
-
-        if (!isConfigured()) {
-            System.out.println("❌ Chưa cấu hình EMAIL_SENDER hoặc EMAIL_APP_PASSWORD trong email_config.properties!");
-            System.out.println("   Vui lòng mở file 'email_config.properties' và nhập Mật khẩu ứng dụng 16 ký tự.");
-            return;
-        }
-
-        System.out.println("📧 Đang thử nghiệm gửi email OTP thật đến: " + target + " ...");
-        boolean success = sendOtpEmail(target, "888999", "Khách Hàng Bookora");
-        if (success) {
-            System.out.println("🎉 CHÚC MỪNG! Email thực tế đã được gửi thành công đến " + target + "!");
-            System.out.println("   Hãy mở hộp thư đến (Inbox hoặc Hộp thư rác/Spam) để xem mã OTP.");
-        } else {
-            System.out.println("❌ Gửi email thất bại! Vui lòng kiểm tra lại địa chỉ Gmail và Mật khẩu ứng dụng.");
-        }
-        System.out.println("===============================================================");
+    private static String buildPasswordResetEmailHtml(String name, String otp) {
+        String displayName = (name != null && !name.trim().isEmpty()) ? name : "Quý khách";
+        return "<!DOCTYPE html>"
+                + "<html>"
+                + "<head><meta charset='UTF-8'></head>"
+                + "<body style='font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; background: #f8fafc; padding: 30px; margin: 0;'>"
+                + "  <div style='max-width: 520px; margin: 0 auto; background: white; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;'>"
+                + "    <div style='background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); color: white; padding: 28px 24px; text-align: center;'>"
+                + "      <h1 style='margin: 0; font-size: 24px; letter-spacing: 1px;'>📖 Bookora</h1>"
+                + "      <p style='margin: 6px 0 0; font-size: 13px; color: #c7d2fe;'>Không Gian Tri Thức & Nghệ Thuật Sống</p>"
+                + "    </div>"
+                + "    <div style='padding: 32px 28px; color: #1e293b; line-height: 1.6;'>"
+                + "      <h2 style='font-size: 18px; margin-top: 0; color: #1e1b4b;'>Yêu cầu đặt lại mật khẩu</h2>"
+                + "      <p>Xin chào <strong>" + displayName + "</strong>,</p>"
+                + "      <p>Hệ thống nhận được yêu cầu đặt lại mật khẩu cho tài khoản Bookora của bạn. Dưới đây là mã xác thực OTP của bạn:</p>"
+                + "      <div style='background: #fff7ed; border: 2px dashed #f97316; border-radius: 10px; text-align: center; padding: 18px; margin: 24px 0;'>"
+                + "        <div style='font-size: 32px; font-weight: 800; letter-spacing: 10px; color: #c2410c;'>" + otp + "</div>"
+                + "        <div style='font-size: 12px; color: #9a3412; margin-top: 6px;'>Mã có hiệu lực trong <strong>5 phút (300 giây)</strong> và chỉ dùng được 1 lần</div>"
+                + "      </div>"
+                + "      <p style='font-size: 13px; color: #64748b;'>⚠️ Vì lý do an toàn bảo mật, tuyệt đối không chia sẻ mã OTP này cho bất kỳ ai khác.</p>"
+                + "      <p style='font-size: 13px; color: #64748b;'>Nếu bạn không yêu cầu đặt lại mật khẩu, tài khoản của bạn vẫn được an toàn và vui lòng bỏ qua email này.</p>"
+                + "    </div>"
+                + "    <div style='background: #f8fafc; padding: 16px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0;'>"
+                + "      © 2026 Bookora Bookstore. Mọi quyền được bảo lưu."
+                + "    </div>"
+                + "  </div>"
+                + "</body>"
+                + "</html>";
     }
 }

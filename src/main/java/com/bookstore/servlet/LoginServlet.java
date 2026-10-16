@@ -53,13 +53,31 @@ public class LoginServlet extends HttpServlet {
         }
 
         username = username.trim();
+
+        // 1. Kiểm tra tài khoản có đang bị khóa do nhập sai quá 5 lần không
+        if (DataStore.isAccountLocked(username)) {
+            request.setAttribute("errorMessage", DataStore.MSG_ACCOUNT_LOCKED_ATTEMPTS);
+            request.setAttribute("username", username);
+            request.getRequestDispatcher("/login.jsp").forward(request, response);
+            return;
+        }
+
+        // 2. Xác thực thông tin đăng nhập
         if (DataStore.validateUser(username, password)) {
-            User user = DataStore.findUser(username);
+            User user = DataStore.findUserByUsernameOrEmail(username);
             if (user != null && "LOCKED".equalsIgnoreCase(user.getStatus())) {
                 request.setAttribute("errorMessage", "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.");
                 request.setAttribute("username", username);
                 request.getRequestDispatcher("/login.jsp").forward(request, response);
                 return;
+            }
+
+            // Đăng nhập thành công -> Reset số lần đăng nhập sai
+            DataStore.recordSuccessfulLogin(username);
+
+            // Tự động nâng cấp sang băm an toàn nếu là mật khẩu plaintext cũ
+            if (user != null) {
+                DataStore.upgradeUserPasswordHash(user.getUsername(), password);
             }
 
             HttpSession session = request.getSession(true);
@@ -75,7 +93,15 @@ public class LoginServlet extends HttpServlet {
             // Chuyển hướng thành công vào trang chủ
             response.sendRedirect(request.getContextPath() + "/home");
         } else {
-            request.setAttribute("errorMessage", "Tên đăng nhập hoặc mật khẩu không chính xác! Vui lòng thử lại.");
+            // Đăng nhập thất bại -> Ghi nhận lần nhập sai
+            int failedCount = DataStore.recordFailedLogin(username);
+            String errMsg;
+            if (failedCount >= DataStore.MAX_FAILED_LOGIN_ATTEMPTS) {
+                errMsg = DataStore.MSG_ACCOUNT_LOCKED_ATTEMPTS;
+            } else {
+                errMsg = DataStore.MSG_INVALID_CREDENTIALS;
+            }
+            request.setAttribute("errorMessage", errMsg);
             request.setAttribute("username", username);
             request.getRequestDispatcher("/login.jsp").forward(request, response);
         }

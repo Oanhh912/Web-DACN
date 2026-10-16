@@ -138,6 +138,7 @@
                             </div>
                             <a href="profile" class="dropdown-item"><i class="fas fa-user-circle"></i> Hồ sơ tài khoản</a>
                             <a href="cart" class="dropdown-item"><i class="fas fa-bag-shopping"></i> Giỏ hàng của tôi</a>
+                            <a href="javascript:void(0)" class="dropdown-item" onclick="openWishlistFromMenu(event)"><i class="fas fa-heart" style="color: #ef4444;"></i> Danh sách yêu thích</a>
                             <a href="logout" class="dropdown-item logout"><i class="fas fa-arrow-right-from-bracket"></i> Đăng xuất</a>
                         </div>
                     </div>

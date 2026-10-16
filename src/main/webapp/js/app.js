@@ -308,6 +308,10 @@ function initUserDropdown() {
 
     trigger.addEventListener('click', (e) => {
         e.stopPropagation();
+        const wl = document.getElementById('wishlistPopover');
+        if (wl) wl.classList.remove('show');
+        const cartPop = document.getElementById('cartPopover');
+        if (cartPop) cartPop.classList.remove('show', 'active', 'open');
         dropdown.classList.toggle('show');
     });
 
@@ -1369,6 +1373,8 @@ function toggleCartPopover(event) {
 
 function showCartPopover() {
     clearTimeout(cartPopoverTimer);
+    const wishlistPop = document.getElementById('wishlistPopover');
+    if (wishlistPop) wishlistPop.classList.remove('show');
     const popover = document.getElementById('cartPopover');
     if (popover) {
         renderCartPopoverItems();
@@ -2635,12 +2641,35 @@ function wlRemove(id, e) {
 }
 
 function toggleWishlistPopover(e) {
-    if (e) e.stopPropagation();
+    if (e) {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    }
     const pop = document.getElementById('wishlistPopover');
     if (!pop) return;
     const cartPop = document.getElementById('cartPopover');
     if (cartPop) cartPop.classList.remove('show', 'active', 'open');
+    const userMenu = document.getElementById('userMenuDropdown');
+    if (userMenu) userMenu.classList.remove('show');
     pop.classList.toggle('show');
+}
+
+function openWishlistFromMenu(e) {
+    if (e) {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    }
+    const userMenu = document.getElementById('userMenuDropdown');
+    if (userMenu) userMenu.classList.remove('show');
+    const cartPop = document.getElementById('cartPopover');
+    if (cartPop) cartPop.classList.remove('show', 'active', 'open');
+    const pop = document.getElementById('wishlistPopover');
+    if (pop) {
+        pop.classList.add('show');
+    }
+    if (window.scrollY > 200) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 }
 
 function wlInjectHeader() {
@@ -2656,6 +2685,7 @@ function wlInjectHeader() {
             <span class="cart-badge wishlist-badge" id="wishlistBadge" style="display: none;">0</span>
         </button>
         <div class="wishlist-popover" id="wishlistPopover" onclick="event.stopPropagation()">
+            <div class="wishlist-popover-caret"></div>
             <div class="wishlist-popover-title"><i class="fas fa-heart"></i> Danh sách yêu thích</div>
             <div class="wishlist-items" id="wishlistItems"></div>
         </div>`;
@@ -2721,6 +2751,7 @@ function initWishlist() {
 }
 
 window.toggleWishlistPopover = toggleWishlistPopover;
+window.openWishlistFromMenu = openWishlistFromMenu;
 window.wlRemove = wlRemove;
 
 document.addEventListener('DOMContentLoaded', initWishlist);

@@ -107,7 +107,7 @@
                         <input type="checkbox" name="remember" value="on">
                         <span>Ghi nhớ đăng nhập</span>
                     </label>
-                    <a href="javascript:void(0)" onclick="alert('Hãy sử dụng một trong các tài khoản thử nghiệm bên dưới!')" class="forgot-link">Quên mật khẩu?</a>
+                    <a href="forgot-password" class="forgot-link" id="linkForgotPassword">Quên mật khẩu?</a>
                 </div>
 
                 <input type="hidden" name="redirect" id="redirectParam" value="<%= request.getParameter("redirect") != null ? request.getParameter("redirect") : "" %>">

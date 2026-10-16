@@ -10,6 +10,9 @@ import com.bookstore.model.PaymentMethod;
 import com.bookstore.model.Review;
 import com.bookstore.model.User;
 import com.bookstore.model.Voucher;
+import com.bookstore.service.EmailService;
+import com.bookstore.service.PasswordUtils;
+import com.bookstore.service.PasswordValidator;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -92,10 +95,16 @@ public class DataStore {
     }
 
     public static void ensureUserTableSchema() {
-        String sql = "ALTER TABLE users ADD COLUMN status VARCHAR(20) DEFAULT 'ACTIVE'";
+        String[] alterSqls = {
+            "ALTER TABLE users ADD COLUMN status VARCHAR(20) DEFAULT 'ACTIVE'",
+            "ALTER TABLE users ADD COLUMN failed_attempts INT DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN lock_until TIMESTAMP NULL"
+        };
         try (Connection conn = DBContext.getConnection();
              Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate(sql);
+            for (String sql : alterSqls) {
+                try { stmt.executeUpdate(sql); } catch (SQLException ignored) {}
+            }
         } catch (SQLException ignored) {}
     }
 
@@ -280,27 +289,63 @@ public class DataStore {
     }
 
     /**
-     * Kiểm tra thông tin đăng nhập từ MySQL
+     * Tìm kiếm người dùng theo địa chỉ email từ MySQL hoặc bộ nhớ tạm
      */
-    public static boolean validateUser(String username, String password) {
-        if (username == null || password == null) return false;
-        String sql = "SELECT username FROM users WHERE LOWER(username) = ? AND password = ?";
+    public static User findUserByEmail(String email) {
+        if (email == null || email.trim().isEmpty()) return null;
+        String normalizedEmail = email.trim().toLowerCase();
+        String sql = "SELECT username, password, full_name, email, phone, role, avatar, status FROM users WHERE LOWER(TRIM(email)) = ?";
 
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, username.trim().toLowerCase());
-            ps.setString(2, password);
+            ps.setString(1, normalizedEmail);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return true;
+                    String st = "ACTIVE";
+                    try {
+                        st = rs.getString("status");
+                    } catch (SQLException ignored) {}
+                    if (st == null || st.trim().isEmpty()) st = "ACTIVE";
+
+                    return new User(
+                            rs.getString("username"),
+                            rs.getString("password"),
+                            rs.getString("full_name"),
+                            rs.getString("email"),
+                            rs.getString("phone"),
+                            rs.getString("role"),
+                            rs.getString("avatar"),
+                            st
+                    );
                 }
             }
         } catch (SQLException e) {
-            System.err.println("⚠️ MySQL validateUser: Không thể truy vấn database (" + e.getMessage() + "). Dùng bộ nhớ tạm.");
+            System.err.println("⚠️ MySQL findUserByEmail: Không thể truy vấn database (" + e.getMessage() + "). Dùng bộ nhớ tạm.");
         }
 
-        User u = memoryUsers.get(username.trim().toLowerCase());
-        return u != null && u.getPassword().equals(password);
+        for (User u : memoryUsers.values()) {
+            if (u.getEmail() != null && u.getEmail().trim().equalsIgnoreCase(normalizedEmail)) {
+                return u;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Kiểm tra xem địa chỉ email đã tồn tại trong hệ thống hay chưa
+     */
+    public static boolean isEmailExists(String email) {
+        return findUserByEmail(email) != null;
+    }
+
+    /**
+     * Kiểm tra thông tin đăng nhập từ MySQL hoặc bộ nhớ tạm
+     */
+    public static boolean validateUser(String username, String password) {
+        if (username == null || password == null) return false;
+        User user = findUserByUsernameOrEmail(username);
+        if (user == null) return false;
+        return PasswordUtils.verifyPassword(password, user.getPassword());
     }
 
     /**
@@ -317,12 +362,23 @@ public class DataStore {
             return false; // Tên đăng nhập đã tồn tại
         }
 
+        // Kiểm tra xem email đã tồn tại chưa (mỗi email chỉ đăng ký 1 tài khoản)
+        if (newUser.getEmail() != null && !newUser.getEmail().trim().isEmpty() && isEmailExists(newUser.getEmail())) {
+            return false; // Email đã tồn tại
+        }
+
+        String rawPassword = newUser.getPassword();
+        String storedPassword = (rawPassword != null && !rawPassword.startsWith("SHA256$"))
+                ? PasswordUtils.hashPassword(rawPassword)
+                : rawPassword;
+        newUser.setPassword(storedPassword);
+
         String sql = "INSERT INTO users (username, password, full_name, email, phone, role, avatar, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, cleanUsername);
-            ps.setString(2, newUser.getPassword());
+            ps.setString(2, storedPassword);
             ps.setString(3, newUser.getFullName());
             ps.setString(4, (newUser.getEmail() != null && !newUser.getEmail().trim().isEmpty()) ? newUser.getEmail().trim() : null);
             ps.setString(5, (newUser.getPhone() != null && !newUser.getPhone().trim().isEmpty()) ? newUser.getPhone().trim() : null);
@@ -512,29 +568,475 @@ public class DataStore {
             return "Tài khoản không tồn tại trong hệ thống!";
         }
 
-        if (!existing.getPassword().equals(oldPassword)) {
+        if (!PasswordUtils.verifyPassword(oldPassword, existing.getPassword())) {
             return "Mật khẩu hiện tại không chính xác!";
         }
 
-        if (oldPassword.equals(newPassword)) {
+        if (!PasswordValidator.isValid(newPassword)) {
+            return PasswordValidator.PASSWORD_REQUIREMENT_MESSAGE;
+        }
+
+        if (PasswordUtils.verifyPassword(newPassword, existing.getPassword())) {
             return "Mật khẩu mới không được trùng với mật khẩu hiện tại!";
         }
 
-        String sql = "UPDATE users SET password = ? WHERE LOWER(username) = ?";
+        String hashedPassword = PasswordUtils.hashPassword(newPassword);
+
+        String sql = "UPDATE users SET password = ?, failed_attempts = 0, lock_until = NULL WHERE LOWER(username) = ?";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, newPassword);
+            ps.setString(1, hashedPassword);
             ps.setString(2, cleanUsername);
             ps.executeUpdate();
-            existing.setPassword(newPassword);
+            existing.setPassword(hashedPassword);
             memoryUsers.put(cleanUsername, existing);
+            unlockAccount(cleanUsername);
             return null; // Thành công
         } catch (SQLException e) {
             System.err.println("⚠️ MySQL changePassword lỗi (" + e.getMessage() + "). Lưu vào bộ nhớ tạm.");
-            existing.setPassword(newPassword);
+            existing.setPassword(hashedPassword);
             memoryUsers.put(cleanUsername, existing);
+            unlockAccount(cleanUsername);
             return null; // Thành công trong bộ nhớ tạm
         }
+    }
+
+    // ====================== CẤU HÌNH & KHÓA TÀI KHOẢN KHI ĐĂNG NHẬP SAI ======================
+
+    public static final int MAX_FAILED_LOGIN_ATTEMPTS = 5;
+    public static final long LOGIN_LOCKOUT_DURATION_MS = 15 * 60 * 1000L; // 15 phút khóa tạm thời
+    public static final String MSG_INVALID_CREDENTIALS = "Tài khoản hoặc mật khẩu không chính xác.";
+    public static final String MSG_ACCOUNT_LOCKED_ATTEMPTS = "Bạn đã nhập sai quá số lần cho phép. Vui lòng thử lại sau 15 phút hoặc sử dụng chức năng quên mật khẩu.";
+
+    public static class FailedLoginRecord {
+        private int failedAttempts = 0;
+        private long lockUntil = 0;
+
+        public synchronized int getFailedAttempts() {
+            return failedAttempts;
+        }
+
+        public synchronized long getLockUntil() {
+            return lockUntil;
+        }
+
+        public synchronized boolean isLocked() {
+            if (lockUntil <= 0) return false;
+            if (System.currentTimeMillis() >= lockUntil) {
+                lockUntil = 0;
+                failedAttempts = 0;
+                return false;
+            }
+            return true;
+        }
+
+        public synchronized int recordFailure(long lockoutDurationMs, int maxAttempts) {
+            failedAttempts++;
+            if (failedAttempts >= maxAttempts) {
+                lockUntil = System.currentTimeMillis() + lockoutDurationMs;
+            }
+            return failedAttempts;
+        }
+
+        public synchronized void reset() {
+            failedAttempts = 0;
+            lockUntil = 0;
+        }
+    }
+
+    private static final ConcurrentHashMap<String, FailedLoginRecord> failedLoginMap = new ConcurrentHashMap<>();
+
+    private static FailedLoginRecord getOrCreateFailedRecord(String key) {
+        return failedLoginMap.computeIfAbsent(key.trim().toLowerCase(), k -> new FailedLoginRecord());
+    }
+
+    /**
+     * Tìm kiếm người dùng theo username hoặc email
+     */
+    public static User findUserByUsernameOrEmail(String identifier) {
+        if (identifier == null || identifier.trim().isEmpty()) return null;
+        String clean = identifier.trim();
+        User u = findUser(clean);
+        if (u != null) return u;
+        return findUserByEmail(clean);
+    }
+
+    /**
+     * Kiểm tra xem tài khoản có đang bị khóa tạm thời do nhập sai quá 5 lần không
+     */
+    public static boolean isAccountLocked(String usernameOrEmail) {
+        if (usernameOrEmail == null || usernameOrEmail.trim().isEmpty()) return false;
+        String key = usernameOrEmail.trim().toLowerCase();
+        User u = findUserByUsernameOrEmail(usernameOrEmail);
+        String usernameKey = (u != null) ? u.getUsername().toLowerCase() : key;
+
+        // 1. Kiểm tra cache bộ nhớ
+        FailedLoginRecord rec = failedLoginMap.get(usernameKey);
+        if (rec != null && rec.isLocked()) {
+            return true;
+        }
+
+        // 2. Kiểm tra trong cơ sở dữ liệu MySQL
+        if (u != null) {
+            String sql = "SELECT failed_attempts, lock_until FROM users WHERE LOWER(username) = ?";
+            try (Connection conn = DBContext.getConnection();
+                 PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, usernameKey);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        Timestamp lockUntil = rs.getTimestamp("lock_until");
+                        if (lockUntil != null) {
+                            long lockTime = lockUntil.getTime();
+                            long now = System.currentTimeMillis();
+                            if (lockTime > now) {
+                                // Đồng bộ lại vào bộ nhớ
+                                FailedLoginRecord r = getOrCreateFailedRecord(usernameKey);
+                                synchronized (r) {
+                                    r.failedAttempts = rs.getInt("failed_attempts");
+                                    r.lockUntil = lockTime;
+                                }
+                                return true;
+                            } else {
+                                // Hết thời gian khóa -> tự động gỡ khóa trong DB và memory
+                                unlockAccount(usernameKey);
+                                return false;
+                            }
+                        }
+                    }
+                }
+            } catch (SQLException e) {
+                // MySQL lỗi -> dùng kết quả từ bộ nhớ
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Ghi nhận 1 lần đăng nhập thất bại. Trả về tổng số lần sai liên tiếp.
+     */
+    public static int recordFailedLogin(String usernameOrEmail) {
+        if (usernameOrEmail == null || usernameOrEmail.trim().isEmpty()) return 0;
+        String key = usernameOrEmail.trim().toLowerCase();
+        User u = findUserByUsernameOrEmail(usernameOrEmail);
+        String usernameKey = (u != null) ? u.getUsername().toLowerCase() : key;
+
+        FailedLoginRecord rec = getOrCreateFailedRecord(usernameKey);
+        int attempts = rec.recordFailure(LOGIN_LOCKOUT_DURATION_MS, MAX_FAILED_LOGIN_ATTEMPTS);
+
+        if (u != null) {
+            try (Connection conn = DBContext.getConnection()) {
+                if (attempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
+                    Timestamp lockUntil = new Timestamp(System.currentTimeMillis() + LOGIN_LOCKOUT_DURATION_MS);
+                    String sql = "UPDATE users SET failed_attempts = ?, lock_until = ? WHERE LOWER(username) = ?";
+                    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                        ps.setInt(1, attempts);
+                        ps.setTimestamp(2, lockUntil);
+                        ps.setString(3, usernameKey);
+                        ps.executeUpdate();
+                    }
+                } else {
+                    String sql = "UPDATE users SET failed_attempts = ? WHERE LOWER(username) = ?";
+                    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                        ps.setInt(1, attempts);
+                        ps.setString(2, usernameKey);
+                        ps.executeUpdate();
+                    }
+                }
+            } catch (SQLException ignored) {}
+        }
+
+        return attempts;
+    }
+
+    /**
+     * Ghi nhận đăng nhập thành công: reset số lần sai và thời gian khóa về 0.
+     */
+    public static void recordSuccessfulLogin(String usernameOrEmail) {
+        if (usernameOrEmail == null || usernameOrEmail.trim().isEmpty()) return;
+        String key = usernameOrEmail.trim().toLowerCase();
+        User u = findUserByUsernameOrEmail(usernameOrEmail);
+        String usernameKey = (u != null) ? u.getUsername().toLowerCase() : key;
+
+        FailedLoginRecord rec = failedLoginMap.get(usernameKey);
+        if (rec != null) {
+            rec.reset();
+        }
+
+        if (u != null) {
+            String sql = "UPDATE users SET failed_attempts = 0, lock_until = NULL WHERE LOWER(username) = ?";
+            try (Connection conn = DBContext.getConnection();
+                 PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, usernameKey);
+                ps.executeUpdate();
+            } catch (SQLException ignored) {}
+        }
+    }
+
+    /**
+     * Mở khóa tài khoản (sau khi đổi mật khẩu / đặt lại mật khẩu thành công hoặc hết giờ)
+     */
+    public static void unlockAccount(String usernameOrEmail) {
+        recordSuccessfulLogin(usernameOrEmail);
+    }
+
+    /**
+     * Nâng cấp mật khẩu plaintext cũ sang định dạng băm an toàn khi đăng nhập đúng
+     */
+    public static void upgradeUserPasswordHash(String username, String plainPassword) {
+        if (username == null || plainPassword == null) return;
+        String cleanUser = username.trim().toLowerCase();
+        User u = findUser(cleanUser);
+        if (u != null && !u.getPassword().startsWith("SHA256$")) {
+            String hashed = PasswordUtils.hashPassword(plainPassword);
+            u.setPassword(hashed);
+            memoryUsers.put(cleanUser, u);
+            String sql = "UPDATE users SET password = ? WHERE LOWER(username) = ?";
+            try (Connection conn = DBContext.getConnection();
+                 PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, hashed);
+                ps.setString(2, cleanUser);
+                ps.executeUpdate();
+            } catch (SQLException ignored) {}
+        }
+    }
+
+    // ====================== QUÊN MẬT KHẨU & XÁC THỰC OTP QUA GMAIL ======================
+
+    public static class PasswordResetSession {
+        private final String email;
+        private final String username;
+        private String otpCode;
+        private long otpExpiry;
+        private long lastSentTime;
+        private int sendCount;
+        private int verifyFailures;
+        private String resetToken;
+        private boolean verified;
+        private long resetTokenExpiry;
+
+        public PasswordResetSession(String email, String username, String otpCode, long otpExpiry) {
+            this.email = email;
+            this.username = username;
+            this.otpCode = otpCode;
+            this.otpExpiry = otpExpiry;
+            this.lastSentTime = System.currentTimeMillis();
+            this.sendCount = 1;
+            this.verifyFailures = 0;
+            this.verified = false;
+        }
+
+        public String getEmail() { return email; }
+        public String getUsername() { return username; }
+        public String getOtpCode() { return otpCode; }
+        public void setOtpCode(String otpCode) { this.otpCode = otpCode; }
+        public long getOtpExpiry() { return otpExpiry; }
+        public void setOtpExpiry(long otpExpiry) { this.otpExpiry = otpExpiry; }
+        public long getLastSentTime() { return lastSentTime; }
+        public void setLastSentTime(long lastSentTime) { this.lastSentTime = lastSentTime; }
+        public int getSendCount() { return sendCount; }
+        public void incrementSendCount() { this.sendCount++; }
+        public int getVerifyFailures() { return verifyFailures; }
+        public void incrementVerifyFailures() { this.verifyFailures++; }
+        public String getResetToken() { return resetToken; }
+        public void setResetToken(String resetToken) { this.resetToken = resetToken; }
+        public boolean isVerified() { return verified; }
+        public void setVerified(boolean verified) { this.verified = verified; }
+        public long getResetTokenExpiry() { return resetTokenExpiry; }
+        public void setResetTokenExpiry(long resetTokenExpiry) { this.resetTokenExpiry = resetTokenExpiry; }
+
+        public boolean isOtpExpired() {
+            return System.currentTimeMillis() > otpExpiry;
+        }
+
+        public boolean isResetTokenExpired() {
+            return System.currentTimeMillis() > resetTokenExpiry;
+        }
+    }
+
+    public static class PasswordResetResult {
+        public final boolean success;
+        public final String message;
+        public final int cooldownSeconds;
+
+        public PasswordResetResult(boolean success, String message, int cooldownSeconds) {
+            this.success = success;
+            this.message = message;
+            this.cooldownSeconds = cooldownSeconds;
+        }
+    }
+
+    public static class PasswordResetVerifyResult {
+        public final boolean success;
+        public final String message;
+        public final String resetToken;
+
+        public PasswordResetVerifyResult(boolean success, String message, String resetToken) {
+            this.success = success;
+            this.message = message;
+            this.resetToken = resetToken;
+        }
+    }
+
+    private static final ConcurrentHashMap<String, PasswordResetSession> passwordResetSessions = new ConcurrentHashMap<>();
+
+    /**
+     * Yêu cầu gửi mã OTP quên mật khẩu đến Gmail của người dùng
+     */
+    public static PasswordResetResult requestPasswordResetOtp(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            return new PasswordResetResult(false, "Vui lòng nhập địa chỉ email của bạn!", 0);
+        }
+        String cleanEmail = email.trim().toLowerCase();
+
+        PasswordResetSession existing = passwordResetSessions.get(cleanEmail);
+        long now = System.currentTimeMillis();
+
+        if (existing != null) {
+            // Kiểm tra cooldown 60 giây
+            long elapsed = now - existing.getLastSentTime();
+            if (elapsed < 60000) {
+                int waitSec = (int) Math.ceil((60000 - elapsed) / 1000.0);
+                return new PasswordResetResult(false, "Vui lòng đợi " + waitSec + " giây trước khi yêu cầu gửi lại mã OTP.", waitSec);
+            }
+            // Giới hạn 5 lần yêu cầu trong 1 giờ
+            if (existing.getSendCount() >= 5 && (now - existing.getLastSentTime() < 3600000L)) {
+                return new PasswordResetResult(false, "Bạn đã yêu cầu gửi mã OTP quá số lần cho phép (5 lần/giờ). Vui lòng thử lại sau.", 0);
+            }
+        }
+
+        User user = findUserByEmail(cleanEmail);
+        if (user == null) {
+            // Không tiết lộ email có tồn tại hay không, trả về thông báo an toàn chuẩn
+            return new PasswordResetResult(true, "Nếu email tồn tại trong hệ thống, hướng dẫn và mã OTP sẽ được gửi đến email đó.", 60);
+        }
+
+        // Tạo mã OTP 6 chữ số ngẫu nhiên
+        String otpCode = String.format("%06d", new java.util.Random().nextInt(900000) + 100000);
+        long expiry = now + (5 * 60 * 1000L); // 5 phút hiệu lực
+
+        PasswordResetSession session = existing;
+        if (session == null) {
+            session = new PasswordResetSession(cleanEmail, user.getUsername(), otpCode, expiry);
+            passwordResetSessions.put(cleanEmail, session);
+        } else {
+            session.setOtpCode(otpCode);
+            session.setOtpExpiry(expiry);
+            session.setLastSentTime(now);
+            session.incrementSendCount();
+            session.setVerified(false);
+            session.setResetToken(null);
+        }
+
+        // Gửi email xác thực OTP qua Gmail SMTP bất đồng bộ (không in OTP trong log)
+        final String targetEmail = user.getEmail();
+        final String fullName = user.getFullName();
+        new Thread(() -> {
+            EmailService.sendPasswordResetOtpEmail(targetEmail, otpCode, fullName);
+        }).start();
+
+        return new PasswordResetResult(true, "Mã xác thực OTP đã được gửi đến email " + EmailService.maskEmail(targetEmail) + ". Mã có hiệu lực trong 5 phút.", 60);
+    }
+
+    /**
+     * Xác thực mã OTP quên mật khẩu
+     */
+    public static PasswordResetVerifyResult verifyPasswordResetOtp(String email, String otp) {
+        if (email == null || email.trim().isEmpty() || otp == null || otp.trim().isEmpty()) {
+            return new PasswordResetVerifyResult(false, "Vui lòng nhập đầy đủ email và mã OTP!", null);
+        }
+        String cleanEmail = email.trim().toLowerCase();
+        PasswordResetSession session = passwordResetSessions.get(cleanEmail);
+
+        if (session == null || session.getOtpCode() == null || session.isOtpExpired()) {
+            return new PasswordResetVerifyResult(false, "Mã OTP đã hết hạn hoặc không tồn tại. Vui lòng yêu cầu mã mới.", null);
+        }
+
+        if (session.getVerifyFailures() >= 5) {
+            passwordResetSessions.remove(cleanEmail);
+            return new PasswordResetVerifyResult(false, "Bạn đã nhập sai mã OTP quá 5 lần. Vui lòng yêu cầu gửi lại mã mới.", null);
+        }
+
+        if (!session.getOtpCode().equals(otp.trim())) {
+            session.incrementVerifyFailures();
+            int remaining = 5 - session.getVerifyFailures();
+            if (remaining <= 0) {
+                passwordResetSessions.remove(cleanEmail);
+                return new PasswordResetVerifyResult(false, "Bạn đã nhập sai mã OTP quá 5 lần. Phiên xác thực đã bị hủy.", null);
+            }
+            return new PasswordResetVerifyResult(false, "Mã OTP không chính xác. Bạn còn " + remaining + " lần thử.", null);
+        }
+
+        // OTP chính xác -> Tạo một resetToken sử dụng 1 lần có hiệu lực 15 phút
+        String resetToken = UUID.randomUUID().toString();
+        session.setVerified(true);
+        session.setResetToken(resetToken);
+        session.setResetTokenExpiry(System.currentTimeMillis() + (15 * 60 * 1000L));
+        session.setOtpCode(null); // Vô hiệu hóa mã OTP ngay sau khi xác thực thành công (chỉ dùng 1 lần)
+
+        return new PasswordResetVerifyResult(true, "Xác thực mã OTP thành công! Vui lòng thiết lập mật khẩu mới.", resetToken);
+    }
+
+    /**
+     * Đặt lại mật khẩu mới sau khi xác minh OTP hợp lệ
+     */
+    public static PasswordResetResult executePasswordReset(String email, String resetToken, String newPassword, String confirmPassword) {
+        if (email == null || email.trim().isEmpty() || resetToken == null || resetToken.trim().isEmpty()) {
+            return new PasswordResetResult(false, "Thông tin xác thực không hợp lệ. Vui lòng thao tác lại từ đầu.", 0);
+        }
+        if (newPassword == null || newPassword.trim().isEmpty()) {
+            return new PasswordResetResult(false, "Vui lòng nhập mật khẩu mới!", 0);
+        }
+        if (confirmPassword == null || confirmPassword.trim().isEmpty()) {
+            return new PasswordResetResult(false, "Vui lòng nhập xác nhận mật khẩu mới!", 0);
+        }
+        if (!newPassword.equals(confirmPassword)) {
+            return new PasswordResetResult(false, "Mật khẩu xác nhận không trùng khớp! Vui lòng kiểm tra lại.", 0);
+        }
+
+        // Kiểm tra ràng buộc mật khẩu
+        if (!PasswordValidator.isValid(newPassword)) {
+            return new PasswordResetResult(false, PasswordValidator.PASSWORD_REQUIREMENT_MESSAGE, 0);
+        }
+
+        String cleanEmail = email.trim().toLowerCase();
+        PasswordResetSession session = passwordResetSessions.get(cleanEmail);
+
+        if (session == null || !session.isVerified() || session.getResetToken() == null 
+                || !session.getResetToken().equals(resetToken.trim()) || session.isResetTokenExpired()) {
+            return new PasswordResetResult(false, "Phiên đặt lại mật khẩu không hợp lệ hoặc đã hết hạn. Vui lòng xác thực lại từ đầu.", 0);
+        }
+
+        User user = findUserByEmail(cleanEmail);
+        if (user == null) {
+            return new PasswordResetResult(false, "Không tìm thấy thông tin tài khoản tương ứng với email này.", 0);
+        }
+
+        // Băm mật khẩu an toàn
+        String hashedPassword = PasswordUtils.hashPassword(newPassword);
+
+        // Lưu mật khẩu mới vào MySQL
+        String sql = "UPDATE users SET password = ?, failed_attempts = 0, lock_until = NULL WHERE LOWER(username) = ?";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, hashedPassword);
+            ps.setString(2, user.getUsername().toLowerCase());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("⚠️ MySQL executePasswordReset lỗi: " + e.getMessage());
+        }
+
+        // Cập nhật bộ nhớ tạm
+        user.setPassword(hashedPassword);
+        memoryUsers.put(user.getUsername().toLowerCase(), user);
+
+        // Mở khóa tài khoản & reset số lần đăng nhập sai
+        unlockAccount(user.getUsername());
+
+        // Hủy phiên đặt lại mật khẩu để token không thể tái sử dụng
+        passwordResetSessions.remove(cleanEmail);
+
+        return new PasswordResetResult(true, "Đặt lại mật khẩu thành công! Bạn có thể đăng nhập bằng mật khẩu mới.", 0);
     }
 
     // ====================== QUẢN LÝ MÃ XÁC THỰC OTP ======================

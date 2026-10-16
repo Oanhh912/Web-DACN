@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -30,7 +30,7 @@
         <!-- Vị trí thông báo lỗi hoặc thành công từ server -->
         <!-- ${ALERT_MESSAGE} -->
 
-        <form action="register" method="POST" id="registerForm" novalidate>
+        <form action="register" method="POST" id="registerForm" onsubmit="event.preventDefault(); handleRegisterSubmit();" novalidate>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
                 <div class="form-group" style="margin-bottom: 0;">
                     <label for="fullName" class="form-label">Họ và tên của bạn <span style="color: #ef4444;">*</span></label>
@@ -66,7 +66,7 @@
                     <div class="input-with-icon">
                         <i class="fas fa-lock input-icon"></i>
                         <input type="password" id="password" name="password" class="form-input" 
-                               placeholder="Tối thiểu 8 ký tự..." required>
+                               value="${password}" placeholder="Tối thiểu 8 ký tự..." required>
                         <button type="button" class="password-toggle" id="toggleRegPassword" title="Hiện/ẩn mật khẩu">
                             <i class="fas fa-eye"></i>
                         </button>
@@ -78,20 +78,20 @@
                     <div class="input-with-icon">
                         <i class="fas fa-shield-alt input-icon"></i>
                         <input type="password" id="confirmPassword" name="confirmPassword" class="form-input" 
-                               placeholder="Nhập lại mật khẩu..." required>
+                               value="${confirmPassword}" placeholder="Nhập lại mật khẩu..." required>
                     </div>
                 </div>
             </div>
 
             <div class="form-options" style="margin-bottom: 22px;">
-                <label class="remember-me">
-                    <input type="checkbox" name="agreeTerms" id="agreeTerms" checked required>
+                <label class="remember-me" id="agreeTermsLabel" style="cursor: pointer;">
+                    <input type="checkbox" name="agreeTerms" id="agreeTerms" ${agreeTermsChecked} required>
                     <span style="font-size: 13px;">Tôi đồng ý với <a href="javascript:void(0)" style="color: var(--primary-light); text-decoration: underline;">Điều khoản sử dụng</a> & <a href="javascript:void(0)" style="color: var(--primary-light); text-decoration: underline;">Chính sách bảo mật</a></span>
                 </label>
             </div>
 
             <div style="display: flex; justify-content: center; margin-top: 10px;">
-                <button type="submit" class="btn-primary" id="btnRegisterSubmit" style="padding: 12px 36px; font-size: 15px; width: auto; min-width: 200px;">
+                <button type="button" class="btn-primary" id="btnRegisterSubmit" onclick="handleRegisterSubmit()" style="padding: 12px 36px; font-size: 15px; width: auto; min-width: 200px;">
                     <span>Tiếp tục</span>
                     <i class="fas fa-arrow-right"></i>
                 </button>
@@ -105,6 +105,27 @@
             <a href="home" style="color: var(--text-muted);"><i class="fas fa-house"></i> Về trang chủ</a>
         </p>
     </main>
+
+    <!-- POPUP MODAL THÔNG BÁO / CẢNH BÁO ĐĂNG KÝ -->
+    <div class="otp-modal-overlay" id="warningAlertModal">
+        <div class="otp-modal-box" style="max-width: 440px;">
+            <div class="otp-icon-wrap" id="warningAlertIconWrap" style="background: #fee2e2; color: #ef4444; width: 68px; height: 68px; margin: 0 auto 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px;">
+                <i class="fas fa-triangle-exclamation" id="warningAlertIcon"></i>
+            </div>
+            <h2 class="otp-modal-title" id="warningAlertTitle" style="font-size: 22px; font-weight: 700; margin-bottom: 8px; color: #0f172a;">Cảnh báo</h2>
+            <p class="otp-modal-desc" id="warningAlertMsg" style="font-size: 14.5px; line-height: 1.6; color: #475569; margin: 0 0 24px;">
+                Nội dung cảnh báo...
+            </p>
+            <div id="warningAlertActions" style="display: flex; gap: 10px; justify-content: center;">
+                <button type="button" class="btn-primary" id="btnWarningClose" onclick="closeWarningAlertModal()" style="min-width: 140px;">
+                    <span id="btnWarningCloseText">Đã hiểu</span>
+                </button>
+                <a href="login" class="btn-primary" id="btnWarningLogin" style="min-width: 140px; background: #f8fafc; color: var(--primary); border: 1px solid #cbd5e1; display: none; text-decoration: none; align-items: center; justify-content: center; font-weight: 600;">
+                    <span><i class="fas fa-arrow-right-to-bracket"></i> Đăng nhập ngay</span>
+                </a>
+            </div>
+        </div>
+    </div>
 
     <!-- POPUP MODAL XÁC THỰC MÃ OTP -->
     <div class="otp-modal-overlay" id="otpModal">
@@ -160,12 +181,14 @@
 
         // Kiểm tra ràng buộc mật khẩu an toàn
         function checkPasswordStrength(pwd) {
-            const hasLength = (pwd || '').length >= 8;
-            const hasUpper = /[A-Z]/.test(pwd || '');
-            const hasLower = /[a-z]/.test(pwd || '');
-            const hasDigit = /[0-9]/.test(pwd || '');
-            const hasSpecial = /[^A-Za-z0-9]/.test(pwd || '');
-            return hasLength && hasUpper && hasLower && hasDigit && hasSpecial;
+            if (!pwd || typeof pwd !== 'string') return false;
+            if (pwd.length < 8) return false;
+            if (/\s/.test(pwd)) return false; // Không chấp nhận khoảng trắng
+            const hasUpper = /[A-Z]/.test(pwd);
+            const hasLower = /[a-z]/.test(pwd);
+            const hasDigit = /[0-9]/.test(pwd);
+            const hasSpecial = /[^A-Za-z0-9\s]/.test(pwd);
+            return hasUpper && hasLower && hasDigit && hasSpecial;
         }
 
         // ====================== XỬ LÝ GỬI & XÁC THỰC OTP QUA EMAIL ======================
@@ -182,44 +205,196 @@
         const btnResend = document.getElementById('btnResend');
         const btnRegisterSubmit = document.getElementById('btnRegisterSubmit');
 
+        // ====================== XỬ LÝ POPUP CẢNH BÁO NGHIỆP VỤ ======================
+        const warningAlertModal = document.getElementById('warningAlertModal');
+        const warningAlertTitle = document.getElementById('warningAlertTitle');
+        const warningAlertMsg = document.getElementById('warningAlertMsg');
+        const warningAlertIconWrap = document.getElementById('warningAlertIconWrap');
+        const warningAlertIcon = document.getElementById('warningAlertIcon');
+        const btnWarningLogin = document.getElementById('btnWarningLogin');
+        const btnWarningCloseText = document.getElementById('btnWarningCloseText');
+
+        function showWarningPopup(title, message, iconClass = 'fa-triangle-exclamation', iconColor = '#ef4444', iconBg = '#fee2e2', showLoginBtn = false, focusElId = null) {
+            warningAlertTitle.textContent = title;
+            warningAlertMsg.textContent = message;
+            warningAlertIconWrap.style.background = iconBg;
+            warningAlertIconWrap.style.color = iconColor;
+            warningAlertIcon.className = 'fas ' + iconClass;
+            btnWarningLogin.style.display = showLoginBtn ? 'inline-flex' : 'none';
+            btnWarningCloseText.textContent = showLoginBtn ? 'Đổi email khác' : 'Đã hiểu';
+
+            warningAlertModal.classList.add('active');
+            warningAlertModal.dataset.focusEl = focusElId || '';
+        }
+
+        function closeWarningAlertModal() {
+            warningAlertModal.classList.remove('active');
+            const focusId = warningAlertModal.dataset.focusEl;
+            if (focusId) {
+                const el = document.getElementById(focusId);
+                if (el) {
+                    el.focus();
+                    if (el.select) el.select();
+                }
+            }
+        }
+
+        if (warningAlertModal) {
+            warningAlertModal.addEventListener('click', (e) => {
+                if (e.target === warningAlertModal) {
+                    closeWarningAlertModal();
+                }
+            });
+        }
+
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,24}$/;
+        const invalidTlds = ['colm', 'con', 'comm', 'cmo', 'cpm', 'coom', 'cm', 'c0m', 'gmai', 'gamil', 'gmial', 'gmaill', 'yaho', 'yahooo', 'hotmial'];
+        const invalidDomains = ['gmai.com', 'gamil.com', 'gmial.com', 'gmaill.com', 'gmail.con', 'gmail.colm', 'yaho.com', 'yahooo.com', 'hotmial.com', 'outlok.com'];
+
+        function isClientEmailValid(val) {
+            if (!val || !emailRegex.test(val)) return false;
+            const at = val.lastIndexOf('@');
+            if (at <= 0) return false;
+            const domain = val.substring(at + 1).toLowerCase();
+            const dot = domain.lastIndexOf('.');
+            if (dot <= 0) return false;
+            const tld = domain.substring(dot + 1);
+            if (invalidTlds.includes(tld)) return false;
+            if (invalidDomains.includes(domain)) return false;
+            return true;
+        }
+
+        const emailInput = document.getElementById('email');
+
+        // Kiểm tra Email ngay khi người dùng rời khỏi ô nhập (on blur)
+        if (emailInput) {
+            emailInput.addEventListener('blur', async () => {
+                const val = emailInput.value.trim();
+                if (!val) return;
+
+                if (!isClientEmailValid(val)) {
+                    showWarningPopup(
+                        'Sai định dạng Email',
+                        'Bạn đang nhập sai định dạng email! Vui lòng kiểm tra lại địa chỉ email (ví dụ: yourname@gmail.com).',
+                        'fa-envelope-circle-check',
+                        '#f59e0b',
+                        '#fef3c7',
+                        false,
+                        'email'
+                    );
+                    return;
+                }
+
+                try {
+                    const res = await fetch('/api/check-email?email=' + encodeURIComponent(val));
+                    const d = await res.json();
+                    if (d.code === 'INVALID_EMAIL' || (!d.success && !d.exists)) {
+                        showWarningPopup(
+                            'Sai định dạng Email',
+                            d.message || 'Bạn đang nhập sai định dạng email! Vui lòng kiểm tra lại địa chỉ email (ví dụ: yourname@gmail.com).',
+                            'fa-envelope-circle-check',
+                            '#f59e0b',
+                            '#fef3c7',
+                            false,
+                            'email'
+                        );
+                    } else if (d.exists || d.code === 'EMAIL_EXISTS') {
+                        showWarningPopup(
+                            'Email đã tồn tại',
+                            d.message || 'Email này đã tồn tại! Mỗi email chỉ được đăng ký 1 tài khoản duy nhất. Vui lòng sử dụng email khác hoặc đăng nhập bằng tài khoản hiện có.',
+                            'fa-triangle-exclamation',
+                            '#ef4444',
+                            '#fee2e2',
+                            true,
+                            'email'
+                        );
+                    }
+                } catch (ignored) {}
+            });
+        }
+
         function escapeHtmlText(str) {
             return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
 
-        regForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+        async function handleRegisterSubmit() {
+            const fullName = (document.getElementById('fullName') ? document.getElementById('fullName').value : '').trim();
+            const username = (document.getElementById('username') ? document.getElementById('username').value : '').trim();
+            const email = (document.getElementById('email') ? document.getElementById('email').value : '').trim();
+            const password = document.getElementById('password') ? document.getElementById('password').value : '';
+            const confirmPassword = document.getElementById('confirmPassword') ? document.getElementById('confirmPassword').value : '';
+            const agreeTerms = document.getElementById('agreeTerms');
 
-            const fullName = document.getElementById('fullName').value.trim();
-            const username = document.getElementById('username').value.trim();
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-
+            // 1. Kiểm tra các trường bắt buộc
             if (!fullName || !username || !email || !password || !confirmPassword) {
-                alert('Vui lòng điền đầy đủ các thông tin bắt buộc (Họ tên, Tên đăng nhập, Email, Mật khẩu)!');
+                showWarningPopup(
+                    'Thiếu thông tin bắt buộc',
+                    'Vui lòng điền đầy đủ các thông tin bắt buộc (Họ tên, Tên đăng nhập, Email, Mật khẩu)!',
+                    'fa-circle-exclamation',
+                    '#ef4444',
+                    '#fee2e2'
+                );
                 return;
             }
 
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(email)) {
-                alert('Địa chỉ Email không hợp lệ! Vui lòng kiểm tra lại.');
-                document.getElementById('email').focus();
+            // 2. Kiểm tra định dạng Email
+            if (!isClientEmailValid(email)) {
+                showWarningPopup(
+                    'Sai định dạng Email',
+                    'Bạn đang nhập sai định dạng email! Vui lòng nhập đúng định dạng email chuẩn (ví dụ: yourname@gmail.com).',
+                    'fa-envelope-circle-check',
+                    '#f59e0b',
+                    '#fef3c7',
+                    false,
+                    'email'
+                );
                 return;
             }
 
+            // 3. Kiểm tra điều khoản sử dụng
+            if (!agreeTerms || !agreeTerms.checked) {
+                showWarningPopup(
+                    'Chưa đồng ý điều khoản',
+                    'Bạn chưa đồng ý điều khoản và yêu cầu phải đồng ý điều khoản mới được đăng ký tài khoản!',
+                    'fa-file-shield',
+                    '#f59e0b',
+                    '#fef3c7',
+                    false,
+                    'agreeTerms'
+                );
+                return;
+            }
+
+            // 4. Kiểm tra mật khẩu an toàn
             if (!checkPasswordStrength(password)) {
-                alert('Mật khẩu phải có ít nhất 8 ký tự, bao gồm ít nhất 1 chữ hoa, 1 chữ thường, 1 chữ số và 1 ký tự đặc biệt!');
-                document.getElementById('password').focus();
+                showWarningPopup(
+                    'Mật khẩu chưa đáp ứng yêu cầu',
+                    'Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, chữ số và ký tự đặc biệt.',
+                    'fa-shield-halved',
+                    '#f59e0b',
+                    '#fef3c7',
+                    false,
+                    'password'
+                );
                 return;
             }
 
+            // 5. Kiểm tra mật khẩu xác nhận
             if (password !== confirmPassword) {
-                alert('Mật khẩu xác nhận không trùng khớp!');
+                showWarningPopup(
+                    'Mật khẩu không khớp',
+                    'Mật khẩu xác nhận không trùng khớp! Vui lòng kiểm tra lại.',
+                    'fa-key',
+                    '#ef4444',
+                    '#fee2e2',
+                    false,
+                    'confirmPassword'
+                );
                 return;
             }
 
             btnRegisterSubmit.disabled = true;
-            btnRegisterSubmit.innerHTML = '<span>Đang gửi mã OTP...</span> <i class="fas fa-spinner fa-spin"></i>';
+            btnRegisterSubmit.innerHTML = '<span>Đang kiểm tra & gửi mã OTP...</span> <i class="fas fa-spinner fa-spin"></i>';
 
             try {
                 const formData = new URLSearchParams();
@@ -229,6 +404,7 @@
                 formData.append('phone', '');
                 formData.append('password', password);
                 formData.append('confirmPassword', confirmPassword);
+                formData.append('agreeTerms', agreeTerms.checked ? 'true' : 'false');
                 formData.append('otpChannel', 'email');
 
                 const response = await fetch('/api/send-otp', {
@@ -260,14 +436,66 @@
 
                     startCountdown();
                 } else {
-                    alert(data.message || 'Có lỗi xảy ra, vui lòng thử lại!');
+                    if (data.code === 'EMAIL_EXISTS' || (data.message && data.message.includes('Email') && data.message.includes('tồn tại'))) {
+                        showWarningPopup(
+                            'Email đã tồn tại',
+                            data.message || 'Email này đã tồn tại! Mỗi email chỉ được đăng ký 1 tài khoản duy nhất. Vui lòng sử dụng email khác hoặc đăng nhập bằng tài khoản hiện có.',
+                            'fa-triangle-exclamation',
+                            '#ef4444',
+                            '#fee2e2',
+                            true,
+                            'email'
+                        );
+                    } else if (data.code === 'INVALID_EMAIL' || (data.message && data.message.includes('định dạng email'))) {
+                        showWarningPopup(
+                            'Sai định dạng Email',
+                            data.message || 'Bạn đã nhập sai định dạng email! Vui lòng nhập đúng định dạng (ví dụ: yourname@gmail.com).',
+                            'fa-envelope-circle-check',
+                            '#f59e0b',
+                            '#fef3c7',
+                            false,
+                            'email'
+                        );
+                    } else if (data.code === 'TERMS_NOT_AGREED' || (data.message && data.message.includes('điều khoản'))) {
+                        showWarningPopup(
+                            'Chưa đồng ý điều khoản',
+                            data.message || 'Bạn chưa đồng ý điều khoản và yêu cầu phải đồng ý điều khoản mới được đăng ký tài khoản!',
+                            'fa-file-shield',
+                            '#f59e0b',
+                            '#fef3c7',
+                            false,
+                            'agreeTerms'
+                        );
+                    } else {
+                        showWarningPopup(
+                            'Không thể tiếp tục',
+                            data.message || 'Có lỗi xảy ra, vui lòng thử lại!',
+                            'fa-circle-exclamation',
+                            '#ef4444',
+                            '#fee2e2'
+                        );
+                    }
                 }
             } catch (err) {
                 btnRegisterSubmit.disabled = false;
                 btnRegisterSubmit.innerHTML = '<span>Tiếp tục</span> <i class="fas fa-arrow-right"></i>';
-                alert('Không thể kết nối tới máy chủ. Vui lòng thử lại!');
+                showWarningPopup(
+                    'Lỗi kết nối',
+                    'Không thể kết nối tới máy chủ. Vui lòng kiểm tra lại kết nối mạng!',
+                    'fa-wifi',
+                    '#ef4444',
+                    '#fee2e2'
+                );
             }
-        });
+        }
+        window.handleRegisterSubmit = handleRegisterSubmit;
+
+        if (regForm) {
+            regForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                handleRegisterSubmit();
+            });
+        }
 
         function closeOtpModal() {
             otpModal.classList.remove('active');

@@ -63,11 +63,7 @@
                             <i class="fas fa-headset" style="color: #06b6d4;"></i> LIÊN HỆ
                         </a>
                     </li>
-                    <li class="nav-menu-item">
-                        <a href="profile" class="nav-menu-link active">
-                            <i class="fas fa-id-card-clip" style="color: #8b5cf6;"></i> HỒ SƠ TÀI KHOẢN
-                        </a>
-                    </li>
+
                 </ul>
             </div>
         </nav>
@@ -463,18 +459,24 @@
             }
         }
 
-        // Tự động mở đúng tab khi URL có hash hoặc biến server truyền
-        document.addEventListener('DOMContentLoaded', () => {
+        // Tự động mở đúng tab khi URL có hash, query parameter hoặc biến server truyền
+        function handleTabRouting() {
             const initialTab = '${activeTab}';
             const hash = window.location.hash;
-            if (initialTab === 'password' || hash === '#password') {
-                switchProfileTab('password');
-            } else if (hash === '#orders') {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tabParam = urlParams.get('tab');
+
+            if (tabParam === 'orders' || initialTab === 'orders' || hash === '#orders') {
                 switchProfileTab('orders');
+            } else if (tabParam === 'password' || initialTab === 'password' || hash === '#password') {
+                switchProfileTab('password');
             } else {
                 switchProfileTab('profile');
             }
-        });
+        }
+
+        document.addEventListener('DOMContentLoaded', handleTabRouting);
+        window.addEventListener('hashchange', handleTabRouting);
 
         // ===== CHỨC NĂNG TẢI ĐƠN HÀNG CỦA TÔI =====
         let allOrdersList = [];

@@ -137,11 +137,11 @@
                         <a href="${pageContext.request.contextPath}/profile" class="dropdown-item">
                             <i class="fas fa-user-circle"></i> Hồ sơ tài khoản
                         </a>
-                        <a href="javascript:void(0)" class="dropdown-item" onclick="toggleCartDrawer()">
+                        <a href="${pageContext.request.contextPath}/profile?tab=orders#orders" class="dropdown-item">
                             <i class="fas fa-box-archive"></i> Đơn hàng của tôi
                         </a>
-                        <a href="javascript:void(0)" class="dropdown-item" onclick="alert('Danh sách yêu thích đang được đồng bộ!')">
-                            <i class="fas fa-heart"></i> Sách yêu thích
+                        <a href="javascript:void(0)" class="dropdown-item" onclick="openWishlistFromMenu(event)">
+                            <i class="fas fa-heart" style="color: #ef4444;"></i> Danh sách yêu thích
                         </a>
                         <a href="${pageContext.request.contextPath}/logout" class="dropdown-item logout">
                             <i class="fas fa-arrow-right-from-bracket"></i> Đăng xuất
@@ -278,19 +278,6 @@
         </div>
     </section>
 
-    <!-- Thanh Thông Tin Khuyến Mãi (Tích hợp từ KHUYEN_MAI) -->
-    <% if (promotions != null && !promotions.isEmpty()) { %>
-    <div class="promo-ticker-wrap">
-        <div class="promo-ticker-inner">
-            <div class="promo-ticker-badge"><i class="fas fa-bolt"></i> ƯU ĐÃI NỔI BẬT:</div>
-            <div class="promo-ticker-items">
-                <% for (DataStore.PromotionItem p : promotions) { %>
-                    <span class="promo-pill"><i class="fas fa-tag"></i> <strong><%= p.title %></strong> - <%= p.description %> (<%= p.discountText %>)</span>
-                <% } %>
-            </div>
-        </div>
-    </div>
-    <% } %>
 
     <!-- 3. BOOK CATALOG & CATEGORIES -->
     <main class="catalog-section" id="catalog">

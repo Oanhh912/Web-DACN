@@ -12,6 +12,7 @@ import com.bookstore.model.Review;
 import com.bookstore.model.User;
 import com.bookstore.model.Voucher;
 import com.bookstore.service.ContentFilterService;
+import com.bookstore.service.PasswordValidator;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -38,7 +39,13 @@ public class BookstoreApp {
     private static final int DEFAULT_PORT = 8080;
     private static final Path WEBAPP_DIR = Paths.get("src", "main", "webapp");
     // Bộ nhớ quản lý session: Token -> Username
-    private static final Map<String, String> activeSessions = new HashMap<>();
+    private static final Map<String, String> activeSessions = new ConcurrentHashMap<>();
+
+    public static void invalidateUserSessions(String username) {
+        if (username == null || username.trim().isEmpty()) return;
+        String cleanUser = username.trim().toLowerCase();
+        activeSessions.entrySet().removeIf(entry -> cleanUser.equals(entry.getValue()));
+    }
     // Chống đặt trùng đơn khi nhấn nhiều lần (Idempotency / Anti-spam)
     private static final Set<String> processedRequestIds = Collections.synchronizedSet(new HashSet<>());
     private static final Map<String, Long> userLastOrderTime = new ConcurrentHashMap<>();
@@ -62,6 +69,7 @@ public class BookstoreApp {
         server.createContext("/", new RootHandler());
         server.createContext("/login", new LoginHandler());
         server.createContext("/register", new RegisterHandler());
+        server.createContext("/forgot-password", new ForgotPasswordPageHandler());
         server.createContext("/home", new HomeHandler());
         server.createContext("/category", new CategoryHandler());
         server.createContext("/category.html", new CategoryHandler());
@@ -80,6 +88,10 @@ public class BookstoreApp {
         server.createContext("/api/me", new ApiMeHandler());
         server.createContext("/api/send-otp", new SendOtpHandler());
         server.createContext("/api/verify-otp", new VerifyOtpHandler());
+        server.createContext("/api/forgot-password/send-otp", new ApiForgotPasswordSendOtpHandler());
+        server.createContext("/api/forgot-password/verify-otp", new ApiForgotPasswordVerifyOtpHandler());
+        server.createContext("/api/forgot-password/reset-password", new ApiForgotPasswordResetHandler());
+        server.createContext("/api/check-email", new ApiCheckEmailHandler());
         server.createContext("/api/checkout/info", new ApiCheckoutInfoHandler());
         server.createContext("/api/checkout/address", new ApiCheckoutAddressHandler());
         server.createContext("/api/checkout/validate-voucher", new ApiValidateVoucherHandler());
@@ -214,6 +226,8 @@ public class BookstoreApp {
                     message = "Vui lòng đăng nhập để tiếp tục truy cập trang chủ!";
                 } else if (query != null && query.contains("register_success")) {
                     message = "Đăng ký tài khoản thành công! Vui lòng đăng nhập để tiếp tục.";
+                } else if (query != null && query.contains("reset_pwd_success")) {
+                    message = "Đặt lại mật khẩu thành công! Vui lòng đăng nhập bằng mật khẩu mới.";
                 }
 
                 String html = renderLoginPage("", message, "");
@@ -239,17 +253,34 @@ public class BookstoreApp {
                     return;
                 }
 
+                // 1. Kiểm tra tài khoản có đang bị khóa do nhập sai quá 5 lần không
+                if (DataStore.isAccountLocked(username)) {
+                    String html = renderLoginPage(DataStore.MSG_ACCOUNT_LOCKED_ATTEMPTS, "", username);
+                    sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
+                    return;
+                }
+
+                // 2. Xác thực thông tin đăng nhập
                 if (DataStore.validateUser(username, password)) {
-                    User loggedInUser = DataStore.findUser(username);
+                    User loggedInUser = DataStore.findUserByUsernameOrEmail(username);
                     if (loggedInUser != null && "LOCKED".equalsIgnoreCase(loggedInUser.getStatus())) {
                         String html = renderLoginPage("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.", "", username);
                         sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
                         return;
                     }
 
+                    // Đăng nhập thành công -> Reset số lần đăng nhập sai
+                    DataStore.recordSuccessfulLogin(username);
+
+                    // Tự động nâng cấp sang băm an toàn nếu là mật khẩu văn bản thuần cũ
+                    if (loggedInUser != null) {
+                        DataStore.upgradeUserPasswordHash(loggedInUser.getUsername(), password);
+                    }
+
                     // Đăng nhập thành công -> Tạo session token
                     String token = UUID.randomUUID().toString();
-                    activeSessions.put(token, username.toLowerCase());
+                    String actualUsername = (loggedInUser != null) ? loggedInUser.getUsername() : username;
+                    activeSessions.put(token, actualUsername.toLowerCase());
 
                     String cookieHeader = "BOOKSTORE_SESSION=" + token + "; Path=/; HttpOnly";
                     if ("on".equals(remember) || "true".equals(remember)) {
@@ -271,7 +302,15 @@ public class BookstoreApp {
                         }
                     }
                 } else {
-                    String html = renderLoginPage("Tên đăng nhập hoặc mật khẩu không chính xác!", "", username);
+                    // Đăng nhập thất bại -> Ghi nhận lần nhập sai
+                    int failedCount = DataStore.recordFailedLogin(username);
+                    String errMsg;
+                    if (failedCount >= DataStore.MAX_FAILED_LOGIN_ATTEMPTS) {
+                        errMsg = DataStore.MSG_ACCOUNT_LOCKED_ATTEMPTS;
+                    } else {
+                        errMsg = DataStore.MSG_INVALID_CREDENTIALS;
+                    }
+                    String html = renderLoginPage(errMsg, "", username);
                     sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
                 }
             } else {
@@ -364,7 +403,17 @@ public class BookstoreApp {
                     return;
                 }
 
-                String html = renderRegisterPage("", "", "", "", "");
+                String query = exchange.getRequestURI().getQuery();
+                Map<String, String> qp = (query != null) ? parseQueryString(query) : Collections.emptyMap();
+                String qFullName = qp.getOrDefault("fullName", "");
+                String qUsername = qp.getOrDefault("username", "");
+                String qEmail = qp.getOrDefault("email", "");
+                String qPhone = qp.getOrDefault("phone", "");
+                String qPassword = qp.getOrDefault("password", "");
+                String qConfirmPassword = qp.getOrDefault("confirmPassword", "");
+                boolean qAgree = "true".equalsIgnoreCase(qp.getOrDefault("agreeTerms", "")) || "1".equals(qp.getOrDefault("agreeTerms", ""));
+
+                String html = renderRegisterPage("", qFullName, qUsername, qEmail, qPhone, qPassword, qConfirmPassword, qAgree);
                 sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
 
             } else if ("POST".equalsIgnoreCase(method)) {
@@ -382,8 +431,27 @@ public class BookstoreApp {
                     return;
                 }
 
+                String agreeTerms = params.getOrDefault("agreeTerms", "").trim();
+                if (!"true".equalsIgnoreCase(agreeTerms) && !"on".equalsIgnoreCase(agreeTerms) && !"1".equalsIgnoreCase(agreeTerms)) {
+                    String html = renderRegisterPage("Bạn chưa đồng ý điều khoản! Yêu cầu phải đồng ý với Điều khoản sử dụng & Chính sách bảo mật mới được đăng ký tài khoản.", fullName, username, email, phone);
+                    sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
+                    return;
+                }
+
+                if (!com.bookstore.service.EmailValidator.isValid(email)) {
+                    String html = renderRegisterPage("Bạn đang nhập sai định dạng email! Vui lòng nhập đúng định dạng email chuẩn (ví dụ: yourname@gmail.com).", fullName, username, email, phone);
+                    sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
+                    return;
+                }
+
+                if (DataStore.isEmailExists(email)) {
+                    String html = renderRegisterPage("Email đã tồn tại! Mỗi email chỉ được đăng ký 1 tài khoản duy nhất. Vui lòng sử dụng email khác hoặc đăng nhập.", fullName, username, email, phone);
+                    sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
+                    return;
+                }
+
                 if (!isStrongPassword(password)) {
-                    String html = renderRegisterPage("Mật khẩu phải có ít nhất 8 ký tự, bao gồm ít nhất 1 chữ hoa, 1 chữ thường, 1 chữ số và 1 ký tự đặc biệt!", fullName, username, email, phone);
+                    String html = renderRegisterPage(PasswordValidator.PASSWORD_REQUIREMENT_MESSAGE, fullName, username, email, phone);
                     sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
                     return;
                 }
@@ -424,6 +492,47 @@ public class BookstoreApp {
     }
 
     /**
+     * API kiểm tra định dạng và tính duy nhất của Email (/api/check-email)
+     */
+    static class ApiCheckEmailHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            String email = "";
+            if ("GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+                String query = exchange.getRequestURI().getQuery();
+                if (query != null) {
+                    Map<String, String> qp = parseQueryString(query);
+                    email = qp.getOrDefault("email", "").trim();
+                }
+            } else if ("POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                Map<String, String> params = parseFormData(exchange);
+                email = params.getOrDefault("email", "").trim();
+            }
+
+            if (email.isEmpty()) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8",
+                        "{\"success\":false,\"code\":\"EMPTY_EMAIL\",\"message\":\"Vui lòng nhập địa chỉ email!\"}");
+                return;
+            }
+
+            if (!com.bookstore.service.EmailValidator.isValid(email)) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8",
+                        "{\"success\":false,\"code\":\"INVALID_EMAIL\",\"message\":\"Bạn đang nhập sai định dạng email! Vui lòng kiểm tra lại cấu trúc email (ví dụ: yourname@gmail.com).\"}");
+                return;
+            }
+
+            if (DataStore.isEmailExists(email)) {
+                sendResponse(exchange, 409, "application/json; charset=UTF-8",
+                        "{\"success\":false,\"exists\":true,\"code\":\"EMAIL_EXISTS\",\"message\":\"Email đã tồn tại! Mỗi email chỉ được đăng ký 1 tài khoản duy nhất. Vui lòng sử dụng email khác hoặc đăng nhập.\"}");
+                return;
+            }
+
+            sendResponse(exchange, 200, "application/json; charset=UTF-8",
+                    "{\"success\":true,\"exists\":false,\"message\":\"Email hợp lệ và có thể đăng ký!\"}");
+        }
+    }
+
+    /**
      * API gửi mã xác thực OTP đăng ký (/api/send-otp)
      */
     static class SendOtpHandler implements HttpHandler {
@@ -453,8 +562,24 @@ public class BookstoreApp {
                 return;
             }
 
+            if (!com.bookstore.service.EmailValidator.isValid(email)) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"code\":\"INVALID_EMAIL\",\"message\":\"Bạn đang nhập sai định dạng email! Vui lòng nhập đúng định dạng email chuẩn (ví dụ: yourname@gmail.com).\"}");
+                return;
+            }
+
+            String agreeTerms = params.getOrDefault("agreeTerms", "").trim();
+            if (!"true".equalsIgnoreCase(agreeTerms) && !"on".equalsIgnoreCase(agreeTerms) && !"1".equalsIgnoreCase(agreeTerms)) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"code\":\"TERMS_NOT_AGREED\",\"message\":\"Bạn chưa đồng ý điều khoản và yêu cầu phải đồng ý điều khoản mới được đăng ký tài khoản.\"}");
+                return;
+            }
+
+            if (DataStore.isEmailExists(email)) {
+                sendResponse(exchange, 409, "application/json; charset=UTF-8", "{\"success\":false,\"code\":\"EMAIL_EXISTS\",\"message\":\"Email đã tồn tại! Mỗi email chỉ được đăng ký 1 tài khoản duy nhất. Vui lòng sử dụng email khác hoặc đăng nhập bằng tài khoản hiện có.\"}");
+                return;
+            }
+
             if (!isStrongPassword(password)) {
-                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Mật khẩu phải có ít nhất 8 ký tự, bao gồm ít nhất 1 chữ hoa, 1 chữ thường, 1 chữ số và 1 ký tự đặc biệt!\"}");
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"" + escapeJson(PasswordValidator.PASSWORD_REQUIREMENT_MESSAGE) + "\"}");
                 return;
             }
 
@@ -537,6 +662,132 @@ public class BookstoreApp {
             } else {
                 sendResponse(exchange, 500, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Có lỗi khi lưu vào cơ sở dữ liệu MySQL. Vui lòng thử lại!\"}");
             }
+        }
+    }
+
+    /**
+     * Xử lý giao diện trang Quên mật khẩu (/forgot-password)
+     */
+    static class ForgotPasswordPageHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendResponse(exchange, 405, "text/plain", "Method Not Allowed");
+                return;
+            }
+            Path templatePath = WEBAPP_DIR.resolve("forgot-password.html");
+            String content;
+            try {
+                content = Files.readString(templatePath, StandardCharsets.UTF_8);
+            } catch (IOException e) {
+                content = "<h1>Forgot Password Template Missing</h1>";
+            }
+            sendResponse(exchange, 200, "text/html; charset=UTF-8", content);
+        }
+    }
+
+    /**
+     * API gửi mã OTP quên mật khẩu đến Gmail (/api/forgot-password/send-otp)
+     */
+    static class ApiForgotPasswordSendOtpHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendResponse(exchange, 405, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Method Not Allowed\"}");
+                return;
+            }
+
+            Map<String, String> params = parseFormData(exchange);
+            String email = params.getOrDefault("email", "").trim();
+            if (email.isEmpty()) {
+                try {
+                    String body = readRequestBody(exchange);
+                    if (body != null && body.contains("\"email\"")) {
+                        int start = body.indexOf("\"email\"");
+                        int valStart = body.indexOf(":", start) + 1;
+                        int valEnd = body.indexOf("\"", body.indexOf("\"", valStart) + 1);
+                        if (valStart > 0 && valEnd > valStart) {
+                            email = body.substring(body.indexOf("\"", valStart) + 1, valEnd).trim();
+                        }
+                    }
+                } catch (Exception ignored) {}
+            }
+
+            if (email.isEmpty()) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Vui lòng nhập địa chỉ email của bạn!\"}");
+                return;
+            }
+
+            DataStore.PasswordResetResult result = DataStore.requestPasswordResetOtp(email);
+            int statusCode = result.success ? 200 : 400;
+            String json = String.format("{\"success\":%b,\"message\":%s,\"cooldown\":%d}",
+                    result.success, escapeJson(result.message), result.cooldownSeconds);
+            sendResponse(exchange, statusCode, "application/json; charset=UTF-8", json);
+        }
+    }
+
+    /**
+     * API xác thực mã OTP quên mật khẩu (/api/forgot-password/verify-otp)
+     */
+    static class ApiForgotPasswordVerifyOtpHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendResponse(exchange, 405, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Method Not Allowed\"}");
+                return;
+            }
+
+            Map<String, String> params = parseFormData(exchange);
+            String email = params.getOrDefault("email", "").trim();
+            String otp = params.getOrDefault("otp", "").trim();
+
+            if (email.isEmpty() || otp.isEmpty()) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Vui lòng nhập đầy đủ email và mã OTP!\"}");
+                return;
+            }
+
+            DataStore.PasswordResetVerifyResult result = DataStore.verifyPasswordResetOtp(email, otp);
+            int statusCode = result.success ? 200 : 400;
+            String json = String.format("{\"success\":%b,\"message\":%s,\"resetToken\":%s}",
+                    result.success, escapeJson(result.message), escapeJson(result.resetToken));
+            sendResponse(exchange, statusCode, "application/json; charset=UTF-8", json);
+        }
+    }
+
+    /**
+     * API thiết lập mật khẩu mới (/api/forgot-password/reset-password)
+     */
+    static class ApiForgotPasswordResetHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendResponse(exchange, 405, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Method Not Allowed\"}");
+                return;
+            }
+
+            Map<String, String> params = parseFormData(exchange);
+            String email = params.getOrDefault("email", "").trim();
+            String resetToken = params.getOrDefault("resetToken", "").trim();
+            String newPassword = params.getOrDefault("newPassword", "");
+            String confirmPassword = params.getOrDefault("confirmPassword", "");
+
+            if (email.isEmpty() || resetToken.isEmpty() || newPassword.isEmpty() || confirmPassword.isEmpty()) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Vui lòng điền đầy đủ các thông tin bắt buộc!\"}");
+                return;
+            }
+
+            DataStore.PasswordResetResult result = DataStore.executePasswordReset(email, resetToken, newPassword, confirmPassword);
+            if (result.success) {
+                User user = DataStore.findUserByEmail(email);
+                if (user != null) {
+                    invalidateUserSessions(user.getUsername());
+                }
+            }
+
+            int statusCode = result.success ? 200 : 400;
+            String json = String.format("{\"success\":%b,\"message\":%s}",
+                    result.success, escapeJson(result.message));
+            sendResponse(exchange, statusCode, "application/json; charset=UTF-8", json);
         }
     }
 
@@ -625,7 +876,14 @@ public class BookstoreApp {
 
             String method = exchange.getRequestMethod();
             if ("GET".equalsIgnoreCase(method)) {
-                String html = renderProfilePage(user, "profile", "", "");
+                String query = exchange.getRequestURI().getQuery();
+                String activeTab = "profile";
+                if (query != null && (query.contains("tab=orders") || query.contains("orders"))) {
+                    activeTab = "orders";
+                } else if (query != null && (query.contains("tab=password") || query.contains("password"))) {
+                    activeTab = "password";
+                }
+                String html = renderProfilePage(user, activeTab, "", "");
                 sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
             } else if ("POST".equalsIgnoreCase(method)) {
                 Map<String, String> params = parseFormData(exchange);
@@ -667,7 +925,7 @@ public class BookstoreApp {
                     } else if (newPassword.length() < 8) {
                         errorMsg = "Mật khẩu mới phải có tối thiểu 8 ký tự!";
                     } else if (!isStrongPassword(newPassword)) {
-                        errorMsg = "Mật khẩu mới phải gồm chữ hoa, chữ thường, số và ký tự đặc biệt!";
+                        errorMsg = PasswordValidator.PASSWORD_REQUIREMENT_MESSAGE;
                     } else if (!newPassword.equals(confirmPassword)) {
                         errorMsg = "Mật khẩu xác nhận không trùng khớp!";
                     } else {
@@ -4382,7 +4640,7 @@ public class BookstoreApp {
 
         for (int attempt = 1; attempt <= 2; attempt++) {
             try {
-                String endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=" + apiKey.trim();
+                String endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=" + apiKey.trim();
                 URL url = new URL(endpoint);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("POST");
@@ -4682,29 +4940,14 @@ public class BookstoreApp {
     }
 
     public static boolean isStrongPassword(String password) {
-        if (password == null || password.length() < 8) {
-            return false;
-        }
-        boolean hasUpper = false;
-        boolean hasLower = false;
-        boolean hasDigit = false;
-        boolean hasSpecial = false;
-
-        for (char c : password.toCharArray()) {
-            if (Character.isUpperCase(c)) {
-                hasUpper = true;
-            } else if (Character.isLowerCase(c)) {
-                hasLower = true;
-            } else if (Character.isDigit(c)) {
-                hasDigit = true;
-            } else {
-                hasSpecial = true;
-            }
-        }
-        return hasUpper && hasLower && hasDigit && hasSpecial;
+        return PasswordValidator.isValid(password);
     }
 
     private static String renderRegisterPage(String error, String fullName, String username, String email, String phone) {
+        return renderRegisterPage(error, fullName, username, email, phone, "", "", false);
+    }
+
+    private static String renderRegisterPage(String error, String fullName, String username, String email, String phone, String password, String confirmPassword, boolean agreeTermsChecked) {
         Path templatePath = WEBAPP_DIR.resolve("register.html");
         String content = "";
         try {
@@ -4722,6 +4965,9 @@ public class BookstoreApp {
         content = content.replace("${username}", (username != null) ? escapeAttr(username) : "");
         content = content.replace("${email}", (email != null) ? escapeAttr(email) : "");
         content = content.replace("${phone}", (phone != null) ? escapeAttr(phone) : "");
+        content = content.replace("${password}", (password != null) ? escapeAttr(password) : "");
+        content = content.replace("${confirmPassword}", (confirmPassword != null) ? escapeAttr(confirmPassword) : "");
+        content = content.replace("${agreeTermsChecked}", agreeTermsChecked ? "checked" : "");
         return content;
     }
 
@@ -4791,11 +5037,11 @@ public class BookstoreApp {
                     "        <a href=\"profile\" class=\"dropdown-item\">\n" +
                     "            <i class=\"fas fa-user-circle\"></i> Hồ sơ tài khoản\n" +
                     "        </a>\n" +
-                    "        <a href=\"cart\" class=\"dropdown-item\">\n" +
-                    "            <i class=\"fas fa-bag-shopping\"></i> Giỏ hàng của tôi\n" +
+                    "        <a href=\"profile?tab=orders#orders\" class=\"dropdown-item\">\n" +
+                    "            <i class=\"fas fa-box-archive\"></i> Đơn hàng của tôi\n" +
                     "        </a>\n" +
-                    "        <a href=\"profile#orders\" class=\"dropdown-item\">\n" +
-                    "            <i class=\"fas fa-box-open\"></i> Đơn hàng của tôi\n" +
+                    "        <a href=\"javascript:void(0)\" class=\"dropdown-item\" onclick=\"openWishlistFromMenu(event)\">\n" +
+                    "            <i class=\"fas fa-heart\" style=\"color: #ef4444;\"></i> Danh sách yêu thích\n" +
                     "        </a>\n" +
                     "        <a href=\"logout\" class=\"dropdown-item logout\">\n" +
                     "            <i class=\"fas fa-arrow-right-from-bracket\"></i> Đăng xuất\n" +
@@ -4885,11 +5131,11 @@ public class BookstoreApp {
                     "        <a href=\"profile\" class=\"dropdown-item\">\n" +
                     "            <i class=\"fas fa-user-circle\"></i> Hồ sơ tài khoản\n" +
                     "        </a>\n" +
-                    "        <a href=\"cart\" class=\"dropdown-item\">\n" +
-                    "            <i class=\"fas fa-bag-shopping\"></i> Giỏ hàng của tôi\n" +
+                    "        <a href=\"profile?tab=orders#orders\" class=\"dropdown-item\">\n" +
+                    "            <i class=\"fas fa-box-archive\"></i> Đơn hàng của tôi\n" +
                     "        </a>\n" +
-                    "        <a href=\"profile#orders\" class=\"dropdown-item\">\n" +
-                    "            <i class=\"fas fa-box-open\"></i> Đơn hàng của tôi\n" +
+                    "        <a href=\"javascript:void(0)\" class=\"dropdown-item\" onclick=\"openWishlistFromMenu(event)\">\n" +
+                    "            <i class=\"fas fa-heart\" style=\"color: #ef4444;\"></i> Danh sách yêu thích\n" +
                     "        </a>\n" +
                     "        <a href=\"logout\" class=\"dropdown-item logout\">\n" +
                     "            <i class=\"fas fa-arrow-right-from-bracket\"></i> Đăng xuất\n" +
@@ -4988,11 +5234,11 @@ public class BookstoreApp {
                     "        <a href=\"profile\" class=\"dropdown-item\">\n" +
                     "            <i class=\"fas fa-user-circle\"></i> Hồ sơ tài khoản\n" +
                     "        </a>\n" +
-                    "        <a href=\"cart\" class=\"dropdown-item\">\n" +
-                    "            <i class=\"fas fa-bag-shopping\"></i> Giỏ hàng của tôi\n" +
+                    "        <a href=\"profile?tab=orders#orders\" class=\"dropdown-item\">\n" +
+                    "            <i class=\"fas fa-box-archive\"></i> Đơn hàng của tôi\n" +
                     "        </a>\n" +
-                    "        <a href=\"profile#orders\" class=\"dropdown-item\">\n" +
-                    "            <i class=\"fas fa-box-open\"></i> Đơn hàng của tôi\n" +
+                    "        <a href=\"javascript:void(0)\" class=\"dropdown-item\" onclick=\"openWishlistFromMenu(event)\">\n" +
+                    "            <i class=\"fas fa-heart\" style=\"color: #ef4444;\"></i> Danh sách yêu thích\n" +
                     "        </a>\n" +
                     "        <a href=\"logout\" class=\"dropdown-item logout\">\n" +
                     "            <i class=\"fas fa-arrow-right-from-bracket\"></i> Đăng xuất\n" +
@@ -5261,11 +5507,11 @@ public class BookstoreApp {
                     "        <a href=\"profile\" class=\"dropdown-item\">\n" +
                     "            <i class=\"fas fa-user-circle\"></i> Hồ sơ tài khoản\n" +
                     "        </a>\n" +
-                    "        <a href=\"cart\" class=\"dropdown-item\">\n" +
-                    "            <i class=\"fas fa-bag-shopping\"></i> Giỏ hàng của tôi\n" +
+                    "        <a href=\"profile?tab=orders#orders\" class=\"dropdown-item\">\n" +
+                    "            <i class=\"fas fa-box-archive\"></i> Đơn hàng của tôi\n" +
                     "        </a>\n" +
-                    "        <a href=\"profile#orders\" class=\"dropdown-item\">\n" +
-                    "            <i class=\"fas fa-box-open\"></i> Đơn hàng của tôi\n" +
+                    "        <a href=\"javascript:void(0)\" class=\"dropdown-item\" onclick=\"openWishlistFromMenu(event)\">\n" +
+                    "            <i class=\"fas fa-heart\" style=\"color: #ef4444;\"></i> Danh sách yêu thích\n" +
                     "        </a>\n" +
                     "        <a href=\"logout\" class=\"dropdown-item logout\">\n" +
                     "            <i class=\"fas fa-arrow-right-from-bracket\"></i> Đăng xuất\n" +
@@ -5504,11 +5750,11 @@ public class BookstoreApp {
                     "        <a href=\"profile\" class=\"dropdown-item\">\n" +
                     "            <i class=\"fas fa-user-circle\"></i> Hồ sơ tài khoản\n" +
                     "        </a>\n" +
-                    "        <a href=\"javascript:void(0)\" class=\"dropdown-item\" onclick=\"toggleCartDrawer()\">\n" +
+                    "        <a href=\"profile?tab=orders#orders\" class=\"dropdown-item\">\n" +
                     "            <i class=\"fas fa-box-archive\"></i> Đơn hàng của tôi\n" +
                     "        </a>\n" +
-                    "        <a href=\"javascript:void(0)\" class=\"dropdown-item\" onclick=\"alert('Danh sách yêu thích đang được đồng bộ!')\">\n" +
-                    "            <i class=\"fas fa-heart\"></i> Sách yêu thích\n" +
+                    "        <a href=\"javascript:void(0)\" class=\"dropdown-item\" onclick=\"openWishlistFromMenu(event)\">\n" +
+                    "            <i class=\"fas fa-heart\" style=\"color: #ef4444;\"></i> Danh sách yêu thích\n" +
                     "        </a>\n" +
                     "        <a href=\"logout\" class=\"dropdown-item logout\">\n" +
                     "            <i class=\"fas fa-arrow-right-from-bracket\"></i> Đăng xuất\n" +
@@ -5591,26 +5837,7 @@ public class BookstoreApp {
         }
         content = content.replace("<!-- ${PUBLISHER_OPTIONS} -->", pubOptionsHtml.toString());
 
-        // Render Active Promotions Banner
-        StringBuilder promoBannerHtml = new StringBuilder();
-        if (promotions != null && !promotions.isEmpty()) {
-            promoBannerHtml.append("<div class=\"promo-ticker-wrap\">");
-            promoBannerHtml.append("<div class=\"promo-ticker-title\"><i class=\"fas fa-tags\"></i> ƯU ĐÃI HOT</div>");
-            promoBannerHtml.append("<div class=\"promo-ticker-items\">");
-            for (DataStore.PromotionItem pr : promotions) {
-                promoBannerHtml.append(String.format(
-                        "<div class=\"promo-ticker-item\" onclick=\"applyPromoSearch('%s')\" title=\"%s\">" +
-                        "<span class=\"promo-code-badge\">%s</span> %s" +
-                        "</div>",
-                        escapeAttr(pr.getCode()),
-                        escapeAttr(pr.getDescription()),
-                        escapeHtml(pr.getCode()),
-                        escapeHtml(pr.getTitle())
-                ));
-            }
-            promoBannerHtml.append("</div></div>");
-        }
-        content = content.replace("<!-- ${PROMOTIONS_BANNER} -->", promoBannerHtml.toString());
+        content = content.replace("<!-- ${PROMOTIONS_BANNER} -->", "");
 
         // Render Book Cards
         StringBuilder booksHtml = new StringBuilder();

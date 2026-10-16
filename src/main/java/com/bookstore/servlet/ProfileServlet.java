@@ -2,6 +2,7 @@ package com.bookstore.servlet;
 
 import com.bookstore.data.DataStore;
 import com.bookstore.model.User;
+import com.bookstore.service.PasswordValidator;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -41,7 +42,8 @@ public class ProfileServlet extends HttpServlet {
             request.setAttribute("currentUser", currentUser);
         }
 
-        request.setAttribute("activeTab", "profile");
+        String tabParam = request.getParameter("tab");
+        request.setAttribute("activeTab", (tabParam != null && !tabParam.trim().isEmpty()) ? tabParam.trim() : "profile");
         request.getRequestDispatcher("/profile.jsp").forward(request, response);
     }
 
@@ -95,10 +97,8 @@ public class ProfileServlet extends HttpServlet {
                 errorMsg = "Vui lòng nhập mật khẩu hiện tại!";
             } else if (newPassword == null || newPassword.trim().isEmpty()) {
                 errorMsg = "Vui lòng nhập mật khẩu mới!";
-            } else if (newPassword.length() < 8) {
-                errorMsg = "Mật khẩu mới phải có ít nhất 8 ký tự!";
             } else if (!isStrongPassword(newPassword)) {
-                errorMsg = "Mật khẩu mới phải bao gồm ít nhất 1 chữ hoa, 1 chữ thường, 1 chữ số và 1 ký tự đặc biệt!";
+                errorMsg = PasswordValidator.PASSWORD_REQUIREMENT_MESSAGE;
             } else if (!newPassword.equals(confirmPassword)) {
                 errorMsg = "Mật khẩu xác nhận không trùng khớp với mật khẩu mới!";
             } else {
@@ -121,14 +121,6 @@ public class ProfileServlet extends HttpServlet {
     }
 
     public static boolean isStrongPassword(String password) {
-        if (password == null || password.length() < 8) return false;
-        boolean hasUpper = false, hasLower = false, hasDigit = false, hasSpecial = false;
-        for (char c : password.toCharArray()) {
-            if (Character.isUpperCase(c)) hasUpper = true;
-            else if (Character.isLowerCase(c)) hasLower = true;
-            else if (Character.isDigit(c)) hasDigit = true;
-            else hasSpecial = true;
-        }
-        return hasUpper && hasLower && hasDigit && hasSpecial;
+        return PasswordValidator.isValid(password);
     }
 }

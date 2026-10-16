@@ -2,6 +2,7 @@ package com.bookstore.servlet;
 
 import com.bookstore.data.DataStore;
 import com.bookstore.model.User;
+import com.bookstore.service.PasswordValidator;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -51,15 +52,34 @@ public class SendOtpServlet extends HttpServlet {
             return;
         }
 
+        String agreeTerms = request.getParameter("agreeTerms");
+        if (agreeTerms == null || (!"true".equalsIgnoreCase(agreeTerms) && !"on".equalsIgnoreCase(agreeTerms) && !"1".equalsIgnoreCase(agreeTerms))) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            response.getWriter().write("{\"success\":false,\"code\":\"TERMS_NOT_AGREED\",\"message\":\"Bạn chưa đồng ý điều khoản và yêu cầu phải đồng ý điều khoản mới được đăng ký tài khoản.\"}");
+            return;
+        }
+
         if (email.isEmpty()) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             response.getWriter().write("{\"success\":false,\"message\":\"Vui lòng nhập địa chỉ Email để nhận mã xác thực OTP!\"}");
             return;
         }
 
+        if (!com.bookstore.service.EmailValidator.isValid(email)) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            response.getWriter().write("{\"success\":false,\"code\":\"INVALID_EMAIL\",\"message\":\"Bạn đang nhập sai định dạng email! Vui lòng nhập đúng định dạng email chuẩn (ví dụ: yourname@gmail.com).\"}");
+            return;
+        }
+
+        if (DataStore.isEmailExists(email)) {
+            response.setStatus(HttpServletResponse.SC_CONFLICT);
+            response.getWriter().write("{\"success\":false,\"code\":\"EMAIL_EXISTS\",\"message\":\"Email đã tồn tại! Mỗi email chỉ được đăng ký 1 tài khoản duy nhất. Vui lòng sử dụng email khác hoặc đăng nhập bằng tài khoản hiện có.\"}");
+            return;
+        }
+
         if (!isStrongPassword(password)) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            response.getWriter().write("{\"success\":false,\"message\":\"Mật khẩu phải có ít nhất 8 ký tự, bao gồm ít nhất 1 chữ hoa, 1 chữ thường, 1 chữ số và 1 ký tự đặc biệt!\"}");
+            response.getWriter().write("{\"success\":false,\"message\":" + escapeJson(PasswordValidator.PASSWORD_REQUIREMENT_MESSAGE) + "}");
             return;
         }
 
@@ -108,25 +128,6 @@ public class SendOtpServlet extends HttpServlet {
     }
 
     public static boolean isStrongPassword(String password) {
-        if (password == null || password.length() < 8) {
-            return false;
-        }
-        boolean hasUpper = false;
-        boolean hasLower = false;
-        boolean hasDigit = false;
-        boolean hasSpecial = false;
-
-        for (char c : password.toCharArray()) {
-            if (Character.isUpperCase(c)) {
-                hasUpper = true;
-            } else if (Character.isLowerCase(c)) {
-                hasLower = true;
-            } else if (Character.isDigit(c)) {
-                hasDigit = true;
-            } else {
-                hasSpecial = true;
-            }
-        }
-        return hasUpper && hasLower && hasDigit && hasSpecial;
+        return PasswordValidator.isValid(password);
     }
 }

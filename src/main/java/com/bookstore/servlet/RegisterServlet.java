@@ -2,6 +2,7 @@ package com.bookstore.servlet;
 
 import com.bookstore.data.DataStore;
 import com.bookstore.model.User;
+import com.bookstore.service.PasswordValidator;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -67,9 +68,28 @@ public class RegisterServlet extends HttpServlet {
         fullName = fullName.trim();
         email = email.trim();
 
+        String agreeTerms = request.getParameter("agreeTerms");
+        if (agreeTerms == null || (!"true".equalsIgnoreCase(agreeTerms) && !"on".equalsIgnoreCase(agreeTerms) && !"1".equalsIgnoreCase(agreeTerms))) {
+            request.setAttribute("errorMessage", "Bạn chưa đồng ý điều khoản! Yêu cầu phải đồng ý với Điều khoản sử dụng & Chính sách bảo mật mới được đăng ký tài khoản.");
+            request.getRequestDispatcher("/register.jsp").forward(request, response);
+            return;
+        }
+
+        if (!com.bookstore.service.EmailValidator.isValid(email)) {
+            request.setAttribute("errorMessage", "Bạn đang nhập sai định dạng email! Vui lòng nhập đúng định dạng email chuẩn (ví dụ: yourname@gmail.com).");
+            request.getRequestDispatcher("/register.jsp").forward(request, response);
+            return;
+        }
+
+        if (DataStore.isEmailExists(email)) {
+            request.setAttribute("errorMessage", "Email đã tồn tại! Mỗi email chỉ được đăng ký 1 tài khoản duy nhất. Vui lòng sử dụng email khác hoặc đăng nhập.");
+            request.getRequestDispatcher("/register.jsp").forward(request, response);
+            return;
+        }
+
         // 2. Kiểm tra mật khẩu an toàn
         if (!isStrongPassword(password)) {
-            request.setAttribute("errorMessage", "Mật khẩu phải có ít nhất 8 ký tự, bao gồm ít nhất 1 chữ hoa, 1 chữ thường, 1 chữ số và 1 ký tự đặc biệt!");
+            request.setAttribute("errorMessage", PasswordValidator.PASSWORD_REQUIREMENT_MESSAGE);
             request.getRequestDispatcher("/register.jsp").forward(request, response);
             return;
         }
@@ -103,25 +123,6 @@ public class RegisterServlet extends HttpServlet {
     }
 
     public static boolean isStrongPassword(String password) {
-        if (password == null || password.length() < 8) {
-            return false;
-        }
-        boolean hasUpper = false;
-        boolean hasLower = false;
-        boolean hasDigit = false;
-        boolean hasSpecial = false;
-
-        for (char c : password.toCharArray()) {
-            if (Character.isUpperCase(c)) {
-                hasUpper = true;
-            } else if (Character.isLowerCase(c)) {
-                hasLower = true;
-            } else if (Character.isDigit(c)) {
-                hasDigit = true;
-            } else {
-                hasSpecial = true;
-            }
-        }
-        return hasUpper && hasLower && hasDigit && hasSpecial;
+        return PasswordValidator.isValid(password);
     }
 }
