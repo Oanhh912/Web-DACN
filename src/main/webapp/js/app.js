@@ -554,12 +554,31 @@ function selectSuggestionCategory(category) {
 function initCategoryPills() {
     const pills = document.querySelectorAll('.category-pill');
     pills.forEach(pill => {
-        pill.addEventListener('click', () => {
+        pill.addEventListener('click', (e) => {
+            e.preventDefault();
             pills.forEach(p => p.classList.remove('active'));
             pill.classList.add('active');
-            onFilterChange();
+            const cat = pill.getAttribute('data-category') || pill.textContent.trim();
+            onFilterChange(cat);
         });
     });
+
+    // Tự động kích hoạt pill nếu có query param ?category= hoặc ?the_loai= trên URL
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const catParam = urlParams.get('category') || urlParams.get('the_loai') || urlParams.get('type');
+        if (catParam) {
+            const targetPill = Array.from(pills).find(p => {
+                const cat = p.getAttribute('data-category') || p.textContent.trim();
+                return cat.toLowerCase() === catParam.toLowerCase();
+            });
+            if (targetPill) {
+                pills.forEach(p => p.classList.remove('active'));
+                targetPill.classList.add('active');
+                onFilterChange(catParam);
+            }
+        }
+    } catch (e) { }
 }
 
 function initMultiFilters() {
@@ -567,7 +586,7 @@ function initMultiFilters() {
     selects.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
-            el.addEventListener('change', onFilterChange);
+            el.addEventListener('change', () => onFilterChange());
         }
     });
 }
@@ -579,8 +598,15 @@ function isCategoryMatch(bookCategory, targetCategory) {
     if (!targetCategory || targetCategory === 'Tất cả' || targetCategory === 'Tất cả sách') return true;
     if (!bookCategory) return false;
 
-    const bCat = bookCategory.toLowerCase().trim();
-    const tCat = targetCategory.toLowerCase().trim();
+    // Chuẩn hóa và giải mã HTML entities nếu có (&amp; -> &)
+    const cleanStr = (s) => (s || '').replace(/&amp;/g, '&')
+                                     .replace(/&lt;/g, '<')
+                                     .replace(/&gt;/g, '>')
+                                     .replace(/&quot;/g, '"')
+                                     .trim();
+
+    const bCat = cleanStr(bookCategory).toLowerCase();
+    const tCat = cleanStr(targetCategory).toLowerCase();
 
     if (bCat === tCat) return true;
     if (bCat.includes(tCat) || tCat.includes(bCat)) return true;
@@ -589,16 +615,19 @@ function isCategoryMatch(bookCategory, targetCategory) {
     const tNorm = removeDiacritics(tCat);
     if (bNorm === tNorm || bNorm.includes(tNorm) || tNorm.includes(bNorm)) return true;
 
-    // Mapping đồng nghĩa tự nhiên theo danh mục sách thực tế của Bookora
+    // Mapping đồng nghĩa và nhóm liên quan theo danh mục sách thực tế của Bookora
     const categoryMap = {
         'văn học': ['văn học', 'tiểu thuyết', 'tản văn', 'truyện', 'kinh điển', 'bố già', 'nguyễn nhật ánh'],
         'kinh tế': ['kinh tế', 'tài chính', 'quản trị', 'đầu tư', 'kinh doanh', 'khởi nghiệp'],
-        'kỹ năng sống': ['kỹ năng', 'kỹ năng sống', 'phát triển bản thân', 'đắc nhân tâm', 'thói quen', 'hạt giống tâm hồn'],
-        'tâm lý học': ['tâm lý', 'tâm lý học', 'tư duy', 'cảm xúc', 'dám bị ghét', 'đọc vị'],
-        'công nghệ thông tin': ['công nghệ', 'tin học', 'lập trình', 'code', 'phần mềm', 'developer'],
+        'kỹ năng sống': ['kỹ năng', 'kỹ năng sống', 'phát triển bản thân', 'đắc nhân tâm', 'thói quen', 'hạt giống tâm hồn', 'tâm lý - kỹ năng sống'],
+        'tâm lý học': ['tâm lý', 'tâm lý học', 'tư duy', 'cảm xúc', 'dám bị ghét', 'đọc vị', 'tâm lý - kỹ năng sống'],
+        'công nghệ': ['công nghệ', 'tin học', 'lập trình', 'code', 'phần mềm', 'developer', 'công nghệ thông tin'],
+        'công nghệ thông tin': ['công nghệ', 'tin học', 'lập trình', 'code', 'phần mềm', 'developer', 'công nghệ thông tin'],
         'tâm linh & đời sống': ['tâm linh', 'đời sống', 'nhân quả', 'bình an', 'hiện tại', 'gia đình'],
         'khoa học': ['khoa học', 'vũ trụ', 'sapiens', 'lịch sử', 'vật lý', 'tri thức'],
-        'trinh thám': ['trinh thám', 'kỳ án', 'bí ẩn', 'vụ án', 'hình sự']
+        'trinh thám': ['trinh thám', 'kỳ án', 'bí ẩn', 'vụ án', 'hình sự'],
+        'sách thiếu nhi': ['thiếu nhi', 'trẻ em', 'truyện tranh', 'cổ tích'],
+        'truyện tranh': ['truyện tranh', 'manga', 'comic', 'thiếu nhi']
     };
 
     if (categoryMap[tCat]) {
@@ -616,22 +645,19 @@ function onFilterChange(forcedCategory) {
     const searchInput = document.getElementById('searchInput');
     const keyword = searchInput ? searchInput.value.trim().toLowerCase() : '';
 
-    // Xác định Danh mục đang chọn
+    // Xác định Danh mục đang chọn: Ưu tiên forcedCategory -> pill có class active -> 'Tất cả'
     let selectedCategory = forcedCategory;
     if (!selectedCategory) {
-        const titleEl = document.getElementById('selectedCategoryTitle');
-        if (titleEl && titleEl.textContent !== 'Tủ Sách Nổi Bật Dành Cho Bạn') {
-            selectedCategory = titleEl.textContent;
-        } else {
-            const activeCatEl = document.querySelector('.category-pill.active');
-            selectedCategory = activeCatEl ? activeCatEl.getAttribute('data-category') : 'Tất cả';
-        }
+        const activeCatEl = document.querySelector('.category-pill.active');
+        selectedCategory = activeCatEl ? (activeCatEl.getAttribute('data-category') || activeCatEl.textContent.trim()) : 'Tất cả';
     }
 
-    // Cập nhật Tiêu đề hiển thị chuẩn theo Ảnh 2 của người dùng
+    // Cập nhật Tiêu đề danh mục hiển thị
     const titleEl = document.getElementById('selectedCategoryTitle');
-    if (titleEl && selectedCategory) {
-        titleEl.textContent = (selectedCategory === 'Tất cả') ? 'Tủ Sách Nổi Bật Dành Cho Bạn' : selectedCategory;
+    if (titleEl) {
+        titleEl.textContent = (!selectedCategory || selectedCategory === 'Tất cả' || selectedCategory === 'Tất cả sách')
+            ? 'Tủ Sách Nổi Bật Dành Cho Bạn'
+            : selectedCategory;
     }
 
     const authorSelect = document.getElementById('filterAuthor');
@@ -667,7 +693,7 @@ function onFilterChange(forcedCategory) {
         const desc = (card.getAttribute('data-desc') || '').toLowerCase();
         const promo = (card.getAttribute('data-promotion') || '').toLowerCase();
         const price = parseFloat(card.getAttribute('data-price')) || 0;
-        const isOutOfStock = card.getAttribute('data-out-of-stock') === 'true';
+        const isOutOfStock = (card.getAttribute('data-is-out-of-stock') === 'true') || (card.getAttribute('data-out-of-stock') === 'true');
 
         // 1. Kiểm tra Danh mục
         const matchCat = isCategoryMatch(category, selectedCategory);
@@ -966,9 +992,19 @@ async function openQuickView(bookId) {
 
     // 8. Đánh giá sao
     const ratingEl = document.getElementById('modalRating');
-    if (ratingEl) ratingEl.textContent = currentModalBook.rating;
     const reviewCountEl = document.getElementById('modalReviewCount');
-    if (reviewCountEl) reviewCountEl.textContent = `(${currentModalBook.reviewCount} đánh giá)`;
+    const ratingMetaItem = (ratingEl && ratingEl.closest('.modal-meta-item')) || (reviewCountEl && reviewCountEl.closest('.modal-meta-item'));
+    const revCount = parseInt(currentModalBook.reviewCount) || 0;
+
+    if (revCount <= 0) {
+        if (ratingMetaItem) {
+            ratingMetaItem.innerHTML = `<i class="far fa-star" style="color: #cbd5e1;"></i> <span>Đánh giá: <em style="color: #94a3b8; font-weight: normal; font-style: italic;">Hiện chưa có đánh giá nào</em></span>`;
+        }
+    } else {
+        if (ratingMetaItem) {
+            ratingMetaItem.innerHTML = `<i class="fas fa-star" style="color: #f59e0b;"></i> <span>Đánh giá: <strong id="modalRating">${currentModalBook.rating}</strong> <span id="modalReviewCount" style="color: #64748b; font-size: 12px;">(${revCount} đánh giá)</span></span>`;
+        }
+    }
 
     // 9. Tồn kho & Trạng thái kho
     const stockTextEl = document.getElementById('modalStockText');
@@ -2286,33 +2322,28 @@ function loadBookReviews(bookId) {
     fetch(`/api/reviews?bookId=${bookId}`)
         .then(res => res.json())
         .then(data => {
-            if (!data.success) {
-                listEl.innerHTML = `<div class="no-reviews-msg" style="text-align:center; padding:24px; color:#94a3b8;">Chưa có đánh giá cho sách này.</div>`;
-                return;
-            }
-
-            const avgEl = document.getElementById('detailAvgScore');
-            if (avgEl) avgEl.textContent = data.averageRating.toFixed(1);
-
-            const totalEl = document.getElementById('detailTotalReviews');
-            if (totalEl) totalEl.textContent = `(${data.reviewCount} đánh giá hợp lệ)`;
-
-            const counts = data.ratingCounts || {};
-            const total = data.reviewCount || 1;
-            for (let i = 1; i <= 5; i++) {
-                const cnt = counts[i] || 0;
-                const pct = Math.round((cnt / (total > 0 ? total : 1)) * 100);
-                const bar = document.getElementById(`barStar${i}`);
-                const cntEl = document.getElementById(`cntStar${i}`);
-                if (bar) bar.style.width = `${pct}%`;
-                if (cntEl) cntEl.textContent = cnt;
-            }
-
-            const reviews = data.reviews || [];
-            if (reviews.length === 0) {
+            if (!data.success || data.reviewCount === 0 || !data.reviews || data.reviews.length === 0) {
+                const avgEl = document.getElementById('detailAvgScore');
+                if (avgEl) {
+                    avgEl.textContent = '—';
+                    avgEl.style.fontSize = '32px';
+                    avgEl.style.color = '#94a3b8';
+                }
+                const starDisplay = document.getElementById('detailStarDisplay');
+                if (starDisplay) {
+                    starDisplay.innerHTML = '<span style="color: #94a3b8; font-size: 13.5px; font-weight: 500; font-style: italic;"><i class="far fa-star" style="color: #cbd5e1;"></i> Hiện chưa có đánh giá nào</span>';
+                }
+                const totalEl = document.getElementById('detailTotalReviews');
+                if (totalEl) totalEl.textContent = '(0 đánh giá)';
+                for (let i = 1; i <= 5; i++) {
+                    const bar = document.getElementById(`barStar${i}`);
+                    const cntEl = document.getElementById(`cntStar${i}`);
+                    if (bar) bar.style.width = '0%';
+                    if (cntEl) cntEl.textContent = '0';
+                }
                 listEl.innerHTML = `<div class="no-reviews-msg" style="text-align:center; padding:28px; color:#64748b; font-size:14px; background:#f8fafc; border-radius:8px;">
                     <i class="far fa-comment-dots" style="font-size:24px; margin-bottom:8px; display:block; color:#cbd5e1;"></i>
-                    Chưa có đánh giá cho sách này.
+                    Hiện chưa có đánh giá nào cho cuốn sách này. Hãy là người đầu tiên mua và viết cảm nhận!
                 </div>`;
                 return;
             }

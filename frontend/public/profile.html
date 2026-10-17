@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hồ Sơ Tài Khoản - Bookora | Tiệm Sách Tri Thức</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- 1. HEADER CHÍNH -->
+    <header class="main-header">
+        <div class="navbar-container" style="max-width: 1280px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between;">
+            <a href="home" class="site-logo">
+                <div class="logo-icon">
+                    <i class="fas fa-book-bookmark"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>Bookora</h1>
+                    <span>Tiệm Sách Tri Thức</span>
+                </div>
+            </a>
+
+            <div class="header-actions" style="display: flex; align-items: center; gap: 16px;">
+                <a href="home" class="btn-guest" style="border: 1px solid var(--border); padding: 8px 16px; border-radius: var(--radius-full); font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 8px; color: var(--text-primary);">
+                    <i class="fas fa-house"></i>
+                    <span>Về Trang Chủ</span>
+                </a>
+                <a href="logout" class="btn-guest" style="background: var(--danger-soft); color: var(--danger); padding: 8px 16px; border-radius: var(--radius-full); font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-arrow-right-from-bracket"></i>
+                    <span>Đăng Xuất</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- THANH ĐIỀU HƯỚNG CHÍNH -->
+        <nav class="main-nav-bar">
+            <div class="nav-bar-container">
+                <ul class="nav-menu-list">
+                    <li class="nav-menu-item">
+                        <a href="home" class="nav-menu-link">
+                            <i class="fas fa-house"></i> TRANG CHỦ
+                        </a>
+                    </li>
+                    <li class="nav-menu-item">
+                        <a href="about" class="nav-menu-link">
+                            <i class="fas fa-circle-info"></i> GIỚI THIỆU
+                        </a>
+                    </li>
+                    <li class="nav-menu-item">
+                        <a href="category" class="nav-menu-link">
+                            <i class="fas fa-list-ul"></i> DANH MỤC SÁCH
+                        </a>
+                    </li>
+                    <li class="nav-menu-item">
+                        <a href="promotions" class="nav-menu-link">
+                            <i class="fas fa-gift" style="color: #f59e0b;"></i> KHUYẾN MÃI
+                        </a>
+                    </li>
+                    <li class="nav-menu-item">
+                        <a href="contact" class="nav-menu-link">
+                            <i class="fas fa-headset" style="color: #06b6d4;"></i> LIÊN HỆ
+                        </a>
+                    </li>
+
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <!-- 2. BREADCRUMB & HERO HEADER -->
+    <div class="profile-header-banner">
+        <div class="profile-header-container">
+            <div class="breadcrumb-nav">
+                <a href="home"><i class="fas fa-house"></i> Trang chủ</a>
+                <i class="fas fa-chevron-right separator"></i>
+                <span>Hồ sơ tài khoản</span>
+            </div>
+            <h1 class="profile-header-title">Quản Lý Tài Khoản Cá Nhân</h1>
+            <p class="profile-header-sub">Xem, cập nhật thông tin cá nhân và thiết lập bảo mật mật khẩu của bạn</p>
+        </div>
+    </div>
+
+    <!-- 3. NỘI DUNG CHÍNH (2 CỘT) -->
+    <main class="profile-page-main">
+        <div class="profile-layout-grid">
+            
+            <!-- CỘT TRÁI: SIDEBAR THÔNG TIN VẮN TẮT & ĐIỀU HƯỚNG TAB -->
+            <aside class="profile-sidebar">
+                <div class="profile-user-summary-card">
+                    <div class="profile-avatar-wrapper">
+                        <img src="${user.avatar}" alt="Avatar" id="sidebarAvatarImg" class="profile-avatar-lg" onerror="this.src='https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150';">
+                        <div class="profile-role-badge badge-${user.role}">${user.role}</div>
+                    </div>
+                    <h2 class="profile-summary-name" id="sidebarFullName">${user.fullName}</h2>
+                    <p class="profile-summary-user"><i class="fas fa-at"></i> ${user.username}</p>
+                    <div class="profile-summary-email"><i class="fas fa-envelope"></i> ${user.email}</div>
+                    
+                    <hr class="profile-sidebar-divider">
+
+                    <!-- Danh mục Tab điều hướng -->
+                    <nav class="profile-tab-nav">
+                        <button type="button" class="tab-nav-btn active" id="tabNavProfile" onclick="switchProfileTab('profile')">
+                            <i class="fas fa-id-card-clip"></i>
+                            <span>Thông tin cá nhân</span>
+                            <i class="fas fa-chevron-right tab-nav-arrow"></i>
+                        </button>
+                        <button type="button" class="tab-nav-btn" id="tabNavPassword" onclick="switchProfileTab('password')">
+                            <i class="fas fa-shield-halved"></i>
+                            <span>Đổi mật khẩu</span>
+                            <i class="fas fa-chevron-right tab-nav-arrow"></i>
+                        </button>
+                        <button type="button" class="tab-nav-btn" id="tabNavOrders" onclick="switchProfileTab('orders')">
+                            <i class="fas fa-box-open"></i>
+                            <span>Đơn hàng của tôi</span>
+                            <i class="fas fa-chevron-right tab-nav-arrow"></i>
+                        </button>
+                        <a href="logout" class="tab-nav-btn tab-logout-btn">
+                            <i class="fas fa-arrow-right-from-bracket"></i>
+                            <span>Đăng xuất tài khoản</span>
+                        </a>
+                    </nav>
+                </div>
+            </aside>
+
+            <!-- CỘT PHẢI: NỘI DUNG TỪNG TAB -->
+            <section class="profile-content-area">
+
+                <!-- Vị trí thông báo thành công hoặc lỗi từ server -->
+                <!-- ${ALERT_MESSAGE} -->
+
+                <!-- ================= TAB 1: THÔNG TIN CÁ NHÂN ================= -->
+                <div class="profile-tab-pane active" id="paneProfile">
+                    <div class="profile-card">
+                        <div class="profile-card-header">
+                            <div class="profile-card-header-icon">
+                                <i class="fas fa-user-pen"></i>
+                            </div>
+                            <div>
+                                <h3 class="profile-card-title">Thông Tin Cá Nhân</h3>
+                                <p class="profile-card-desc">Cập nhật họ tên, địa chỉ email, số điện thoại và ảnh đại diện</p>
+                            </div>
+                        </div>
+
+                        <form action="profile" method="POST" id="formUpdateProfile" class="profile-form">
+                            <input type="hidden" name="action" value="updateProfile">
+
+                            <!-- Hàng 1: Username & Quyền hạn (Chỉ đọc) -->
+                            <div class="form-row-2">
+                                <div class="form-group">
+                                    <label class="form-label">Tên đăng nhập (Username) <span class="label-lock"><i class="fas fa-lock"></i> Cố định</span></label>
+                                    <div class="input-with-icon input-readonly">
+                                        <i class="fas fa-user input-icon"></i>
+                                        <input type="text" class="form-input" value="${user.username}" readonly disabled>
+                                    </div>
+                                    <small class="form-hint">Tên đăng nhập được gắn liền với tài khoản và không thể sửa đổi.</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">Vai trò tài khoản <span class="label-lock"><i class="fas fa-shield-alt"></i> Hệ thống</span></label>
+                                    <div class="input-with-icon input-readonly">
+                                        <i class="fas fa-user-shield input-icon"></i>
+                                        <input type="text" class="form-input" value="${user.role}" readonly disabled>
+                                    </div>
+                                    <small class="form-hint">Quyền hạn trong hệ thống: ${user.role}.</small>
+                                </div>
+                            </div>
+
+                            <!-- Hàng 2: Họ và tên & Số điện thoại -->
+                            <div class="form-row-2">
+                                <div class="form-group">
+                                    <label for="fullName" class="form-label">Họ và tên của bạn <span class="required">*</span></label>
+                                    <div class="input-with-icon">
+                                        <i class="fas fa-address-card input-icon"></i>
+                                        <input type="text" id="fullName" name="fullName" class="form-input" value="${user.fullName}" placeholder="Nhập họ và tên..." required>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="phone" class="form-label">Số điện thoại liên hệ</label>
+                                    <div class="input-with-icon">
+                                        <i class="fas fa-phone input-icon"></i>
+                                        <input type="tel" id="phone" name="phone" class="form-input" value="${user.phone}" placeholder="Ví dụ: 0912345678">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Hàng 3: Email -->
+                            <div class="form-group">
+                                <label for="email" class="form-label">Địa chỉ Email <span class="required">*</span></label>
+                                <div class="input-with-icon">
+                                    <i class="fas fa-envelope input-icon"></i>
+                                    <input type="email" id="email" name="email" class="form-input" value="${user.email}" placeholder="yourname@gmail.com" required>
+                                </div>
+                                <small class="form-hint">Email dùng để nhận thông báo đơn hàng và mã xác thực OTP.</small>
+                            </div>
+
+                            <!-- Hàng 4: Ảnh đại diện (URL hoặc Tải từ máy tính) & Xem trước -->
+                            <div class="form-group">
+                                <label for="avatar" class="form-label">Ảnh đại diện tài khoản (Avatar)</label>
+                                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap;">
+                                    <div class="input-with-icon" style="flex: 1; min-width: 260px;">
+                                        <i class="fas fa-image input-icon"></i>
+                                        <input type="text" id="avatar" name="avatar" class="form-input" value="${user.avatar}" placeholder="https://... hoặc chọn tải từ máy tính" oninput="previewAvatar(this.value)">
+                                    </div>
+                                    <input type="file" id="avatarFileInput" accept="image/*" style="display:none;" onchange="uploadAvatarFromPc(this)">
+                                    <button type="button" class="btn-primary" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border: none; white-space: nowrap; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; color: white; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 8px rgba(79,70,229,0.25);" onclick="document.getElementById('avatarFileInput').click()">
+                                        <i class="fas fa-file-arrow-up"></i>
+                                        <span>Tải từ máy tính</span>
+                                    </button>
+                                </div>
+                                <div id="uploadStatusText" style="font-size: 13px; color: #4f46e5; margin-bottom: 8px; display: none;"></div>
+                                
+                                <!-- Gợi ý chọn nhanh các avatar mẫu -->
+                                <div class="avatar-presets-wrap">
+                                    <span class="avatar-presets-title"><i class="fas fa-wand-magic-sparkles"></i> Hoặc chọn nhanh ảnh đại diện mẫu:</span>
+                                    <div class="avatar-presets-list">
+                                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150" alt="Preset 1" class="avatar-preset-item" onclick="choosePresetAvatar(this.src)" title="Ảnh 1 - Nữ công sở">
+                                        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150" alt="Preset 2" class="avatar-preset-item" onclick="choosePresetAvatar(this.src)" title="Ảnh 2 - Nữ trẻ trung">
+                                        <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150" alt="Preset 3" class="avatar-preset-item" onclick="choosePresetAvatar(this.src)" title="Ảnh 3 - Nam phong cách">
+                                        <img src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150" alt="Preset 4" class="avatar-preset-item" onclick="choosePresetAvatar(this.src)" title="Ảnh 4 - Nam lịch lãm">
+                                        <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150" alt="Preset 5" class="avatar-preset-item" onclick="choosePresetAvatar(this.src)" title="Ảnh 5 - Nữ nụ cười">
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            <div class="profile-form-footer">
+                                <button type="submit" class="btn-primary btn-save-profile">
+                                    <i class="fas fa-floppy-disk"></i>
+                                    <span>Lưu Thông Tin Thay Đổi</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+
+                <!-- ================= TAB 3: ĐƠN HÀNG CỦA TÔI ================= -->
+                <div class="profile-tab-pane" id="paneOrders">
+                    <div class="profile-card">
+                        <div class="profile-card-header" style="margin-bottom: 20px;">
+                            <div class="profile-card-header-icon" style="background: #ede9fe; color: #7c3aed;">
+                                <i class="fas fa-box-open"></i>
+                            </div>
+                            <div>
+                                <h3 class="profile-card-title" style="text-transform: uppercase;">Quản Lý Đơn Hàng</h3>
+                                <p class="profile-card-desc">Theo dõi trạng thái các đơn hàng bạn đã đặt tại Bookora</p>
+                            </div>
+                        </div>
+
+                        <!-- THANH LỌC TRẠNG THÁI -->
+                        <div class="order-status-nav" id="orderStatusNav">
+                            <button class="order-status-tab active" onclick="filterOrdersByStatus('ALL', this)">Tất cả (<span id="cntAll">0</span>)</button>
+                            <button class="order-status-tab" onclick="filterOrdersByStatus('CHO_XAC_NHAN', this)">Chờ xác nhận (<span id="cntPending">0</span>)</button>
+                            <button class="order-status-tab" onclick="filterOrdersByStatus('DANG_GIAO', this)">Đang giao (<span id="cntShipping">0</span>)</button>
+                            <button class="order-status-tab" onclick="filterOrdersByStatus('HOAN_THANH', this)">Hoàn thành (<span id="cntDelivered">0</span>)</button>
+                            <button class="order-status-tab" onclick="filterOrdersByStatus('DA_HUY', this)">Đã hủy (<span id="cntCancelled">0</span>)</button>
+                        </div>
+
+                        <!-- Ô TÌM KIẾM ĐƠN HÀNG -->
+                        <div class="order-search-box">
+                            <div class="order-search-input-wrap">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="orderSearchInput" class="order-search-input" placeholder="Tìm theo Mã đơn hàng hoặc Tên sản phẩm..." oninput="onSearchOrderInput()">
+                            </div>
+                            <button type="button" class="btn-order-search" onclick="onSearchOrderInput()">Tìm</button>
+                        </div>
+
+                        <!-- DANH SÁCH THẺ ĐƠN HÀNG -->
+                        <div id="myOrdersContainer">
+                            <div class="orders-loading" id="ordersLoading" style="text-align:center; padding: 40px; color: var(--text-muted);">
+                                <i class="fas fa-circle-notch fa-spin" style="font-size: 28px; color: var(--primary);"></i>
+                                <p style="margin-top: 12px;">Đang tải danh sách đơn hàng...</p>
+                            </div>
+                            <div id="ordersListWrap" style="display:none;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= TAB 2: ĐỔI MẬT KHẨU ================= -->
+                <div class="profile-tab-pane" id="panePassword">
+                    <div class="profile-card">
+                        <div class="profile-card-header">
+                            <div class="profile-card-header-icon" style="background: #fef3c7; color: var(--accent);">
+                                <i class="fas fa-key"></i>
+                            </div>
+                            <div>
+                                <h3 class="profile-card-title">Thay Đổi Mật Khẩu</h3>
+                                <p class="profile-card-desc">Cập nhật mật khẩu định kỳ để nâng cao an toàn cho tài khoản của bạn</p>
+                            </div>
+                        </div>
+
+                        <form action="profile" method="POST" id="formChangePassword" class="profile-form">
+                            <input type="hidden" name="action" value="changePassword">
+
+                            <!-- Mật khẩu hiện tại -->
+                            <div class="form-group">
+                                <label for="oldPassword" class="form-label">Mật khẩu hiện tại <span class="required">*</span></label>
+                                <div class="input-with-icon">
+                                    <i class="fas fa-lock-open input-icon"></i>
+                                    <input type="password" id="oldPassword" name="oldPassword" class="form-input" placeholder="Nhập mật khẩu hiện tại..." required>
+                                    <button type="button" class="password-toggle" onclick="togglePassVisibility('oldPassword', this)" title="Ẩn/hiện mật khẩu">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Mật khẩu mới -->
+                            <div class="form-group">
+                                <label for="newPassword" class="form-label">Mật khẩu mới <span class="required">*</span></label>
+                                <div class="input-with-icon">
+                                    <i class="fas fa-lock input-icon"></i>
+                                    <input type="password" id="newPassword" name="newPassword" class="form-input" placeholder="Tối thiểu 8 ký tự, có chữ hoa, thường, số, ký tự đặc biệt..." required oninput="checkPasswordStrength(this.value)">
+                                    <button type="button" class="password-toggle" onclick="togglePassVisibility('newPassword', this)" title="Ẩn/hiện mật khẩu">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Bảng tiêu chuẩn độ mạnh mật khẩu -->
+                                <div class="password-strength-box" id="pwdStrengthBox">
+                                    <div class="strength-meter-bar">
+                                        <div class="strength-meter-fill" id="strengthFill"></div>
+                                    </div>
+                                    <div class="strength-status-text" id="strengthStatusText">Độ mạnh mật khẩu: Chưa nhập</div>
+                                    <ul class="strength-criteria-list">
+                                        <li id="critLength"><i class="fas fa-circle-xmark"></i> Tối thiểu 8 ký tự</li>
+                                        <li id="critUpper"><i class="fas fa-circle-xmark"></i> Ít nhất 1 chữ in hoa (A-Z)</li>
+                                        <li id="critLower"><i class="fas fa-circle-xmark"></i> Ít nhất 1 chữ in thường (a-z)</li>
+                                        <li id="critNumber"><i class="fas fa-circle-xmark"></i> Ít nhất 1 chữ số (0-9)</li>
+                                        <li id="critSpecial"><i class="fas fa-circle-xmark"></i> Ít nhất 1 ký tự đặc biệt (!@#$%^&*...)</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- Xác nhận mật khẩu mới -->
+                            <div class="form-group">
+                                <label for="confirmPassword" class="form-label">Xác nhận mật khẩu mới <span class="required">*</span></label>
+                                <div class="input-with-icon">
+                                    <i class="fas fa-shield-halved input-icon"></i>
+                                    <input type="password" id="confirmPassword" name="confirmPassword" class="form-input" placeholder="Nhập lại mật khẩu mới..." required oninput="checkPasswordMatch()">
+                                    <button type="button" class="password-toggle" onclick="togglePassVisibility('confirmPassword', this)" title="Ẩn/hiện mật khẩu">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <small id="pwdMatchMsg" class="form-hint" style="display: none;"></small>
+                            </div>
+
+                            <div class="profile-form-footer">
+                                <button type="submit" class="btn-primary btn-save-profile" style="background: linear-gradient(135deg, #d97706 0%, #b45309 100%);">
+                                    <i class="fas fa-key"></i>
+                                    <span>Cập Nhật Mật Khẩu Mới</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+            </section>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="site-footer" style="margin-top: 60px; padding: 30px 24px; text-align: center; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 13px;">
+        <p>© 2026 <strong>Bookora</strong> - Tiệm Sách Tri Thức. Bản quyền thuộc về Hoàng Oanh.</p>
+    </footer>
+
+    <!-- JAVASCRIPT ĐIỀU KHIỂN TRANG PROFILE -->
+    <script>
+        // Xử lý xem trước & chọn avatar
+        function previewAvatar(url) {
+            if (!url || !url.trim()) return;
+            const img = document.getElementById('sidebarAvatarImg');
+            if (img) img.src = url.trim();
+        }
+
+        function choosePresetAvatar(url) {
+            document.getElementById('avatar').value = url;
+            previewAvatar(url);
+        }
+
+        async function uploadAvatarFromPc(input) {
+            if (!input.files || !input.files[0]) return;
+            const file = input.files[0];
+
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Kích thước ảnh quá lớn! Vui lòng chọn tệp nhỏ hơn 5MB.');
+                input.value = '';
+                return;
+            }
+
+            const statusText = document.getElementById('uploadStatusText');
+            if (statusText) {
+                statusText.style.display = 'block';
+                statusText.style.color = '#6366f1';
+                statusText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang tải lên ảnh đại diện...';
+            }
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const base64Data = e.target.result;
+                try {
+                    const res = await fetch('/api/upload-avatar', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ avatarData: base64Data })
+                    });
+                    const data = await res.json();
+                    if (res.ok && data.success) {
+                        document.getElementById('avatar').value = data.avatarUrl;
+                        previewAvatar(data.avatarUrl);
+                        if (statusText) {
+                            statusText.style.color = '#10b981';
+                            statusText.innerHTML = '<i class="fas fa-circle-check"></i> ' + data.message;
+                        }
+                        const headerAvatars = document.querySelectorAll('.header-user-avatar, .user-avatar-small, .nav-user-avatar');
+                        headerAvatars.forEach(img => img.src = data.avatarUrl);
+                    } else {
+                        alert(data.message || 'Có lỗi xảy ra khi tải ảnh lên máy chủ!');
+                        if (statusText) {
+                            statusText.style.color = '#ef4444';
+                            statusText.innerHTML = '<i class="fas fa-triangle-exclamation"></i> Tải ảnh thất bại.';
+                        }
+                    }
+                } catch (err) {
+                    console.error('Lỗi upload avatar:', err);
+                    alert('Lỗi kết nối máy chủ khi tải ảnh đại diện!');
+                    if (statusText) {
+                        statusText.style.color = '#ef4444';
+                        statusText.innerHTML = '<i class="fas fa-wifi"></i> Lỗi kết nối máy chủ.';
+                    }
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Chuyển Tab
+
+        function switchProfileTab(tabName) {
+            const allBtns = document.querySelectorAll('.tab-nav-btn');
+            const allPanes = document.querySelectorAll('.profile-tab-pane');
+            allBtns.forEach(b => b.classList.remove('active'));
+            allPanes.forEach(p => p.classList.remove('active'));
+
+            if (tabName === 'password') {
+                document.getElementById('tabNavPassword').classList.add('active');
+                document.getElementById('panePassword').classList.add('active');
+                history.replaceState(null, null, '#password');
+            } else if (tabName === 'orders') {
+                document.getElementById('tabNavOrders').classList.add('active');
+                document.getElementById('paneOrders').classList.add('active');
+                history.replaceState(null, null, '#orders');
+                loadMyOrders();
+            } else {
+                document.getElementById('tabNavProfile').classList.add('active');
+                document.getElementById('paneProfile').classList.add('active');
+                history.replaceState(null, null, '#profile');
+            }
+        }
+
+        // Tự động mở đúng tab khi URL có hash, query parameter hoặc biến server truyền
+        function handleTabRouting() {
+            const initialTab = '${activeTab}';
+            const hash = window.location.hash;
+            const urlParams = new URLSearchParams(window.location.search);
+            const tabParam = urlParams.get('tab');
+
+            if (tabParam === 'orders' || initialTab === 'orders' || hash === '#orders') {
+                switchProfileTab('orders');
+            } else if (tabParam === 'password' || initialTab === 'password' || hash === '#password') {
+                switchProfileTab('password');
+            } else {
+                switchProfileTab('profile');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', handleTabRouting);
+        window.addEventListener('hashchange', handleTabRouting);
+
+        // ===== CHỨC NĂNG TẢI ĐƠN HÀNG CỦA TÔI =====
+        let allOrdersList = [];
+        let currentStatusFilter = 'ALL';
+        let ordersLoaded = false;
+
+        async function loadMyOrders() {
+            if (ordersLoaded) return;
+            const loadingEl = document.getElementById('ordersLoading');
+            const listWrap = document.getElementById('ordersListWrap');
+
+            try {
+                const res = await fetch('/api/orders/my-orders');
+                if (!res.ok) {
+                    if (res.status === 401) {
+                        listWrap.innerHTML = `<div style="text-align:center;padding:40px;color:#ef4444;"><i class="fas fa-lock"></i><p>Vui lòng đăng nhập để xem đơn hàng!</p></div>`;
+                    } else {
+                        listWrap.innerHTML = `<div style="text-align:center;padding:40px;color:#ef4444;"><i class="fas fa-circle-exclamation"></i><p>Không thể tải đơn hàng. Vui lòng thử lại!</p></div>`;
+                    }
+                    loadingEl.style.display = 'none';
+                    listWrap.style.display = 'block';
+                    return;
+                }
+
+                const data = await res.json();
+                loadingEl.style.display = 'none';
+                listWrap.style.display = 'block';
+
+                if (!data.success || !data.orders || data.orders.length === 0) {
+                    allOrdersList = [];
+                    updateStatusCounts();
+                    listWrap.innerHTML = `
+                        <div style="text-align:center;padding:50px 20px;">
+                            <div style="font-size:60px;color:#e2e8f0;margin-bottom:16px;"><i class="fas fa-box-open"></i></div>
+                            <h4 style="color:var(--text-muted);font-size:18px;margin-bottom:8px;">Bạn chưa có đơn hàng nào</h4>
+                            <p style="color:var(--text-muted);margin-bottom:24px;">Hãy khám phá bộ sưu tập sách đa dạng tại Bookora và đặt đơn hàng đầu tiên!</p>
+                            <a href="home" style="display:inline-block;padding:10px 24px;background:var(--primary);color:#fff;border-radius:8px;text-decoration:none;font-weight:600;"><i class="fas fa-book"></i> Khám phá sách ngay</a>
+                        </div>`;
+                    return;
+                }
+
+                ordersLoaded = true;
+                allOrdersList = data.orders;
+                updateStatusCounts();
+                renderFilteredOrders();
+
+            } catch (e) {
+                console.error('Lỗi tải đơn hàng:', e);
+                document.getElementById('ordersLoading').style.display = 'none';
+                listWrap.style.display = 'block';
+                listWrap.innerHTML = `<div style="text-align:center;padding:40px;color:#ef4444;"><i class="fas fa-wifi"></i><p>Lỗi kết nối máy chủ. Vui lòng thử lại!</p></div>`;
+            }
+        }
+
+        function normalizeStatus(st) {
+            if (!st) return 'CHO_XAC_NHAN';
+            const s = st.toUpperCase();
+            if (s === 'PENDING' || s === 'CHO_XAC_NHAN') return 'CHO_XAC_NHAN';
+            if (s === 'SHIPPING' || s === 'DANG_GIAO') return 'DANG_GIAO';
+            if (s === 'DELIVERED' || s === 'HOAN_THANH') return 'HOAN_THANH';
+            if (s === 'CANCELLED' || s === 'DA_HUY') return 'DA_HUY';
+            return s;
+        }
+
+        function updateStatusCounts() {
+            let cntAll = allOrdersList.length;
+            let cntPending = 0;
+            let cntShipping = 0;
+            let cntDelivered = 0;
+            let cntCancelled = 0;
+
+            allOrdersList.forEach(o => {
+                const st = normalizeStatus(o.orderStatus);
+                if (st === 'CHO_XAC_NHAN') cntPending++;
+                else if (st === 'DANG_GIAO') cntShipping++;
+                else if (st === 'HOAN_THANH') cntDelivered++;
+                else if (st === 'DA_HUY') cntCancelled++;
+            });
+
+            document.getElementById('cntAll').innerText = cntAll;
+            document.getElementById('cntPending').innerText = cntPending;
+            document.getElementById('cntShipping').innerText = cntShipping;
+            document.getElementById('cntDelivered').innerText = cntDelivered;
+            document.getElementById('cntCancelled').innerText = cntCancelled;
+        }
+
+        function filterOrdersByStatus(status, btnEl) {
+            currentStatusFilter = status;
+            const tabs = document.querySelectorAll('.order-status-tab');
+            tabs.forEach(t => t.classList.remove('active'));
+            if (btnEl) btnEl.classList.add('active');
+            renderFilteredOrders();
+        }
+
+        function onSearchOrderInput() {
+            renderFilteredOrders();
+        }
+
+        function renderFilteredOrders() {
+            const listWrap = document.getElementById('ordersListWrap');
+            const searchKeyword = (document.getElementById('orderSearchInput').value || '').trim().toLowerCase();
+
+            let filtered = allOrdersList.filter(o => {
+                const st = normalizeStatus(o.orderStatus);
+                if (currentStatusFilter !== 'ALL' && st !== currentStatusFilter) {
+                    return false;
+                }
+                if (searchKeyword) {
+                    const matchCode = (o.orderCode || '').toLowerCase().includes(searchKeyword);
+                    const matchItems = (o.items || []).some(item => (item.bookTitle || '').toLowerCase().includes(searchKeyword));
+                    return matchCode || matchItems;
+                }
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                listWrap.innerHTML = `
+                    <div style="text-align:center;padding:40px 20px;">
+                        <i class="fas fa-search" style="font-size:40px;color:#cbd5e1;margin-bottom:12px;"></i>
+                        <p style="color:var(--text-muted);font-size:15px;">Không tìm thấy đơn hàng nào phù hợp</p>
+                    </div>`;
+                return;
+            }
+
+            let html = '';
+            filtered.forEach(o => {
+                const st = normalizeStatus(o.orderStatus);
+                let statusBadgeHtml = '';
+                if (st === 'DANG_GIAO') {
+                    statusBadgeHtml = `<span class="order-card-status-badge status-badge-shipping">ĐANG GIAO HÀNG</span>`;
+                } else if (st === 'CHO_XAC_NHAN') {
+                    statusBadgeHtml = `<span class="order-card-status-badge status-badge-pending">CHỜ XÁC NHẬN</span>`;
+                } else if (st === 'HOAN_THANH') {
+                    statusBadgeHtml = `<span class="order-card-status-badge status-badge-delivered">GIAO THÀNH CÔNG</span>`;
+                } else if (st === 'DA_HUY') {
+                    statusBadgeHtml = `<span class="order-card-status-badge status-badge-cancelled">ĐÃ HỦY</span>`;
+                } else {
+                    statusBadgeHtml = `<span class="order-card-status-badge status-badge-pending">${escHtml(o.orderStatus)}</span>`;
+                }
+
+                // Render items
+                let itemsHtml = '';
+                let totalItemsCount = 0;
+                if (o.items && o.items.length > 0) {
+                    o.items.forEach(item => {
+                        totalItemsCount += (item.quantity || 1);
+                        const imgSrc = item.bookImage ? item.bookImage : 'images/default-book.jpg';
+                        const formattedPrice = new Intl.NumberFormat('vi-VN').format(item.price || 0) + ' đ';
+                        const reviewBtnHtml = (st === 'HOAN_THANH') ? `
+                            <button type="button" class="btn-review-item" onclick="openReviewModalForItem(${item.bookId}, '${escHtml(item.bookTitle)}', '${escHtml(o.orderCode)}')" style="margin-top: 6px; background: #0284c7; color: white; border: none; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                                <i class="fas fa-star" style="color: #f59e0b;"></i> Đánh giá
+                            </button>
+                        ` : '';
+                        itemsHtml += `
+                            <div class="order-item-row">
+                                <img src="${escHtml(imgSrc)}" alt="${escHtml(item.bookTitle)}" class="order-item-img" onerror="this.src='images/default-book.jpg'">
+                                <div class="order-item-info">
+                                    <div class="order-item-title">${escHtml(item.bookTitle || 'Sách Bookora')}</div>
+                                    <div class="order-item-variant">Phân loại: Sách in / Bìa mềm</div>
+                                </div>
+                                <div class="order-item-qty-price">
+                                    <div class="order-item-qty">x ${item.quantity || 1}</div>
+                                    <div class="order-item-price">${formattedPrice}</div>
+                                    ${reviewBtnHtml}
+                                </div>
+                            </div>`;
+                    });
+                } else {
+                    totalItemsCount = 1;
+                    itemsHtml = `
+                        <div class="order-item-row">
+                            <img src="images/default-book.jpg" alt="Book" class="order-item-img">
+                            <div class="order-item-info">
+                                <div class="order-item-title">Sách đã đặt theo mã #${escHtml(o.orderCode)}</div>
+                                <div class="order-item-variant">Địa chỉ nhận: ${escHtml(o.deliveryAddress || '')}</div>
+                            </div>
+                            <div class="order-item-qty-price">
+                                <div class="order-item-qty">x 1</div>
+                                <div class="order-item-price">${escHtml(o.formattedTotal)}</div>
+                            </div>
+                        </div>`;
+                }
+
+                // Actions
+                let actionBtnsHtml = '';
+                if (st === 'DANG_GIAO') {
+                    actionBtnsHtml = `
+                        <a href="order-success?code=${encodeURIComponent(o.orderCode)}" class="btn-order-outline" target="_blank">Xem chi tiết</a>
+                        <button type="button" class="btn-order-primary" onclick="confirmReceivedOrder('${escHtml(o.orderCode)}')">Đã nhận được hàng</button>`;
+                } else if (st === 'CHO_XAC_NHAN') {
+                    actionBtnsHtml = `
+                        <a href="order-success?code=${encodeURIComponent(o.orderCode)}" class="btn-order-outline" target="_blank">Xem chi tiết</a>
+                        <button type="button" class="btn-order-danger" onclick="cancelOrderModal('${escHtml(o.orderCode)}')">Hủy đơn hàng</button>`;
+                } else if (st === 'HOAN_THANH') {
+                    actionBtnsHtml = `
+                        <button type="button" class="btn-order-outline" onclick="buyAgainOrder('${escHtml(o.orderCode)}')">Mua lại</button>
+                        <button type="button" class="btn-order-primary" onclick="openReviewModal('${escHtml(o.orderCode)}')">Đánh giá</button>
+                        <a href="order-success?code=${encodeURIComponent(o.orderCode)}" class="btn-order-outline" target="_blank">Xem chi tiết</a>`;
+                } else if (st === 'DA_HUY') {
+                    actionBtnsHtml = `
+                        <button type="button" class="btn-order-primary" onclick="buyAgainOrder('${escHtml(o.orderCode)}')">Mua lại</button>
+                        <a href="order-success?code=${encodeURIComponent(o.orderCode)}" class="btn-order-outline" target="_blank">Xem chi tiết</a>`;
+                } else {
+                    actionBtnsHtml = `<a href="order-success?code=${encodeURIComponent(o.orderCode)}" class="btn-order-outline" target="_blank">Xem chi tiết</a>`;
+                }
+
+                html += `
+                    <div class="order-card">
+                        <div class="order-card-header">
+                            <div class="order-card-code">MÃ ĐƠN: #${escHtml(o.orderCode)}</div>
+                            <div class="order-card-meta">
+                                <div class="order-card-date"><i class="far fa-clock"></i> Ngày đặt: ${escHtml(o.createdAt || '')}</div>
+                                <div>TRẠNG THÁI: ${statusBadgeHtml}</div>
+                            </div>
+                        </div>
+
+                        <div class="order-card-items">
+                            ${itemsHtml}
+                        </div>
+
+                        <div class="order-card-summary">
+                            Tổng số tiền (${totalItemsCount} SP): <strong class="order-summary-total">${escHtml(o.formattedTotal)}</strong>
+                        </div>
+
+                        <div class="order-card-footer">
+                            <a href="tel:19006868" class="btn-order-support" onclick="showSupportInfo(event)">
+                                <i class="fas fa-phone-alt"></i> Liên hệ hỗ trợ
+                            </a>
+                            <div class="order-card-actions">
+                                ${actionBtnsHtml}
+                            </div>
+                        </div>
+                    </div>`;
+            });
+
+            listWrap.innerHTML = html;
+        }
+
+        function showSupportInfo(e) {
+            e.preventDefault();
+            alert('📞 Hotline Hỗ Trợ Đơn Hàng Bookora: 1900 6868\\nEmail: support@bookora.vn\\nGiờ làm việc: 8:00 - 21:00 hàng ngày.');
+        }
+
+        function confirmReceivedOrder(code) {
+            if (confirm(`Bạn xác nhận đã nhận thành công đơn hàng #${code}?`)) {
+                alert(`Cảm ơn bạn! Đơn hàng #${code} đã được cập nhật thành HOÀN THÀNH.`);
+                const ord = allOrdersList.find(o => o.orderCode === code);
+                if (ord) ord.orderStatus = 'HOAN_THANH';
+                updateStatusCounts();
+                renderFilteredOrders();
+            }
+        }
+
+        function cancelOrderModal(code) {
+            if (confirm(`Bạn có chắc chắn muốn hủy đơn hàng #${code}?`)) {
+                alert(`Đơn hàng #${code} đã được hủy thành công.`);
+                const ord = allOrdersList.find(o => o.orderCode === code);
+                if (ord) ord.orderStatus = 'DA_HUY';
+                updateStatusCounts();
+                renderFilteredOrders();
+            }
+        }
+
+        function buyAgainOrder(code) {
+            alert(`Đã thêm lại các sản phẩm trong đơn hàng #${code} vào Giỏ hàng!`);
+            window.location.href = 'cart.html';
+        }
+
+        function escHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g,'&amp;')
+                .replace(/</g,'&lt;')
+                .replace(/>/g,'&gt;')
+                .replace(/"/g,'&quot;');
+        }
+
+        // Hiện/ẩn mật khẩu
+        function togglePassVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            const isPass = input.type === 'password';
+            input.type = isPass ? 'text' : 'password';
+            btn.innerHTML = isPass ? '<i class="fas fa-eye-slash"></i>' : '<i class="fas fa-eye"></i>';
+        }
+
+        // Xem trước Avatar
+        function previewAvatar(url) {
+            const trimmed = url ? url.trim() : '';
+            const sidebarImg = document.getElementById('sidebarAvatarImg');
+            if (sidebarImg && trimmed) {
+                sidebarImg.src = trimmed;
+            }
+        }
+
+        function choosePresetAvatar(src) {
+            const avatarInput = document.getElementById('avatar');
+            if (avatarInput) {
+                avatarInput.value = src;
+                previewAvatar(src);
+            }
+        }
+
+        // Kiểm tra độ mạnh mật khẩu theo thời gian thực
+        function checkPasswordStrength(password) {
+            const box = document.getElementById('pwdStrengthBox');
+            if (!box) return;
+            box.style.display = password.length > 0 ? 'block' : 'none';
+
+            const hasLen = password.length >= 8;
+            const hasUpper = /[A-Z]/.test(password);
+            const hasLower = /[a-z]/.test(password);
+            const hasDigit = /[0-9]/.test(password);
+            const hasSpecial = /[^A-Za-z0-9]/.test(password);
+
+            updateCrit('critLength', hasLen);
+            updateCrit('critUpper', hasUpper);
+            updateCrit('critLower', hasLower);
+            updateCrit('critNumber', hasDigit);
+            updateCrit('critSpecial', hasSpecial);
+
+            let score = 0;
+            if (hasLen) score++;
+            if (hasUpper) score++;
+            if (hasLower) score++;
+            if (hasDigit) score++;
+            if (hasSpecial) score++;
+
+            const fill = document.getElementById('strengthFill');
+            const statusText = document.getElementById('strengthStatusText');
+
+            if (score <= 2) {
+                fill.style.width = '30%';
+                fill.style.background = '#ef4444';
+                statusText.innerHTML = 'Độ mạnh: <span style="color:#ef4444; font-weight:700;">Yếu</span> (Chưa đạt chuẩn)';
+            } else if (score === 3 || score === 4) {
+                fill.style.width = '70%';
+                fill.style.background = '#f59e0b';
+                statusText.innerHTML = 'Độ mạnh: <span style="color:#f59e0b; font-weight:700;">Khá</span> (Cần thêm ký tự)';
+            } else {
+                fill.style.width = '100%';
+                fill.style.background = '#10b981';
+                statusText.innerHTML = 'Độ mạnh: <span style="color:#10b981; font-weight:700;">Rất An Toàn!</span>';
+            }
+
+            checkPasswordMatch();
+        }
+
+        function updateCrit(elementId, isValid) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            if (isValid) {
+                el.className = 'crit-valid';
+                el.innerHTML = '<i class="fas fa-circle-check"></i> ' + el.textContent.trim();
+            } else {
+                el.className = 'crit-invalid';
+                el.innerHTML = '<i class="fas fa-circle-xmark"></i> ' + el.textContent.trim();
+            }
+        }
+
+        // Kiểm tra mật khẩu xác nhận trùng khớp
+        function checkPasswordMatch() {
+            const newPass = document.getElementById('newPassword').value;
+            const confirmPass = document.getElementById('confirmPassword').value;
+            const msg = document.getElementById('pwdMatchMsg');
+            if (!msg || !confirmPass) {
+                if (msg) msg.style.display = 'none';
+                return;
+            }
+
+            msg.style.display = 'block';
+            if (newPass === confirmPass) {
+                msg.style.color = '#10b981';
+                msg.innerHTML = '<i class="fas fa-check-circle"></i> Mật khẩu xác nhận trùng khớp!';
+            } else {
+                msg.style.color = '#ef4444';
+                msg.innerHTML = '<i class="fas fa-circle-exclamation"></i> Mật khẩu xác nhận chưa trùng khớp!';
+            }
+        }
+    </script>
+    <!-- MODAL GỬI ĐÁNH GIÁ SÁCH TẠI ĐƠN HÀNG CỦA TÔI -->
+    <div class="review-modal-backdrop" id="profileReviewModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); z-index: 99999; justify-content: center; align-items: center; padding: 16px;">
+        <div class="review-modal-card" style="background: white; border-radius: 16px; width: 100%; max-width: 540px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.25); position: relative; animation: modalPop 0.25s ease;">
+            <button type="button" class="btn-modal-close" onclick="closeProfileReviewModal()" style="position: absolute; top: 16px; right: 16px; background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; color: #64748b; font-size: 14px;"><i class="fas fa-times"></i></button>
+
+            <h3 style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">
+                <i class="fas fa-star" style="color: #f59e0b; margin-right: 6px;"></i> Đánh giá sản phẩm
+            </h3>
+            <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;" id="profileReviewOrderMeta">Đơn hàng: #ORD-20260925-1001</p>
+
+            <!-- Thông báo cảnh báo / lỗi (Nội dung bị chặn từ cấm...) -->
+            <div id="profileReviewAlertBox" style="display: none; padding: 12px 16px; border-radius: 8px; font-size: 13.5px; font-weight: 500; margin-bottom: 16px; line-height: 1.4;"></div>
+
+            <form id="profileReviewSubmitForm" onsubmit="submitProfileBookReview(event)">
+                <!-- Chọn sách trong đơn hàng -->
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 13.5px; font-weight: 600; color: #334155; margin-bottom: 6px;">Sản phẩm cần đánh giá:</label>
+                    <select id="profileReviewBookSelect" style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; color: #1e293b; outline: none; background: #f8fafc;" onchange="onProfileReviewBookChange()">
+                        <!-- Options Javascript render -->
+                    </select>
+                </div>
+
+                <!-- Rating Chọn sao -->
+                <div style="margin-bottom: 18px; text-align: center; background: #f8fafc; padding: 16px; border-radius: 10px; border: 1px solid #e2e8f0;">
+                    <label style="display: block; font-size: 14px; font-weight: 600; color: #334155; margin-bottom: 8px;">Chọn mức độ hài lòng của bạn:</label>
+                    <div class="interactive-star-rating" style="display: inline-flex; gap: 8px; font-size: 32px; color: #f59e0b; cursor: pointer;">
+                        <i class="fas fa-star prof-star" data-rating="1" onclick="selectProfReviewStar(1)" onmouseover="hoverProfReviewStar(1)" onmouseleave="resetProfReviewStars()"></i>
+                        <i class="fas fa-star prof-star" data-rating="2" onclick="selectProfReviewStar(2)" onmouseover="hoverProfReviewStar(2)" onmouseleave="resetProfReviewStars()"></i>
+                        <i class="fas fa-star prof-star" data-rating="3" onclick="selectProfReviewStar(3)" onmouseover="hoverProfReviewStar(3)" onmouseleave="resetProfReviewStars()"></i>
+                        <i class="fas fa-star prof-star" data-rating="4" onclick="selectProfReviewStar(4)" onmouseover="hoverProfReviewStar(4)" onmouseleave="resetProfReviewStars()"></i>
+                        <i class="fas fa-star prof-star" data-rating="5" onclick="selectProfReviewStar(5)" onmouseover="hoverProfReviewStar(5)" onmouseleave="resetProfReviewStars()"></i>
+                    </div>
+                    <input type="hidden" id="profSelectedStarRating" value="5">
+                    <div id="profStarTextLabel" style="font-size: 13px; font-weight: 600; color: #f59e0b; margin-top: 6px;">Rất tuyệt vời (5 sao)</div>
+                </div>
+
+                <!-- Ô nhập nội dung -->
+                <div style="margin-bottom: 20px;">
+                    <label for="profReviewContentInput" style="display: block; font-size: 14px; font-weight: 600; color: #334155; margin-bottom: 6px;">Nội dung đánh giá <span style="color: #ef4444;">*</span></label>
+                    <textarea id="profReviewContentInput" rows="4" placeholder="Hãy chia sẻ cảm nhận của bạn về cuốn sách này (chất lượng nội dung, hình thức in ấn, thái độ đóng gói...)" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: inherit; font-size: 14px; outline: none; resize: vertical;" required></textarea>
+                </div>
+
+                <!-- Nút gửi -->
+                <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                    <button type="button" onclick="closeProfileReviewModal()" style="padding: 10px 18px; border: 1px solid #cbd5e1; background: white; color: #475569; border-radius: 8px; font-weight: 600; cursor: pointer;">Hủy bỏ</button>
+                    <button type="submit" id="btnSubmitProfReview" style="padding: 10px 22px; border: none; background: #0284c7; color: white; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-paper-plane"></i> Gửi đánh giá
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentProfOrderCode = null;
+        let currentProfBookId = null;
+
+        function openReviewModalForItem(bookId, bookTitle, orderCode) {
+            currentProfOrderCode = orderCode;
+            currentProfBookId = bookId;
+
+            const modal = document.getElementById('profileReviewModal');
+            const meta = document.getElementById('profileReviewOrderMeta');
+            const alertBox = document.getElementById('profileReviewAlertBox');
+            const select = document.getElementById('profileReviewBookSelect');
+
+            if (alertBox) alertBox.style.display = 'none';
+            if (meta) meta.textContent = `Đơn hàng: #${orderCode}`;
+
+            if (select) {
+                select.innerHTML = `<option value="${bookId}">${escHtml(bookTitle)}</option>`;
+                select.value = bookId;
+            }
+
+            selectProfReviewStar(5);
+            const contentInput = document.getElementById('profReviewContentInput');
+            if (contentInput) contentInput.value = '';
+
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function openReviewModal(code) {
+            currentProfOrderCode = code;
+            const ord = allOrdersList.find(o => o.orderCode === code);
+            if (!ord) return;
+
+            const modal = document.getElementById('profileReviewModal');
+            const meta = document.getElementById('profileReviewOrderMeta');
+            const alertBox = document.getElementById('profileReviewAlertBox');
+            const select = document.getElementById('profileReviewBookSelect');
+
+            if (alertBox) alertBox.style.display = 'none';
+            if (meta) meta.textContent = `Đơn hàng: #${code}`;
+
+            if (select) {
+                select.innerHTML = '';
+                if (ord.items && ord.items.length > 0) {
+                    ord.items.forEach(item => {
+                        const opt = document.createElement('option');
+                        opt.value = item.bookId;
+                        opt.textContent = item.bookTitle || `Sách #${item.bookId}`;
+                        select.appendChild(opt);
+                    });
+                    currentProfBookId = ord.items[0].bookId;
+                } else {
+                    const opt = document.createElement('option');
+                    opt.value = 1;
+                    opt.textContent = `Sách theo đơn #${code}`;
+                    select.appendChild(opt);
+                    currentProfBookId = 1;
+                }
+            }
+
+            selectProfReviewStar(5);
+            const contentInput = document.getElementById('profReviewContentInput');
+            if (contentInput) contentInput.value = '';
+
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function closeProfileReviewModal() {
+            const modal = document.getElementById('profileReviewModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function onProfileReviewBookChange() {
+            const select = document.getElementById('profileReviewBookSelect');
+            if (select) {
+                currentProfBookId = parseInt(select.value) || 0;
+            }
+        }
+
+        function selectProfReviewStar(star) {
+            const starInput = document.getElementById('profSelectedStarRating');
+            if (starInput) starInput.value = star;
+
+            const stars = document.querySelectorAll('.prof-star');
+            stars.forEach((s, idx) => {
+                if (idx < star) {
+                    s.style.color = '#f59e0b';
+                } else {
+                    s.style.color = '#cbd5e1';
+                }
+            });
+
+            const labels = ["", "Rất không hài lòng (1 sao)", "Không hài lòng (2 sao)", "Bình thường (3 sao)", "Hài lòng (4 sao)", "Rất tuyệt vời (5 sao)"];
+            const labelEl = document.getElementById('profStarTextLabel');
+            if (labelEl) labelEl.textContent = labels[star] || `${star} sao`;
+        }
+
+        function hoverProfReviewStar(star) {
+            const stars = document.querySelectorAll('.prof-star');
+            stars.forEach((s, idx) => {
+                if (idx < star) {
+                    s.style.color = '#fcd34d';
+                } else {
+                    s.style.color = '#cbd5e1';
+                }
+            });
+        }
+
+        function resetProfReviewStars() {
+            const currentStar = parseInt(document.getElementById('profSelectedStarRating')?.value || '5');
+            selectProfReviewStar(currentStar);
+        }
+
+        function submitProfileBookReview(e) {
+            if (e) e.preventDefault();
+
+            const bookId = currentProfBookId || parseInt(document.getElementById('profileReviewBookSelect')?.value || '0');
+            const rating = parseInt(document.getElementById('profSelectedStarRating')?.value || '5');
+            const content = document.getElementById('profReviewContentInput')?.value?.trim() || '';
+            const alertBox = document.getElementById('profileReviewAlertBox');
+            const btnSubmit = document.getElementById('btnSubmitProfReview');
+
+            if (bookId <= 0) {
+                if (alertBox) {
+                    alertBox.style.display = 'block';
+                    alertBox.style.background = '#fef2f2';
+                    alertBox.style.color = '#991b1b';
+                    alertBox.style.border = '1px solid #fecaca';
+                    alertBox.innerHTML = '<i class="fas fa-circle-exclamation"></i> Vui lòng chọn sản phẩm cần đánh giá!';
+                }
+                return;
+            }
+
+            if (!content) {
+                if (alertBox) {
+                    alertBox.style.display = 'block';
+                    alertBox.style.background = '#fef2f2';
+                    alertBox.style.color = '#991b1b';
+                    alertBox.style.border = '1px solid #fecaca';
+                    alertBox.innerHTML = '<i class="fas fa-circle-exclamation"></i> Vui lòng nhập nội dung đánh giá (không chỉ chứa khoảng trắng).';
+                }
+                return;
+            }
+
+            if (btnSubmit) {
+                btnSubmit.disabled = true;
+                btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang gửi...';
+            }
+
+            const formData = new URLSearchParams();
+            formData.append('bookId', bookId);
+            formData.append('rating', rating);
+            formData.append('content', content);
+
+            fetch('/api/reviews', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                },
+                body: formData.toString()
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (btnSubmit) {
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerHTML = '<i class="fas fa-paper-plane"></i> Gửi đánh giá';
+                }
+
+                if (data.blocked || !data.success) {
+                    // TỰ ĐỘNG CHẶN NỘI DUNG VÀ HIỂN THỊ THÔNG BÁO CHO KHÁCH HÀNG
+                    if (alertBox) {
+                        alertBox.style.display = 'block';
+                        alertBox.style.background = '#fff1f2';
+                        alertBox.style.color = '#be123c';
+                        alertBox.style.border = '1px solid #fecdd3';
+                        alertBox.innerHTML = `<i class="fas fa-shield-cat" style="font-size:16px; margin-right:6px;"></i> ${data.message}`;
+                    }
+                } else {
+                    closeProfileReviewModal();
+                    alert(`✅ ${data.message || 'Đánh giá của bạn đã được gửi thành công.'}`);
+                }
+            })
+            .catch(err => {
+                console.error("Lỗi gửi đánh giá:", err);
+                if (btnSubmit) {
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerHTML = '<i class="fas fa-paper-plane"></i> Gửi đánh giá';
+                }
+                if (alertBox) {
+                    alertBox.style.display = 'block';
+                    alertBox.style.background = '#fef2f2';
+                    alertBox.style.color = '#991b1b';
+                    alertBox.style.border = '1px solid #fecaca';
+                    alertBox.innerHTML = '<i class="fas fa-circle-exclamation"></i> Đã xảy ra lỗi hệ thống khi kết nối. Vui lòng thử lại sau!';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

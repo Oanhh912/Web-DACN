@@ -1,2 +1,55 @@
+# ==============================================================================
+# Bookora - .gitignore
+# ==============================================================================
 
+# ─── Thông tin nhạy cảm (KHÔNG BAO GIỜ commit) ───────────────────────────────
 gemini.key
+config/gemini.key
+email_config.properties
+config/email_config.properties
+sms_config.properties
+config/sms_config.properties
+*.key
+*.secret
+
+# ─── Build output ─────────────────────────────────────────────────────────────
+build/
+target/
+bin/
+*.class
+*.jar
+!lib/*.jar
+!backend/lib/*.jar
+!src/main/webapp/WEB-INF/lib/*.jar
+
+# ─── File tạm và hệ thống ─────────────────────────────────────────────────────
+sources.txt
+*.tmp
+*.bak
+*.swp
+*.orig
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── IDE / Editor ─────────────────────────────────────────────────────────────
+.idea/
+*.iml
+.vscode/settings.json
+*.suo
+*.user
+.project
+.classpath
+.settings/
+
+# ─── Uploads của người dùng (tùy chọn) ───────────────────────────────────────
+# Bỏ comment dòng dưới nếu không muốn commit ảnh upload
+# src/main/webapp/uploads/
+# frontend/public/uploads/
+
+# ─── Node (nếu có) ────────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+.env
+.env.local
+.env.production

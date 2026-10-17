@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Bookora Quản Trị Hệ Thống</title>
+    <!-- FontAwesome 6 Icons & Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Admin Design System CSS -->
+    <link rel="stylesheet" href="/admin/css/admin.css">
+</head>
+<body>
+
+    <div class="admin-layout">
+        <!-- 1. SIDEBAR MENU ADMIN -->
+        <aside class="admin-sidebar" id="adminSidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo-icon">
+                    <i class="fas fa-book-bookmark"></i>
+                </div>
+                <div class="sidebar-logo-text">
+                    <span class="sidebar-brand-title">BOOKORA</span>
+                    <span class="sidebar-brand-badge"><i class="fas fa-shield-halved"></i> ADMIN PORTAL</span>
+                </div>
+            </div>
+
+            <div class="sidebar-menu">
+                <div class="menu-category-title">Bảng điều khiển</div>
+                <ul class="sidebar-nav-list">
+                    <li class="sidebar-nav-item">
+                        <a href="/admin" class="sidebar-nav-link active">
+                            <i class="fas fa-chart-pie"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="menu-category-title">Quản lý hệ thống</div>
+                <ul class="sidebar-nav-list">
+                    <li class="sidebar-nav-item">
+                        <a href="/admin/books" class="sidebar-nav-link">
+                            <i class="fas fa-book"></i>
+                            <span>Quản lý sách & kho</span>
+                            <span class="sidebar-badge badge-danger">3</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="/admin/customers" class="sidebar-nav-link">
+                            <i class="fas fa-users"></i>
+                            <span>Quản lý khách hàng</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="/admin/categories" class="sidebar-nav-link">
+                            <i class="fas fa-tags"></i>
+                            <span>Quản lý danh mục sách</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="/admin/promotions" class="sidebar-nav-link">
+                            <i class="fas fa-ticket"></i>
+                            <span>Khuyến mãi & mã giảm giá</span>
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="menu-category-title">Báo cáo & AI</div>
+                <ul class="sidebar-nav-list">
+                    <li class="sidebar-nav-item">
+                        <a href="/admin/reports" class="sidebar-nav-link">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Thống kê & báo cáo</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="/admin/chatbot" class="sidebar-nav-link">
+                            <i class="fas fa-robot"></i>
+                            <span>Quản lý nội dung Chatbot AI</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-user-card">
+                    <img src="${adminAvatar}" alt="Admin Avatar" class="sidebar-user-avatar" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150';">
+                    <div class="sidebar-user-info">
+                        <div class="sidebar-user-name">${adminFullName}</div>
+                        <div class="sidebar-user-role"><i class="fas fa-crown" style="color:#f59e0b;"></i> ${adminUsername} (ADMIN)</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 2. MAIN WRAPPER CONTAINER -->
+        <div class="admin-main-wrapper">
+            <!-- HEADER BAR ADMIN -->
+            <header class="admin-header">
+                <div class="header-search-wrap">
+                    <i class="fas fa-magnifying-glass header-search-icon"></i>
+                    <input type="text" class="header-search-input" placeholder="Tìm kiếm nhanh đơn hàng, sách, khách hàng...">
+                </div>
+
+                <div class="header-actions">
+                    <button type="button" class="header-btn-icon" title="Thông báo">
+                        <i class="far fa-bell"></i>
+                        <span class="header-badge-dot"></span>
+                    </button>
+                    <a href="/home" target="_blank" class="header-user-btn" title="Xem trang chủ khách hàng">
+                        <i class="fas fa-globe" style="color:var(--primary);"></i>
+                        <span class="header-user-title">Trang Khách Hàng</span>
+                    </a>
+                    <a href="/logout" class="header-user-btn" style="border-color:#fca5a5; color:#dc2626;" title="Đăng xuất khỏi hệ thống">
+                        <i class="fas fa-right-from-bracket"></i>
+                        <span class="header-user-title">Đăng xuất</span>
+                    </a>
+                </div>
+            </header>
+
+            <!-- MAIN CONTENT AREA -->
+            <main class="admin-content">
+                <!-- BREADCRUMB & TITLE -->
+                <div class="admin-breadcrumb">
+                    <a href="/admin"><i class="fas fa-house"></i> Admin Portal</a>
+                    <i class="fas fa-chevron-right"></i>
+                    <span>Dashboard</span>
+                </div>
+
+                <div class="admin-page-header">
+                    <div class="admin-page-title-wrap">
+                        <h1>Tổng Quan Hệ Thống Quản Trị</h1>
+                        <p class="admin-page-sub">Chào mừng trở lại, <strong>${adminFullName}</strong>! Dưới đây là tình hình hoạt động kinh doanh hôm nay.</p>
+                    </div>
+                    <div>
+                        <a href="/admin/books" class="btn-admin btn-admin-primary">
+                            <i class="fas fa-plus"></i>
+                            <span>Thêm sách mới</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 1. STATS GRID -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <div class="stat-label">Tổng số đầu sách</div>
+                            <div class="stat-value">${totalBooks}</div>
+                            <div class="stat-change up"><i class="fas fa-arrow-up"></i> 38 đầu sách đang kinh doanh</div>
+                        </div>
+                        <div class="stat-icon-box stat-icon-purple">
+                            <i class="fas fa-book"></i>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <div class="stat-label">Khách hàng đăng ký</div>
+                            <div class="stat-value">${totalCustomers}</div>
+                            <div class="stat-change up"><i class="fas fa-arrow-up"></i> +12.5% so với tháng trước</div>
+                        </div>
+                        <div class="stat-icon-box stat-icon-blue">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <div class="stat-label">Tổng số đơn hàng</div>
+                            <div class="stat-value">${totalOrders}</div>
+                            <div class="stat-change up"><i class="fas fa-arrow-up"></i> 100% xử lý an toàn</div>
+                        </div>
+                        <div class="stat-icon-box stat-icon-green">
+                            <i class="fas fa-box-open"></i>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <div class="stat-label">Doanh thu hệ thống</div>
+                            <div class="stat-value">${totalRevenue}</div>
+                            <div class="stat-change up"><i class="fas fa-arrow-up"></i> Tăng trưởng ổn định</div>
+                        </div>
+                        <div class="stat-icon-box stat-icon-amber">
+                            <i class="fas fa-sack-dollar"></i>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <div class="stat-label">Sách sắp hết hàng</div>
+                            <div class="stat-value">${lowStockCount}</div>
+                            <div class="stat-change down"><i class="fas fa-exclamation-triangle"></i> Cần nhập thêm kho</div>
+                        </div>
+                        <div class="stat-icon-box stat-icon-rose">
+                            <i class="fas fa-warehouse"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. BẢNG HOẠT ĐỘNG GẦN ĐÂY -->
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">
+                            <i class="fas fa-clock-rotate-left" style="color:var(--primary);"></i>
+                            Đơn Hàng Gần Đây
+                        </h3>
+                        <a href="/admin/reports" class="btn-admin btn-admin-secondary">Xem tất cả báo cáo</a>
+                    </div>
+                    <div class="admin-table-wrap">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Mã đơn</th>
+                                    <th>Khách hàng</th>
+                                    <th>Ngày đặt</th>
+                                    <th>Phương thức</th>
+                                    <th>Tổng tiền</th>
+                                    <th>Trạng thái</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>#ORD-20260928-1003</strong></td>
+                                    <td>Hoàng Oanh (oanh)</td>
+                                    <td>2026-09-28 10:00</td>
+                                    <td>COD (Tiền mặt)</td>
+                                    <td><strong>119,000 đ</strong></td>
+                                    <td><span class="badge-status badge-warning"><i class="fas fa-clock"></i> Chờ xác nhận</span></td>
+                                    <td><a href="/order-success?code=ORD-20260928-1003" class="btn-action-icon" target="_blank" title="Xem chi tiết"><i class="fas fa-eye"></i></a></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>#ORD-20260927-1002</strong></td>
+                                    <td>Hoàng Oanh (oanh)</td>
+                                    <td>2026-09-27 09:15</td>
+                                    <td>Chuyển khoản VietQR</td>
+                                    <td><strong>255,000 đ</strong></td>
+                                    <td><span class="badge-status badge-info"><i class="fas fa-truck"></i> Đang giao hàng</span></td>
+                                    <td><a href="/order-success?code=ORD-20260927-1002" class="btn-action-icon" target="_blank" title="Xem chi tiết"><i class="fas fa-eye"></i></a></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>#ORD-20260925-1001</strong></td>
+                                    <td>Hoàng Oanh (oanh)</td>
+                                    <td>2026-09-25 14:30</td>
+                                    <td>COD (Tiền mặt)</td>
+                                    <td><strong>213,000 đ</strong></td>
+                                    <td><span class="badge-status badge-success"><i class="fas fa-check-circle"></i> Hoàn thành</span></td>
+                                    <td><a href="/order-success?code=ORD-20260925-1001" class="btn-action-icon" target="_blank" title="Xem chi tiết"><i class="fas fa-eye"></i></a></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>#ORD-20260928-1004</strong></td>
+                                    <td>Khách Hàng Thân Thiết (khachhang)</td>
+                                    <td>2026-09-28 11:00</td>
+                                    <td>COD (Tiền mặt)</td>
+                                    <td><strong>118,000 đ</strong></td>
+                                    <td><span class="badge-status badge-success"><i class="fas fa-check-circle"></i> Hoàn thành</span></td>
+                                    <td><a href="/order-success?code=ORD-20260928-1004" class="btn-action-icon" target="_blank" title="Xem chi tiết"><i class="fas fa-eye"></i></a></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+</body>
+</html>
