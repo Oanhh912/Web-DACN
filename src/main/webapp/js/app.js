@@ -3,8 +3,151 @@
  * Hoàn thiện đầy đủ Use Case "Xem và tìm kiếm sách" theo chuẩn tài liệu BA
  */
 
-// Giỏ hàng lưu trong LocalStorage
-let cart = JSON.parse(localStorage.getItem('bookstore_cart') || '[]');
+// Quản lý người dùng hiện tại & phân tách dữ liệu riêng biệt
+function getActiveUsername() {
+    if (window.CURRENT_USER && window.CURRENT_USER.username) {
+        return window.CURRENT_USER.username.trim().toLowerCase();
+    }
+    const metaEl = document.querySelector('.dropdown-header-info, .user-meta .user-fullname');
+    if (window.CURRENT_USERNAME) {
+        return window.CURRENT_USERNAME.trim().toLowerCase();
+    }
+    return 'guest';
+}
+
+function getCartStorageKey(username) {
+    const u = username || getActiveUsername();
+    return 'bookstore_cart_' + u;
+}
+
+function getWishlistStorageKey(username) {
+    const u = username || getActiveUsername();
+    return 'bookora_wishlist_' + u;
+}
+
+function getOrderNoteStorageKey(username) {
+    const u = username || getActiveUsername();
+    return 'bookstore_order_note_' + u;
+}
+
+function loadCartFromStorage(username) {
+    const key = getCartStorageKey(username);
+    try {
+        const raw = localStorage.getItem(key);
+        if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    return [];
+}
+
+let cart = loadCartFromStorage();
+let syncCartTimer = null;
+
+async function syncCartToBackend(items) {
+    const user = getActiveUsername();
+    if (user === 'guest') return;
+    try {
+        await fetch('/api/cart', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ items: items })
+        });
+    } catch (e) {
+        console.warn('[Bookora] Lỗi đồng bộ giỏ hàng tới máy chủ:', e);
+    }
+}
+
+async function initUserDataContext() {
+    // Dọn dẹp legacy global keys nếu có
+    try {
+        const legacyCart = localStorage.getItem('bookstore_cart');
+        const legacyWl = localStorage.getItem('bookora_wishlist');
+        const activeUser = getActiveUsername();
+        if (legacyCart && legacyCart !== '[]') {
+            const userCartKey = getCartStorageKey(activeUser);
+            if (!localStorage.getItem(userCartKey)) {
+                localStorage.setItem(userCartKey, legacyCart);
+            }
+        }
+        if (legacyWl && legacyWl !== '[]') {
+            const userWlKey = getWishlistStorageKey(activeUser);
+            if (!localStorage.getItem(userWlKey)) {
+                localStorage.setItem(userWlKey, legacyWl);
+            }
+        }
+        localStorage.removeItem('bookstore_cart');
+        localStorage.removeItem('bookora_wishlist');
+        localStorage.removeItem('bookstore_order_note');
+    } catch (e) {}
+
+    // Nếu chưa có CURRENT_USER trong window, gọi /api/me
+    if (!window.CURRENT_USER) {
+        try {
+            const res = await fetch('/api/me');
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.username) {
+                    window.CURRENT_USER = data;
+                }
+            }
+        } catch (e) {}
+    }
+
+    const activeUser = getActiveUsername();
+    cart = loadCartFromStorage(activeUser);
+
+    // Đồng bộ giỏ hàng & wishlist từ máy chủ nếu đã đăng nhập
+    if (activeUser !== 'guest') {
+        try {
+            const res = await fetch('/api/cart');
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.success && Array.isArray(data.items)) {
+                    if (data.items.length > 0 || cart.length === 0) {
+                        cart = data.items.map(it => ({
+                            id: it.id,
+                            code: it.code || ('MS' + String(it.id).padStart(3, '0')),
+                            title: it.title,
+                            image: it.image,
+                            price: it.price,
+                            formattedPrice: formatVNCurrency(it.price),
+                            quantity: it.quantity,
+                            stock: it.stock !== undefined ? it.stock : 10,
+                            author: it.author || '',
+                            publisher: it.publisher || '',
+                            category: it.category || ''
+                        }));
+                        localStorage.setItem(getCartStorageKey(activeUser), JSON.stringify(cart));
+                    } else if (cart.length > 0) {
+                        syncCartToBackend(cart);
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('[Bookora] Lỗi tải giỏ hàng từ máy chủ:', e);
+        }
+
+        try {
+            const resWl = await fetch('/api/wishlist');
+            if (resWl.ok) {
+                const dataWl = await resWl.json();
+                if (dataWl && dataWl.success && Array.isArray(dataWl.items)) {
+                    const wlList = dataWl.items.map(b => ({
+                        id: b.id,
+                        title: b.title,
+                        image: b.image,
+                        price: b.price || formatVNCurrency(b.priceNum || 0)
+                    }));
+                    wlSave(wlList, activeUser);
+                }
+            }
+        } catch (e) {
+            console.warn('[Bookora] Lỗi tải yêu thích từ máy chủ:', e);
+        }
+    }
+
+    updateCartUI();
+    if (typeof wlRefreshUI === 'function') wlRefreshUI();
+}
 
 // Cache lưu tồn kho các cuốn sách từ API/DOM
 let bookStockCache = {};
@@ -150,9 +293,11 @@ function formatMoney(amount) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    fetchAllBooksStock().then(() => {
-        clampCartQuantitiesToStock();
-        if (typeof updateCartUI === 'function') updateCartUI();
+    initUserDataContext().then(() => {
+        fetchAllBooksStock().then(() => {
+            clampCartQuantitiesToStock();
+            if (typeof updateCartUI === 'function') updateCartUI();
+        });
     });
     if (typeof initPasswordToggle === 'function') initPasswordToggle();
     if (typeof initQuickLoginPills === 'function') initQuickLoginPills();
@@ -1595,7 +1740,14 @@ async function addToCart(bookId, quantity = 1) {
 }
 
 function saveCart() {
-    localStorage.setItem('bookstore_cart', JSON.stringify(cart));
+    const user = getActiveUsername();
+    localStorage.setItem(getCartStorageKey(user), JSON.stringify(cart));
+    if (user !== 'guest') {
+        clearTimeout(syncCartTimer);
+        syncCartTimer = setTimeout(() => {
+            syncCartToBackend(cart);
+        }, 300);
+    }
 }
 
 function updateCartUI() {
@@ -1692,10 +1844,10 @@ function initCartPage() {
     // Phục hồi ghi chú đơn hàng nếu đã lưu
     const noteEl = document.getElementById('cartOrderNote');
     if (noteEl) {
-        const savedNote = localStorage.getItem('bookstore_order_note') || '';
+        const savedNote = localStorage.getItem(getOrderNoteStorageKey()) || '';
         noteEl.value = savedNote;
         noteEl.addEventListener('input', (e) => {
-            localStorage.setItem('bookstore_order_note', e.target.value);
+            localStorage.setItem(getOrderNoteStorageKey(), e.target.value);
         });
     }
 
@@ -2593,12 +2745,14 @@ document.addEventListener('DOMContentLoaded', () => {
 /* ==========================================================================
    DANH SÁCH YÊU THÍCH (WISHLIST) - lưu trong localStorage
    ========================================================================== */
-const WISHLIST_KEY = 'bookora_wishlist';
+function wlGetStorageKey() {
+    return typeof getWishlistStorageKey === 'function' ? getWishlistStorageKey() : 'bookora_wishlist';
+}
 
 function wlGet() {
-    try { return JSON.parse(localStorage.getItem(WISHLIST_KEY)) || []; } catch (e) { return []; }
+    try { return JSON.parse(localStorage.getItem(wlGetStorageKey())) || []; } catch (e) { return []; }
 }
-function wlSave(list) { localStorage.setItem(WISHLIST_KEY, JSON.stringify(list)); }
+function wlSave(list) { localStorage.setItem(wlGetStorageKey(), JSON.stringify(list)); }
 function wlHas(id) { return wlGet().some(b => String(b.id) === String(id)); }
 function wlEsc(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -2621,6 +2775,17 @@ function wlToggle(book) {
     if (idx >= 0) { list.splice(idx, 1); } else { list.push(book); }
     wlSave(list);
     wlRefreshUI();
+
+    // Đồng bộ với máy chủ theo tài khoản hiện tại
+    try {
+        fetch('/api/wishlist/toggle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(book)
+        }).catch(err => console.warn('[Bookora] Lỗi đồng bộ yêu thích:', err));
+    } catch (err) {}
+
     return idx < 0;
 }
 
@@ -2669,6 +2834,16 @@ function wlRemove(id, e) {
     if (e) e.stopPropagation();
     wlSave(wlGet().filter(b => String(b.id) !== String(id)));
     wlRefreshUI();
+
+    // Đồng bộ xóa với máy chủ
+    try {
+        fetch('/api/wishlist/remove', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ id: id })
+        }).catch(err => console.warn('[Bookora] Lỗi đồng bộ xóa yêu thích:', err));
+    } catch (err) {}
 }
 
 function toggleWishlistPopover(e) {

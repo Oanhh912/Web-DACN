@@ -19,14 +19,15 @@ let checkoutState = {
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // 1. Lấy dữ liệu giỏ hàng từ LocalStorage
-    loadCartForCheckout();
-
-    // 2. Tải thông tin tài khoản, danh sách địa chỉ, voucher từ Backend
+    // 1. Tải thông tin tài khoản, danh sách địa chỉ, voucher từ Backend
     await loadCheckoutInfo();
 
+    // 2. Lấy dữ liệu giỏ hàng từ LocalStorage theo user
+    loadCartForCheckout();
+
     // 3. Khởi tạo ghi chú đơn hàng từ localStorage nếu có
-    const savedNote = localStorage.getItem('bookstore_order_note');
+    const noteKey = typeof getOrderNoteStorageKey === 'function' ? getOrderNoteStorageKey() : 'bookstore_order_note';
+    const savedNote = localStorage.getItem(noteKey);
     if (savedNote && document.getElementById('orderNoteInput')) {
         document.getElementById('orderNoteInput').value = savedNote;
     }
@@ -37,7 +38,8 @@ document.addEventListener('DOMContentLoaded', async () => {
  */
 function loadCartForCheckout() {
     try {
-        const raw = localStorage.getItem('bookstore_cart');
+        const cartKey = typeof getCartStorageKey === 'function' ? getCartStorageKey() : 'bookstore_cart';
+        const raw = localStorage.getItem(cartKey);
         checkoutState.cartItems = raw ? JSON.parse(raw) : [];
     } catch (e) {
         checkoutState.cartItems = [];
@@ -425,9 +427,20 @@ async function handlePlaceOrder() {
 
         // 4. Nếu là phương thức COD thành công
         if (data && data.success) {
-            // Xóa giỏ hàng trên trình duyệt
-            localStorage.setItem('bookstore_cart', '[]');
-            localStorage.removeItem('bookstore_order_note');
+            // Xóa giỏ hàng trên trình duyệt theo tài khoản
+            const cartKey = typeof getCartStorageKey === 'function' ? getCartStorageKey() : 'bookstore_cart';
+            const noteKey = typeof getOrderNoteStorageKey === 'function' ? getOrderNoteStorageKey() : 'bookstore_order_note';
+            localStorage.setItem(cartKey, '[]');
+            localStorage.removeItem(noteKey);
+            try {
+                fetch('/api/cart', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify([])
+                }).catch(() => {});
+            } catch (e) {}
+
             if (typeof updateCartUI === 'function') updateCartUI();
 
             showToast('🎉 Đặt hàng thành công! Đang chuyển hướng...');
@@ -553,8 +566,19 @@ async function simulatePaymentResult(action) {
 
         // 3. Trường hợp THANH TOÁN THÀNH CÔNG
         if (data && data.success) {
-            localStorage.setItem('bookstore_cart', '[]');
-            localStorage.removeItem('bookstore_order_note');
+            const cartKey = typeof getCartStorageKey === 'function' ? getCartStorageKey() : 'bookstore_cart';
+            const noteKey = typeof getOrderNoteStorageKey === 'function' ? getOrderNoteStorageKey() : 'bookstore_order_note';
+            localStorage.setItem(cartKey, '[]');
+            localStorage.removeItem(noteKey);
+            try {
+                fetch('/api/cart', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify([])
+                }).catch(() => {});
+            } catch (e) {}
+
             if (typeof updateCartUI === 'function') updateCartUI();
 
             showToast('🎉 Thanh toán trực tuyến thành công! Đang chuyển hướng...');

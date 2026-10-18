@@ -19,9 +19,9 @@
     --danger-soft: #fee2e2;
     --success: #10b981;
     --success-soft: #d1fae5;
-    --radius-sm: 8px;
-    --radius-md: 14px;
-    --radius-lg: 20px;
+    --radius-sm: 0px;
+    --radius-md: 0px;
+    --radius-lg: 0px;
     --radius-full: 9999px;
     --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.04);
     --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
@@ -450,11 +450,11 @@ button, input {
 }
 
 .top-bar {
+    display: none !important;
     background: #110e38;
     color: #e2e8f0;
     font-size: 12px;
     padding: 7px 24px;
-    display: flex;
     justify-content: space-between;
     align-items: center;
 }
@@ -9993,3 +9993,266 @@ button, input {
 
 /* Ẩn nhãn vai trò (CUSTOMER) cạnh tên tài khoản trên header */
 .user-role-tag { display: none !important; }
+
+/* ==========================================================================
+   CHUYỂN TOÀN BỘ Ô BO GÓC TRÊN TRANG VỀ Ô VUÔNG (BORDER-RADIUS: 0)
+   NGOẠI TRỪ CÁC THÀNH PHẦN TRÊN THANH HEADER NAVBAR NHƯ ẢNH YÊU CẦU
+   ========================================================================== */
+
+/* 1. Tất cả thẻ, hộp, nút, ảnh, ô nhập, modal, banner chuyển sang ô vuông góc cạnh */
+.book-card,
+.book-cover,
+.book-cover-wrap,
+.banner-slider-container,
+.banner-img,
+.side-banner-card,
+.side-banner-img,
+.banner-nav-btn,
+.hero-card,
+.hero-tag,
+.hero-cta,
+.category-filter-bar,
+.category-pill,
+.category-card,
+.nav-cat-item,
+.badge-tag,
+.book-code,
+.modal-code,
+.btn-quickview,
+.btn-add-cart,
+.modal-dialog,
+.modal-close,
+.modal-book-cover,
+.modal-book-cover img,
+.modal-meta-grid,
+.modal-stock-badge,
+.modal-promo-box,
+.qty-control,
+.modal-qty-box,
+.btn-modal-cart,
+.btn-modal-add-cart,
+.btn-modal-buy-now,
+.cart-item-img,
+.btn-qty-mini,
+.btn-checkout,
+.cart-popover,
+.cart-popover-img,
+.cart-popover-qty-box,
+.btn-popover-checkout,
+.cart-prod-img,
+.cart-stepper,
+.cart-note-textarea,
+.btn-cart-page-checkout,
+.btn-empty-continue,
+.cart-table-card,
+.cart-summary-box,
+.toast,
+.alert,
+.form-input,
+.form-select,
+.btn-primary,
+.btn-secondary,
+.btn-save-profile,
+.btn-confirm-place-order,
+.btn-apply-voucher,
+.btn-order-search,
+.btn-order-primary,
+.btn-order-danger,
+.btn-order-outline,
+.btn-order-support,
+.btn-view-order,
+.btn-sim-success,
+.btn-sim-failure,
+.btn-action-home,
+.btn-action-viewcart,
+.btn-empty-ai,
+.btn-empty-reset,
+.btn-reset-filters,
+.btn-send-contact,
+.filter-select,
+.stock-pill,
+.filter-chip,
+.no-books-found,
+.chat-bubble,
+.chat-rec-card,
+.chat-rec-img,
+.chat-prompt-chip,
+.publisher-brand-badge .brand-tag,
+.detail-cover-card,
+.detail-cover-img,
+.detail-discount-badge,
+.quantity-stepper-box,
+.btn-action-add-cart,
+.btn-action-buy-now,
+.vinabook-service-card,
+.bookora-service-card,
+.featured-thumb-wrap,
+.featured-badge,
+.related-book-card,
+.related-cover-box,
+.related-badge,
+.stock-limit-modal,
+.stock-limit-close,
+.btn-stock-limit-ok,
+.checkout-alert-box,
+.checkout-card,
+.checkout-summary-card,
+.checkout-textarea,
+.payment-method-card,
+.pm-icon-wrap,
+.address-card-item,
+.address-empty-box,
+.btn-add-first-address,
+.btn-action-outline,
+.badge-default-addr,
+.payment-security-notice,
+.summary-item-thumb,
+.voucher-input,
+.voucher-chip,
+.applied-voucher-banner,
+.voucher-error-msg,
+.address-modal-dialog,
+.form-input-custom,
+.form-control-cust,
+.btn-modal-cancel,
+.btn-modal-save,
+.online-payment-modal,
+.online-countdown-box,
+.qr-image-frame,
+.qr-img,
+.transfer-info-card,
+.btn-copy-chip,
+.success-hero-card,
+.order-code-badge-wrap,
+.order-timeline-card,
+.order-info-card,
+.order-items-card,
+.badge-status-paid,
+.badge-status-pending,
+.badge-status-failed,
+.badge-status,
+.order-code-chip,
+.success-item-thumb,
+.order-status-nav,
+.order-status-tab,
+.order-search-input,
+.order-card,
+.order-card-status-badge,
+.order-item-img,
+.wishlist-popover,
+.wishlist-item,
+.wishlist-item img,
+.btn-detail-wishlist,
+.btn-wishlist-heart,
+.about-hero-box,
+.about-stat-item,
+.promo-ticket-card,
+.promo-code-badge,
+.btn-copy-promo,
+.contact-form-col,
+.contact-input-field,
+.contact-az-layout,
+.contact-az-input,
+.contact-az-map-card,
+.btn-contact-az-submit,
+.voucher-item-card,
+.btn-voucher-condition,
+.btn-voucher-copy,
+.promo-filter-chip,
+.voucher-modal,
+.profile-card,
+.profile-user-summary-card,
+.profile-card-header-icon,
+.tab-nav-btn,
+.login-container,
+.register-card,
+.brand-icon,
+.channel-card,
+.otp-modal-box,
+.otp-hint-banner,
+.otp-choice-box,
+.otp-input-field,
+.demo-otp-badge,
+.quick-pill,
+.search-suggestions-dropdown,
+.search-suggest-thumb,
+.promo-ticker-inner,
+.promo-ticker-title,
+.multi-filter-toolbar,
+.content-article-body,
+.content-highlight-box,
+.brand-stat-card,
+.commit-card-item,
+.commit-card-icon,
+.sidebar-widget-card,
+.sidebar-art-thumb,
+.company-showcase-figure,
+.btn-back-about,
+.article-category-badge,
+.article-featured-img,
+.article-quote-box,
+.article-book-cta,
+.article-book-cta-thumb,
+.btn-cta-view-detail,
+.sidebar-article-item,
+.contact-form-standalone,
+.btn-promo-more-top {
+    border-radius: 0 !important;
+}
+
+/* 2. CÁC MỤC TRÊN THANH HEADER GIỮ NGUYÊN BO GÓC NHƯ TRONG ẢNH MẪU */
+/* Logo Bookora (icon sách bo góc squircle) */
+.site-logo .logo-icon {
+    border-radius: 14px !important;
+}
+
+/* Khung tìm kiếm (ô bo góc nhẹ) & nút Tìm kiếm (ô vuông liền khối) */
+.search-form .search-input-wrap,
+.search-input-wrap {
+    border-radius: 4px !important;
+}
+.search-input {
+    border-radius: 0 !important;
+}
+.btn-search {
+    border-radius: 0 !important;
+}
+
+/* Biểu tượng Hotline hình tròn */
+.header-hotline .hotline-icon {
+    border-radius: 50% !important;
+}
+
+/* Nút Trái tim (Yêu thích) bo góc */
+.header-actions .btn-wishlist-toggle,
+.btn-wishlist-toggle,
+#btnWishlistToggle {
+    border-radius: 14px !important;
+}
+
+/* Nút Giỏ hàng (Túi xách) bo góc */
+.header-actions .btn-cart-toggle,
+.btn-cart-toggle,
+#btnCartToggle {
+    border-radius: 14px !important;
+}
+
+/* Huy hiệu số đếm màu đỏ trên nút giỏ hàng và nút yêu thích */
+.cart-badge,
+.wishlist-badge {
+    border-radius: 10px !important;
+}
+
+/* Khung tài khoản dạng viên thuốc (Pill) kèm ảnh đại diện tròn */
+.user-dropdown .user-profile-trigger {
+    border-radius: 9999px !important;
+}
+.user-dropdown .user-avatar-img {
+    border-radius: 50% !important;
+}
+
+/* Nút Đăng nhập/Đăng ký dạng viên thuốc nếu là khách */
+.guest-auth-buttons .btn-guest {
+    border-radius: 9999px !important;
+}
+

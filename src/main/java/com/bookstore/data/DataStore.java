@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -48,6 +49,7 @@ public class DataStore {
     private static final List<Category> memoryCategories = Collections.synchronizedList(new ArrayList<>());
     private static final List<Review> memoryReviews = Collections.synchronizedList(new ArrayList<>());
     private static final ConcurrentHashMap<String, List<OrderItem>> memoryCarts = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, Set<Integer>> memoryWishlists = new ConcurrentHashMap<>();
     private static int nextAddressId = 100;
     private static int nextOrderId = 100;
 
@@ -58,6 +60,8 @@ public class DataStore {
         ensureCategoryTableSchema();
         ensureReviewTableSchema();
         ensureChatbotConversationTables();
+        ensureCartTableSchema();
+        ensureWishlistTableSchema();
     }
 
     public static void ensureCategoryTableSchema() {
@@ -123,6 +127,46 @@ public class DataStore {
                     stmt.executeUpdate(sql);
                 } catch (SQLException ignored) {}
             }
+        } catch (SQLException ignored) {}
+    }
+
+    public static void ensureCartTableSchema() {
+        String sqlCart = "CREATE TABLE IF NOT EXISTS gio_hang ("
+                + "id INT AUTO_INCREMENT PRIMARY KEY, "
+                + "username VARCHAR(50) NOT NULL, "
+                + "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, "
+                + "updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, "
+                + "FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE"
+                + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+        String sqlCtCart = "CREATE TABLE IF NOT EXISTS ct_gio_hang ("
+                + "id INT AUTO_INCREMENT PRIMARY KEY, "
+                + "gio_hang_id INT NOT NULL, "
+                + "book_id INT NOT NULL, "
+                + "quantity INT NOT NULL DEFAULT 1, "
+                + "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, "
+                + "FOREIGN KEY (gio_hang_id) REFERENCES gio_hang(id) ON DELETE CASCADE, "
+                + "FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE"
+                + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+        try (Connection conn = DBContext.getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.executeUpdate(sqlCart);
+            stmt.executeUpdate(sqlCtCart);
+        } catch (SQLException ignored) {}
+    }
+
+    public static void ensureWishlistTableSchema() {
+        String sqlCreate = "CREATE TABLE IF NOT EXISTS yeu_thich ("
+                + "id INT AUTO_INCREMENT PRIMARY KEY, "
+                + "username VARCHAR(50) NOT NULL, "
+                + "book_id INT NOT NULL, "
+                + "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, "
+                + "UNIQUE KEY uq_user_book (username, book_id), "
+                + "FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE, "
+                + "FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE"
+                + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+        try (Connection conn = DBContext.getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.executeUpdate(sqlCreate);
         } catch (SQLException ignored) {}
     }
 
@@ -3151,6 +3195,202 @@ public class DataStore {
                 conn.setAutoCommit(true);
             }
         } catch (SQLException ignored) {}
+    }
+
+    /**
+     * Lấy danh sách sản phẩm trong giỏ hàng của người dùng (Bảng GIO_HANG & CT_GIO_HANG)
+     */
+    public static List<OrderItem> getCartByUsername(String username) {
+        if (username == null || username.trim().isEmpty()) return Collections.emptyList();
+        String cleanUser = username.trim().toLowerCase();
+        List<OrderItem> result = new ArrayList<>();
+
+        try (Connection conn = DBContext.getConnection()) {
+            String sql = "SELECT ct.id, ct.book_id, ct.quantity, " +
+                         "COALESCE(b.code, '') AS code, " +
+                         "COALESCE(b.title, 'Sách Bookora') AS title, " +
+                         "COALESCE(b.image, '') AS image, " +
+                         "COALESCE(b.price, 0) AS price, " +
+                         "COALESCE(b.author, '') AS author, " +
+                         "COALESCE(b.publisher, '') AS publisher, " +
+                         "COALESCE(b.category, '') AS category, " +
+                         "COALESCE(b.stock, 0) AS stock " +
+                         "FROM gio_hang gh " +
+                         "JOIN ct_gio_hang ct ON gh.id = ct.gio_hang_id " +
+                         "LEFT JOIN books b ON ct.book_id = b.id " +
+                         "WHERE LOWER(gh.username) = ? " +
+                         "ORDER BY ct.id ASC";
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, cleanUser);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        int bookId = rs.getInt("book_id");
+                        int quantity = rs.getInt("quantity");
+                        String code = rs.getString("code");
+                        String title = rs.getString("title");
+                        String image = rs.getString("image");
+                        double price = rs.getDouble("price");
+                        OrderItem item = new OrderItem(bookId, code, title, image, price, quantity);
+                        item.setId(rs.getInt("id"));
+                        result.add(item);
+                    }
+                }
+            }
+            if (!result.isEmpty()) {
+                memoryCarts.put(cleanUser, new ArrayList<>(result));
+                return result;
+            }
+        } catch (SQLException ignored) {}
+
+        // Dự phòng lấy từ bộ nhớ nếu DB chưa có hoặc lỗi kết nối
+        List<OrderItem> mem = memoryCarts.get(cleanUser);
+        if (mem != null) {
+            for (OrderItem oi : mem) {
+                Book b = getBookById(oi.getBookId());
+                if (b != null) {
+                    if (oi.getBookTitle() == null || oi.getBookTitle().isEmpty()) oi.setBookTitle(b.getTitle());
+                    if (oi.getBookImage() == null || oi.getBookImage().isEmpty()) oi.setBookImage(b.getImage());
+                    if (oi.getBookCode() == null || oi.getBookCode().isEmpty()) oi.setBookCode(b.getCode());
+                    if (oi.getPrice() <= 0) oi.setPrice(b.getPrice());
+                }
+            }
+            return new ArrayList<>(mem);
+        }
+        return Collections.emptyList();
+    }
+
+    /**
+     * Lấy danh sách sách yêu thích của người dùng (Bảng YEU_THICH)
+     */
+    public static List<Book> getWishlistByUsername(String username) {
+        if (username == null || username.trim().isEmpty()) return Collections.emptyList();
+        String cleanUser = username.trim().toLowerCase();
+        List<Book> list = new ArrayList<>();
+        Set<Integer> bookIds = new LinkedHashSet<>();
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(
+                     "SELECT book_id FROM yeu_thich WHERE LOWER(username) = ? ORDER BY id DESC")) {
+            ps.setString(1, cleanUser);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    bookIds.add(rs.getInt("book_id"));
+                }
+            }
+        } catch (SQLException ignored) {}
+
+        if (bookIds.isEmpty()) {
+            Set<Integer> mem = memoryWishlists.get(cleanUser);
+            if (mem != null) {
+                bookIds.addAll(mem);
+            }
+        } else {
+            memoryWishlists.put(cleanUser, new HashSet<>(bookIds));
+        }
+
+        for (int bid : bookIds) {
+            Book b = getBookById(bid);
+            if (b != null) {
+                list.add(b);
+            }
+        }
+        return list;
+    }
+
+    /**
+     * Thêm / Bỏ sách trong danh sách yêu thích của người dùng
+     * @return true nếu sau khi thao tác sách đang nằm trong danh sách yêu thích, false nếu đã bị bỏ
+     */
+    public static synchronized boolean toggleWishlist(String username, int bookId) {
+        if (username == null || username.trim().isEmpty() || bookId <= 0) return false;
+        String cleanUser = username.trim().toLowerCase();
+        boolean nowInWishlist = false;
+
+        try (Connection conn = DBContext.getConnection()) {
+            boolean exists = false;
+            try (PreparedStatement psCheck = conn.prepareStatement("SELECT id FROM yeu_thich WHERE LOWER(username) = ? AND book_id = ?")) {
+                psCheck.setString(1, cleanUser);
+                psCheck.setInt(2, bookId);
+                try (ResultSet rs = psCheck.executeQuery()) {
+                    exists = rs.next();
+                }
+            }
+
+            if (exists) {
+                try (PreparedStatement psDel = conn.prepareStatement("DELETE FROM yeu_thich WHERE LOWER(username) = ? AND book_id = ?")) {
+                    psDel.setString(1, cleanUser);
+                    psDel.setInt(2, bookId);
+                    psDel.executeUpdate();
+                }
+                nowInWishlist = false;
+            } else {
+                try (PreparedStatement psIns = conn.prepareStatement("INSERT INTO yeu_thich (username, book_id) VALUES (?, ?)")) {
+                    psIns.setString(1, cleanUser);
+                    psIns.setInt(2, bookId);
+                    psIns.executeUpdate();
+                }
+                nowInWishlist = true;
+            }
+        } catch (SQLException ignored) {
+            Set<Integer> set = memoryWishlists.computeIfAbsent(cleanUser, k -> ConcurrentHashMap.newKeySet());
+            if (set.contains(bookId)) {
+                set.remove(bookId);
+                nowInWishlist = false;
+            } else {
+                set.add(bookId);
+                nowInWishlist = true;
+            }
+            return nowInWishlist;
+        }
+
+        Set<Integer> set = memoryWishlists.computeIfAbsent(cleanUser, k -> ConcurrentHashMap.newKeySet());
+        if (nowInWishlist) {
+            set.add(bookId);
+        } else {
+            set.remove(bookId);
+        }
+        return nowInWishlist;
+    }
+
+    /**
+     * Xóa sách khỏi danh sách yêu thích
+     */
+    public static synchronized boolean removeFromWishlist(String username, int bookId) {
+        if (username == null || username.trim().isEmpty() || bookId <= 0) return false;
+        String cleanUser = username.trim().toLowerCase();
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement("DELETE FROM yeu_thich WHERE LOWER(username) = ? AND book_id = ?")) {
+            ps.setString(1, cleanUser);
+            ps.setInt(2, bookId);
+            ps.executeUpdate();
+        } catch (SQLException ignored) {}
+
+        Set<Integer> set = memoryWishlists.get(cleanUser);
+        if (set != null) {
+            set.remove(bookId);
+        }
+        return true;
+    }
+
+    /**
+     * Kiểm tra sách có nằm trong danh sách yêu thích của người dùng không
+     */
+    public static boolean isInWishlist(String username, int bookId) {
+        if (username == null || username.trim().isEmpty() || bookId <= 0) return false;
+        String cleanUser = username.trim().toLowerCase();
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement("SELECT id FROM yeu_thich WHERE LOWER(username) = ? AND book_id = ?")) {
+            ps.setString(1, cleanUser);
+            ps.setInt(2, bookId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return true;
+            }
+        } catch (SQLException ignored) {}
+
+        Set<Integer> set = memoryWishlists.get(cleanUser);
+        return set != null && set.contains(bookId);
     }
 
     // =========================================================================

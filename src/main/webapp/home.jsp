@@ -28,28 +28,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trang Chủ - Bookora | Tiệm Sách Tri Thức</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css?v=20261018_square">
 </head>
 <body>
 
     <!-- 1. HEADER & NAVIGATION -->
     <header class="main-header">
-        <div class="top-bar">
-            <div class="topbar-contact-info">
-                <span><i class="fas fa-phone"></i> 028.73008182</span>
-                <span><i class="fas fa-envelope"></i> hotro@bookora.com</span>
-                <span><i class="fas fa-location-dot"></i> Số 25, ngõ 68 phố Cầu Giấy, phường Quan Hoa, quận Cầu Giấy, TP. Hà Nội</span>
-            </div>
-            <div class="topbar-auth-links">
-            <% if (isLoggedIn) { %>
-                <span class="topbar-welcome"><i class="fas fa-circle-user"></i> Xin chào, <strong><%= currentUser.getFullName() %></strong></span>
-                <span class="topbar-divider">|</span>
-                <a href="${pageContext.request.contextPath}/logout" class="topbar-auth-btn"><i class="fas fa-arrow-right-from-bracket"></i> ĐĂNG XUẤT</a>
-            <% } else { %>
-                <span style="color: #cbd5e1;"><i class="fas fa-truck-fast"></i> Miễn phí vận chuyển từ 250.000 đ</span>
-            <% } %>
-            </div>
-        </div>
 
         <div class="navbar-container">
             <!-- Logo -->

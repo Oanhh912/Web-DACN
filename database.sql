@@ -236,6 +236,18 @@ CREATE TABLE `ct_gio_hang` (
     FOREIGN KEY (`book_id`) REFERENCES `books`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 9.5 BẢNG SÁCH YÊU THÍCH (YEU_THICH)
+DROP TABLE IF EXISTS `yeu_thich`;
+CREATE TABLE `yeu_thich` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `username` VARCHAR(50) NOT NULL,
+    `book_id` INT NOT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY `uq_user_book` (`username`, `book_id`),
+    FOREIGN KEY (`username`) REFERENCES `users`(`username`) ON DELETE CASCADE,
+    FOREIGN KEY (`book_id`) REFERENCES `books`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- 10. BẢNG ĐƠN HÀNG (DON_HANG - Bước 6 trong luồng đặt hàng)
 DROP TABLE IF EXISTS `don_hang`;
 CREATE TABLE `don_hang` (

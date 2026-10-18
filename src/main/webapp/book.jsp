@@ -32,66 +32,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= book != null ? book.getTitle() : "Chi Tiết Sách" %> - Bookora | Tiệm Sách Tri Thức</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/css/style.css?v=20260927_07">
+    <link rel="stylesheet" href="/css/style.css?v=20261018_square">
 </head>
 <body class="book-detail-page">
 
     <!-- 1. HEADER & NAVIGATION -->
     <header class="main-header">
-        <div class="top-bar">
-            <div class="topbar-contact-info">
-                <span><i class="fas fa-phone"></i> 028.73008182</span>
-                <span><i class="fas fa-envelope"></i> hotro@bookora.com</span>
-                <span><i class="fas fa-location-dot"></i> Số 25, ngõ 68 phố Cầu Giấy, TP. Hà Nội</span>
-            </div>
-            <% if (currentUser != null) { %>
-                <div class="topbar-auth-links">
-                    <span class="topbar-welcome"><i class="fas fa-circle-user"></i> Xin chào, <strong><%= currentUser.getFullName() %></strong></span>
-                    <span class="topbar-divider">|</span>
-                    <a href="logout" class="topbar-auth-btn"><i class="fas fa-arrow-right-from-bracket"></i> ĐĂNG XUẤT</a>
-                </div>
-            <% } else { %>
-                <div class="topbar-auth-links">
-                    <span style="color: #cbd5e1;"><i class="fas fa-truck-fast"></i> Miễn phí vận chuyển từ 250.000 đ</span>
-                </div>
-            <% } %>
-        </div>
-
-        <div class="navbar-container">
-            <!-- Logo -->
-            <a href="home" class="site-logo">
-                <div class="logo-icon">
-                    <i class="fas fa-book-bookmark"></i>
-                </div>
-                <div class="logo-text">
-                    <h1>Bookora</h1>
-                    <span>Tiệm Sách Tri Thức</span>
-                </div>
-            </a>
-
-            <!-- Thanh tìm kiếm sách -->
-            <form action="home" method="GET" class="search-form" id="searchForm">
-                <div class="search-input-wrap">
-                    <input type="text" id="searchInput" name="q" class="search-input" 
-                           placeholder="Tìm kiếm theo tựa sách, tác giả, NXB..." 
-                           autocomplete="off">
-                    <button type="submit" class="btn-search" id="btnSearchSubmit" title="Tìm kiếm">
-                        Tìm kiếm
-                    </button>
-                </div>
-                <div class="search-suggestions-dropdown" id="searchSuggestionsDropdown"></div>
-            </form>
-
-            <!-- Hotline tư vấn -->
-            <div class="header-hotline">
-                <div class="hotline-icon">
-                    <i class="fas fa-phone-volume"></i>
-                </div>
-                <div class="hotline-text">
-                    <small>Tư vấn bán hàng</small>
-                    <strong>028.73008182</strong>
-                </div>
-            </div>
 
             <!-- Khối hành động: Giỏ hàng & User Profile -->
             <div class="header-actions">

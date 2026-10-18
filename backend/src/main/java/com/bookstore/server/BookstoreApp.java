@@ -96,6 +96,10 @@ public class BookstoreApp {
         server.createContext("/api/suggestions", new ApiSuggestionsHandler());
         server.createContext("/api/chatbot", new ApiChatbotHandler());
         server.createContext("/api/me", new ApiMeHandler());
+        server.createContext("/api/cart", new ApiCartHandler());
+        server.createContext("/api/wishlist", new ApiWishlistHandler());
+        server.createContext("/api/wishlist/toggle", new ApiWishlistToggleHandler());
+        server.createContext("/api/wishlist/remove", new ApiWishlistRemoveHandler());
         server.createContext("/api/send-otp", new SendOtpHandler());
         server.createContext("/api/verify-otp", new VerifyOtpHandler());
         server.createContext("/api/forgot-password/send-otp", new ApiForgotPasswordSendOtpHandler());
@@ -4873,11 +4877,11 @@ public class BookstoreApp {
         public void handle(HttpExchange exchange) throws IOException {
             User user = getAuthenticatedUser(exchange);
             if (user == null) {
-                sendResponse(exchange, 401, "application/json", "{\"error\":\"Unauthorized\"}");
+                sendResponse(exchange, 401, "application/json", "{\"success\":false,\"error\":\"Unauthorized\"}");
                 return;
             }
             String json = String.format(
-                    "{\"username\":%s,\"fullName\":%s,\"email\":%s,\"role\":%s,\"avatar\":%s}",
+                    "{\"success\":true,\"username\":%s,\"fullName\":%s,\"email\":%s,\"role\":%s,\"avatar\":%s}",
                     escapeJson(user.getUsername()),
                     escapeJson(user.getFullName()),
                     escapeJson(user.getEmail()),
@@ -4885,6 +4889,189 @@ public class BookstoreApp {
                     escapeJson(user.getAvatar())
             );
             sendResponse(exchange, 200, "application/json; charset=UTF-8", json);
+        }
+    }
+
+    /**
+     * API Giỏ hàng riêng biệt theo từng tài khoản (/api/cart)
+     * GET: Lấy danh sách sản phẩm trong giỏ của người dùng đang đăng nhập
+     * POST: Lưu/đồng bộ toàn bộ giỏ hàng của người dùng đang đăng nhập
+     * DELETE: Xóa sạch giỏ hàng của người dùng đang đăng nhập
+     */
+    static class ApiCartHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            String method = exchange.getRequestMethod();
+            User user = getAuthenticatedUser(exchange);
+
+            if ("GET".equalsIgnoreCase(method)) {
+                if (user == null) {
+                    sendResponse(exchange, 200, "application/json; charset=UTF-8", "{\"success\":true,\"guest\":true,\"items\":[]}");
+                    return;
+                }
+                List<OrderItem> items = DataStore.getCartByUsername(user.getUsername());
+                StringBuilder sb = new StringBuilder("{\"success\":true,\"username\":");
+                sb.append(escapeJson(user.getUsername())).append(",\"items\":[");
+                for (int i = 0; i < items.size(); i++) {
+                    OrderItem it = items.get(i);
+                    Book b = DataStore.getBookById(it.getBookId());
+                    int stock = (b != null) ? b.getStock() : 10;
+                    String author = (b != null) ? b.getAuthor() : "";
+                    String publisher = (b != null) ? b.getPublisher() : "";
+                    String category = (b != null) ? b.getCategory() : "";
+                    if (i > 0) sb.append(",");
+                    sb.append(String.format(Locale.US,
+                        "{\"id\":%d,\"code\":%s,\"title\":%s,\"image\":%s,\"price\":%.0f,\"quantity\":%d,\"stock\":%d,\"author\":%s,\"publisher\":%s,\"category\":%s}",
+                        it.getBookId(),
+                        escapeJson(it.getBookCode() != null ? it.getBookCode() : ""),
+                        escapeJson(it.getBookTitle() != null ? it.getBookTitle() : ""),
+                        escapeJson(it.getBookImage() != null ? it.getBookImage() : ""),
+                        it.getPrice(),
+                        it.getQuantity(),
+                        stock,
+                        escapeJson(author),
+                        escapeJson(publisher),
+                        escapeJson(category)
+                    ));
+                }
+                sb.append("]}");
+                sendResponse(exchange, 200, "application/json; charset=UTF-8", sb.toString());
+
+            } else if ("POST".equalsIgnoreCase(method)) {
+                if (user == null) {
+                    sendResponse(exchange, 401, "application/json; charset=UTF-8", "{\"success\":false,\"needLogin\":true,\"message\":\"Vui lòng đăng nhập!\"}");
+                    return;
+                }
+                String body = readRequestBody(exchange);
+                List<OrderItemReq> reqs = extractOrderItems(body);
+                List<OrderItem> cartItems = new ArrayList<>();
+                for (OrderItemReq req : reqs) {
+                    Book b = DataStore.getBookById(req.bookId);
+                    if (b != null) {
+                        OrderItem oi = new OrderItem(b.getId(), b.getCode(), b.getTitle(), b.getImage(), b.getPrice(), req.quantity);
+                        cartItems.add(oi);
+                    }
+                }
+                DataStore.syncCartToDb(user.getUsername(), cartItems);
+                sendResponse(exchange, 200, "application/json; charset=UTF-8",
+                        String.format(Locale.US, "{\"success\":true,\"count\":%d}", cartItems.size()));
+
+            } else if ("DELETE".equalsIgnoreCase(method)) {
+                if (user != null) {
+                    DataStore.syncCartToDb(user.getUsername(), Collections.emptyList());
+                }
+                sendResponse(exchange, 200, "application/json; charset=UTF-8", "{\"success\":true}");
+            } else {
+                sendResponse(exchange, 405, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Method Not Allowed\"}");
+            }
+        }
+    }
+
+    /**
+     * API Danh sách yêu thích riêng biệt theo từng tài khoản (/api/wishlist)
+     * GET: Lấy danh sách sách yêu thích của người dùng đang đăng nhập
+     * DELETE: Xóa sách khỏi yêu thích
+     */
+    static class ApiWishlistHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            String method = exchange.getRequestMethod();
+            User user = getAuthenticatedUser(exchange);
+
+            if ("GET".equalsIgnoreCase(method)) {
+                if (user == null) {
+                    sendResponse(exchange, 200, "application/json; charset=UTF-8", "{\"success\":true,\"guest\":true,\"items\":[]}");
+                    return;
+                }
+                List<Book> books = DataStore.getWishlistByUsername(user.getUsername());
+                StringBuilder sb = new StringBuilder("{\"success\":true,\"username\":");
+                sb.append(escapeJson(user.getUsername())).append(",\"items\":[");
+                for (int i = 0; i < books.size(); i++) {
+                    Book b = books.get(i);
+                    if (i > 0) sb.append(",");
+                    sb.append(String.format(Locale.US,
+                        "{\"id\":%d,\"code\":%s,\"title\":%s,\"image\":%s,\"price\":%s,\"priceNum\":%.0f,\"author\":%s,\"stock\":%d}",
+                        b.getId(),
+                        escapeJson(b.getCode()),
+                        escapeJson(b.getTitle()),
+                        escapeJson(b.getImage()),
+                        escapeJson(b.getFormattedPrice()),
+                        b.getPrice(),
+                        escapeJson(b.getAuthor()),
+                        b.getStock()
+                    ));
+                }
+                sb.append("]}");
+                sendResponse(exchange, 200, "application/json; charset=UTF-8", sb.toString());
+
+            } else if ("DELETE".equalsIgnoreCase(method)) {
+                if (user == null) {
+                    sendResponse(exchange, 401, "application/json; charset=UTF-8", "{\"success\":false,\"needLogin\":true}");
+                    return;
+                }
+                String body = readRequestBody(exchange);
+                int bookId = extractJsonInt(body, "bookId", 0);
+                if (bookId <= 0) bookId = extractJsonInt(body, "id", 0);
+                DataStore.removeFromWishlist(user.getUsername(), bookId);
+                int count = DataStore.getWishlistByUsername(user.getUsername()).size();
+                sendResponse(exchange, 200, "application/json; charset=UTF-8", String.format(Locale.US, "{\"success\":true,\"count\":%d}", count));
+            } else {
+                sendResponse(exchange, 405, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Method Not Allowed\"}");
+            }
+        }
+    }
+
+    /**
+     * API Thêm/bớt sách vào danh sách yêu thích (/api/wishlist/toggle)
+     */
+    static class ApiWishlistToggleHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendResponse(exchange, 405, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Method Not Allowed\"}");
+                return;
+            }
+            User user = getAuthenticatedUser(exchange);
+            if (user == null) {
+                sendResponse(exchange, 401, "application/json; charset=UTF-8", "{\"success\":false,\"needLogin\":true,\"message\":\"Vui lòng đăng nhập để lưu sách yêu thích!\"}");
+                return;
+            }
+            String body = readRequestBody(exchange);
+            int bookId = extractJsonInt(body, "bookId", 0);
+            if (bookId <= 0) bookId = extractJsonInt(body, "id", 0);
+            if (bookId <= 0) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Thiếu bookId hợp lệ!\"}");
+                return;
+            }
+            boolean active = DataStore.toggleWishlist(user.getUsername(), bookId);
+            int count = DataStore.getWishlistByUsername(user.getUsername()).size();
+            sendResponse(exchange, 200, "application/json; charset=UTF-8",
+                    String.format(Locale.US, "{\"success\":true,\"active\":%b,\"count\":%d}", active, count));
+        }
+    }
+
+    /**
+     * API Xóa sách khỏi danh sách yêu thích (/api/wishlist/remove)
+     */
+    static class ApiWishlistRemoveHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendResponse(exchange, 405, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Method Not Allowed\"}");
+                return;
+            }
+            User user = getAuthenticatedUser(exchange);
+            if (user == null) {
+                sendResponse(exchange, 401, "application/json; charset=UTF-8", "{\"success\":false,\"needLogin\":true}");
+                return;
+            }
+            String body = readRequestBody(exchange);
+            int bookId = extractJsonInt(body, "bookId", 0);
+            if (bookId <= 0) bookId = extractJsonInt(body, "id", 0);
+            DataStore.removeFromWishlist(user.getUsername(), bookId);
+            int count = DataStore.getWishlistByUsername(user.getUsername()).size();
+            sendResponse(exchange, 200, "application/json; charset=UTF-8",
+                    String.format(Locale.US, "{\"success\":true,\"count\":%d}", count));
         }
     }
 
@@ -5006,7 +5193,7 @@ public class BookstoreApp {
         content = content.replace("${user.avatar}", escapeAttr(user.getAvatar() != null ? user.getAvatar() : "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150"));
         content = content.replace("${activeTab}", (activeTab != null && !activeTab.isEmpty()) ? activeTab : "profile");
 
-        return content;
+        return injectCurrentUserScript(content, user);
     }
 
     private static String renderCartPage(User user) {
@@ -5100,7 +5287,7 @@ public class BookstoreApp {
         }
 
         content = content.replace("${searchKeyword}", "");
-        return content;
+        return injectCurrentUserScript(content, user);
     }
 
     private static String renderContentPage(String templateFileName, User user) {
@@ -5194,7 +5381,7 @@ public class BookstoreApp {
         }
 
         content = content.replace("${searchKeyword}", "");
-        return content;
+        return injectCurrentUserScript(content, user);
     }
 
     private static String renderBookDetailPage(User user, int bookId) {
@@ -5487,7 +5674,7 @@ public class BookstoreApp {
         }
 
         content = content.replace("${searchKeyword}", "");
-        return content;
+        return injectCurrentUserScript(content, user);
     }
 
     private static String renderCategoryPage(User user, String categoryName, String sortOrder) {
@@ -5719,7 +5906,7 @@ public class BookstoreApp {
         String selectedSort = (sortOrder != null) ? sortOrder : "newest";
         content = content.replace("value=\"" + selectedSort + "\"", "value=\"" + selectedSort + "\" selected");
 
-        return content;
+        return injectCurrentUserScript(content, user);
     }
 
     private static String renderHomePage(User user, List<Book> books, List<String> categories, String selectedCat, String keyword) {
@@ -5984,10 +6171,27 @@ public class BookstoreApp {
         content = content.replace("<!-- ${BOOK_GRID} -->", booksHtml.toString());
         content = content.replace("${bookCount}", String.valueOf(books.size()));
 
-        return content;
+        return injectCurrentUserScript(content, user);
     }
 
     // ====================== UTILITY FUNCTIONS ======================
+
+    private static String injectCurrentUserScript(String content, User user) {
+        if (content == null) return "";
+        String script = "<script>\n" +
+                "  window.CURRENT_USER = " + (user != null 
+                    ? String.format("{\"username\":%s,\"fullName\":%s,\"role\":%s,\"email\":%s}", 
+                        escapeJson(user.getUsername()), 
+                        escapeJson(user.getFullName()), 
+                        escapeJson(user.getRole()),
+                        escapeJson(user.getEmail() != null ? user.getEmail() : ""))
+                    : "null") + ";\n" +
+                "</script>";
+        if (content.contains("</head>")) {
+            return content.replace("</head>", script + "\n</head>");
+        }
+        return script + "\n" + content;
+    }
 
     private static User getAuthenticatedUser(HttpExchange exchange) {
         String token = getSessionToken(exchange);

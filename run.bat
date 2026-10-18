@@ -21,10 +21,7 @@ if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
 
 echo [1/3] Dang bien dich ma nguon Java...
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-  "$files = Get-ChildItem -Path '%BACKEND_SRC%' -Recurse -Filter '*.java' | Select-Object -ExpandProperty FullName; ^
-   $args = @('-encoding','UTF-8','-cp','%BACKEND_LIB%\servlet-api.jar;%BACKEND_LIB%\mysql-connector-j.jar','-d','%BUILD_DIR%') + $files; ^
-   & javac @args; exit $LASTEXITCODE"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0compile.ps1"
 
 if %ERRORLEVEL% NEQ 0 (
     echo.
@@ -50,7 +47,6 @@ echo   oanh       / 123456   (Khach Hang)
 echo   khachhang  / 123456   (Khach Hang)
 echo =======================================================================
 
-java -cp "%BUILD_DIR%;%BACKEND_LIB%\servlet-api.jar;%BACKEND_LIB%\mysql-connector-j.jar" ^
-     com.bookstore.server.BookstoreApp
+java -cp "%BUILD_DIR%;%BACKEND_LIB%\servlet-api.jar;%BACKEND_LIB%\mysql-connector-j.jar" com.bookstore.server.BookstoreApp
 
 pause
