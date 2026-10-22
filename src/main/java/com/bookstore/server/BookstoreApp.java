@@ -113,6 +113,12 @@ public class BookstoreApp {
         server.createContext("/api/payment/confirm-online", new ApiConfirmOnlinePaymentHandler());
         server.createContext("/api/orders/detail", new ApiGetOrderDetailHandler());
         server.createContext("/api/orders/my-orders", new ApiMyOrdersHandler());
+        server.createContext("/api/orders/cancel", new ApiCustomerOrderCancelHandler());
+        server.createContext("/api/admin/orders", new ApiAdminOrdersHandler());
+        server.createContext("/api/admin/orders/detail", new ApiAdminOrderDetailHandler());
+        server.createContext("/api/admin/orders/confirm", new ApiAdminOrderConfirmHandler());
+        server.createContext("/api/admin/orders/update-status", new ApiAdminOrderStatusHandler());
+        server.createContext("/api/admin/orders/cancel", new ApiAdminOrderCancelHandler());
         server.createContext("/api/upload-avatar", new ApiUploadAvatarHandler());
 
         // API Đánh giá & Phản hồi Sách (Book Reviews & Rating)
@@ -154,6 +160,7 @@ public class BookstoreApp {
         server.createContext("/db", new DatabaseViewerHandler());
         server.createContext("/admin", new AdminHandler());
         server.createContext("/admin/books", new AdminHandler());
+        server.createContext("/admin/orders", new AdminHandler());
         server.createContext("/admin/customers", new AdminHandler());
         server.createContext("/admin/categories", new AdminHandler());
         server.createContext("/admin/promotions", new AdminHandler());
@@ -358,6 +365,8 @@ public class BookstoreApp {
             String fileName = "index.html";
             if (path.equals("/admin/books")) {
                 fileName = "books.html";
+            } else if (path.equals("/admin/orders")) {
+                fileName = "orders.html";
             } else if (path.equals("/admin/customers")) {
                 fileName = "customers.html";
             } else if (path.equals("/admin/categories")) {
@@ -1540,9 +1549,10 @@ public class BookstoreApp {
             }
             itemsJson.append("]");
 
-            String json = String.format("{\"success\":true,\"order\":{\"id\":%d,\"orderCode\":%s,\"recipientName\":%s,\"recipientPhone\":%s,\"deliveryAddress\":%s,\"voucherCode\":%s,\"subtotal\":%.0f,\"discountAmount\":%.0f,\"shippingFee\":%.0f,\"totalAmount\":%.0f,\"formattedSubtotal\":%s,\"formattedDiscount\":%s,\"formattedShipping\":%s,\"formattedTotal\":%s,\"paymentMethodCode\":%s,\"paymentMethodName\":%s,\"paymentStatus\":%s,\"orderStatus\":%s,\"note\":%s,\"transactionId\":%s,\"createdAt\":%s,\"items\":%s}}",
+            String json = String.format("{\"success\":true,\"order\":{\"id\":%d,\"orderCode\":%s,\"username\":%s,\"recipientName\":%s,\"recipientPhone\":%s,\"deliveryAddress\":%s,\"voucherCode\":%s,\"subtotal\":%.0f,\"discountAmount\":%.0f,\"shippingFee\":%.0f,\"totalAmount\":%.0f,\"formattedSubtotal\":%s,\"formattedDiscount\":%s,\"formattedShipping\":%s,\"formattedTotal\":%s,\"paymentMethodCode\":%s,\"paymentMethodName\":%s,\"paymentStatus\":%s,\"orderStatus\":%s,\"orderStatusText\":%s,\"note\":%s,\"cancelReason\":%s,\"transactionId\":%s,\"createdAt\":%s,\"items\":%s}}",
                     order.getId(),
                     escapeJson(order.getOrderCode()),
+                    escapeJson(order.getUsername()),
                     escapeJson(order.getRecipientName()),
                     escapeJson(order.getRecipientPhone()),
                     escapeJson(order.getDeliveryAddress()),
@@ -1559,7 +1569,9 @@ public class BookstoreApp {
                     escapeJson(order.getPaymentMethodName()),
                     escapeJson(order.getPaymentStatus()),
                     escapeJson(order.getOrderStatus()),
+                    escapeJson(order.getOrderStatusText()),
                     escapeJson(order.getNote() != null ? order.getNote() : ""),
+                    escapeJson(order.getCancelReason()),
                     escapeJson(order.getTransactionId() != null ? order.getTransactionId() : ""),
                     escapeJson(order.getCreatedAt()),
                     itemsJson.toString()
@@ -1591,7 +1603,7 @@ public class BookstoreApp {
                 sb.append(String.format(
                     "{\"id\":%d,\"orderCode\":%s,\"recipientName\":%s,\"recipientPhone\":%s," +
                     "\"deliveryAddress\":%s,\"subtotal\":%.0f,\"discountAmount\":%.0f,\"shippingFee\":%.0f,\"totalAmount\":%.0f,\"formattedTotal\":%s," +
-                    "\"paymentMethodName\":%s,\"paymentStatus\":%s,\"orderStatus\":%s,\"createdAt\":%s,\"items\":[",
+                    "\"paymentMethodCode\":%s,\"paymentMethodName\":%s,\"paymentStatus\":%s,\"orderStatus\":%s,\"orderStatusText\":%s,\"note\":%s,\"cancelReason\":%s,\"createdAt\":%s,\"items\":[",
                     o.getId(),
                     escapeJson(o.getOrderCode()),
                     escapeJson(o.getRecipientName()),
@@ -1602,9 +1614,13 @@ public class BookstoreApp {
                     o.getShippingFee(),
                     o.getTotalAmount(),
                     escapeJson(o.getFormattedTotal()),
+                    escapeJson(o.getPaymentMethodCode()),
                     escapeJson(o.getPaymentMethodName()),
                     escapeJson(o.getPaymentStatus()),
                     escapeJson(o.getOrderStatus()),
+                    escapeJson(o.getOrderStatusText()),
+                    escapeJson(o.getNote() != null ? o.getNote() : ""),
+                    escapeJson(o.getCancelReason()),
                     escapeJson(o.getCreatedAt())
                 ));
                 List<OrderItem> items = o.getItems();
@@ -1630,6 +1646,308 @@ public class BookstoreApp {
             sb.append("]}");
 
             sendResponse(exchange, 200, "application/json; charset=UTF-8", sb.toString());
+        }
+    }
+
+    /**
+     * API Khách hàng yêu cầu hủy đơn hàng (/api/orders/cancel)
+     * - Chỉ hủy được đơn hàng của chính tài khoản đang đăng nhập
+     * - Chỉ hủy được khi đơn ở trạng thái CHO_XAC_NHAN
+     * - Thông báo thành công: "Đơn hàng đã được hủy thành công."
+     * - Thông báo lỗi: "Không thể hủy đơn hàng ở trạng thái hiện tại."
+     */
+    static class ApiCustomerOrderCancelHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendResponse(exchange, 405, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Method Not Allowed\"}");
+                return;
+            }
+
+            User user = getAuthenticatedUser(exchange);
+            if (user == null) {
+                sendResponse(exchange, 401, "application/json; charset=UTF-8", "{\"success\":false,\"needLogin\":true,\"message\":\"Vui lòng đăng nhập!\"}");
+                return;
+            }
+
+            String body = readRequestBody(exchange);
+            String orderCode = extractJsonString(body, "orderCode");
+            String reason = extractJsonString(body, "reason");
+            if (orderCode == null || orderCode.trim().isEmpty()) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Thiếu mã đơn hàng!\"}");
+                return;
+            }
+
+            DataStore.OrderResult result = DataStore.cancelOrder(orderCode, user.getUsername(), false, reason);
+            int statusCode = result.isSuccess() ? 200 : 400;
+            sendResponse(exchange, statusCode, "application/json; charset=UTF-8",
+                    String.format("{\"success\":%b,\"message\":%s}", result.isSuccess(), escapeJson(result.getMessage())));
+        }
+    }
+
+    /**
+     * API Admin: Lấy danh sách đơn hàng phân trang, tìm kiếm & bộ lọc (/api/admin/orders)
+     */
+    static class ApiAdminOrdersHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendResponse(exchange, 405, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Method Not Allowed\"}");
+                return;
+            }
+
+            User user = getAuthenticatedUser(exchange);
+            if (user == null || !"ADMIN".equalsIgnoreCase(user.getRole())) {
+                sendResponse(exchange, 403, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Bạn không có quyền truy cập chức năng này!\"}");
+                return;
+            }
+
+            String query = exchange.getRequestURI().getQuery();
+            String search = "";
+            String status = "ALL";
+            String fromDate = "";
+            String toDate = "";
+            int page = 1;
+            int limit = 10;
+
+            if (query != null) {
+                Map<String, String> qp = parseQueryString(query);
+                search = qp.getOrDefault("search", "").trim();
+                status = qp.getOrDefault("status", "ALL").trim();
+                fromDate = qp.getOrDefault("fromDate", "").trim();
+                toDate = qp.getOrDefault("toDate", "").trim();
+                try {
+                    if (qp.containsKey("page")) page = Integer.parseInt(qp.get("page").trim());
+                    if (qp.containsKey("limit")) limit = Integer.parseInt(qp.get("limit").trim());
+                } catch (NumberFormatException ignored) {}
+            }
+
+            DataStore.OrderPageResult pageResult = DataStore.getAdminOrders(search, status, fromDate, toDate, page, limit);
+
+            StringBuilder sb = new StringBuilder();
+            sb.append(String.format("{\"success\":true,\"total\":%d,\"totalPages\":%d,\"currentPage\":%d,\"pageSize\":%d,\"orders\":[",
+                    pageResult.getTotalOrders(), pageResult.getTotalPages(), pageResult.getCurrentPage(), pageResult.getPageSize()));
+
+            List<Order> orders = pageResult.getOrders();
+            for (int i = 0; i < orders.size(); i++) {
+                Order o = orders.get(i);
+                if (i > 0) sb.append(",");
+                sb.append(String.format(
+                    "{\"id\":%d,\"orderCode\":%s,\"username\":%s,\"recipientName\":%s,\"recipientPhone\":%s," +
+                    "\"deliveryAddress\":%s,\"subtotal\":%.0f,\"discountAmount\":%.0f,\"shippingFee\":%.0f," +
+                    "\"totalAmount\":%.0f,\"formattedTotal\":%s,\"paymentMethodCode\":%s,\"paymentMethodName\":%s," +
+                    "\"paymentStatus\":%s,\"orderStatus\":%s,\"orderStatusText\":%s,\"note\":%s,\"cancelReason\":%s," +
+                    "\"transactionId\":%s,\"createdAt\":%s,\"itemCount\":%d}",
+                    o.getId(),
+                    escapeJson(o.getOrderCode()),
+                    escapeJson(o.getUsername()),
+                    escapeJson(o.getRecipientName()),
+                    escapeJson(o.getRecipientPhone()),
+                    escapeJson(o.getDeliveryAddress()),
+                    o.getSubtotal(),
+                    o.getDiscountAmount(),
+                    o.getShippingFee(),
+                    o.getTotalAmount(),
+                    escapeJson(o.getFormattedTotal()),
+                    escapeJson(o.getPaymentMethodCode()),
+                    escapeJson(o.getPaymentMethodName()),
+                    escapeJson(o.getPaymentStatus()),
+                    escapeJson(o.getOrderStatus()),
+                    escapeJson(o.getOrderStatusText()),
+                    escapeJson(o.getNote() != null ? o.getNote() : ""),
+                    escapeJson(o.getCancelReason()),
+                    escapeJson(o.getTransactionId() != null ? o.getTransactionId() : ""),
+                    escapeJson(o.getCreatedAt()),
+                    o.getItems() != null ? o.getItems().size() : 0
+                ));
+            }
+            sb.append("]}");
+            sendResponse(exchange, 200, "application/json; charset=UTF-8", sb.toString());
+        }
+    }
+
+    /**
+     * API Admin: Lấy chi tiết đơn hàng (/api/admin/orders/detail)
+     */
+    static class ApiAdminOrderDetailHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendResponse(exchange, 405, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Method Not Allowed\"}");
+                return;
+            }
+
+            User user = getAuthenticatedUser(exchange);
+            if (user == null || !"ADMIN".equalsIgnoreCase(user.getRole())) {
+                sendResponse(exchange, 403, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Bạn không có quyền truy cập chức năng này!\"}");
+                return;
+            }
+
+            String query = exchange.getRequestURI().getQuery();
+            String code = "";
+            if (query != null) {
+                Map<String, String> qp = parseQueryString(query);
+                code = qp.getOrDefault("code", "").trim();
+            }
+
+            if (code.isEmpty()) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Thiếu mã đơn hàng!\"}");
+                return;
+            }
+
+            Order order = DataStore.getOrderByCode(code, null);
+            if (order == null) {
+                sendResponse(exchange, 404, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Không tìm thấy đơn hàng!\"}");
+                return;
+            }
+
+            StringBuilder itemsJson = new StringBuilder("[");
+            for (int i = 0; i < order.getItems().size(); i++) {
+                OrderItem it = order.getItems().get(i);
+                if (i > 0) itemsJson.append(",");
+                Book b = DataStore.getBookById(it.getBookId());
+                int currentStock = b != null ? b.getStock() : 0;
+                itemsJson.append(String.format("{\"bookId\":%d,\"bookCode\":%s,\"bookTitle\":%s,\"bookImage\":%s,\"price\":%.0f,\"quantity\":%d,\"subtotal\":%.0f,\"formattedPrice\":%s,\"formattedSubtotal\":%s,\"currentStock\":%d}",
+                        it.getBookId(),
+                        escapeJson(it.getBookCode()),
+                        escapeJson(it.getBookTitle()),
+                        escapeJson(it.getBookImage()),
+                        it.getPrice(),
+                        it.getQuantity(),
+                        it.getSubtotal(),
+                        escapeJson(it.getFormattedPrice()),
+                        escapeJson(it.getFormattedSubtotal()),
+                        currentStock
+                ));
+            }
+            itemsJson.append("]");
+
+            String json = String.format("{\"success\":true,\"order\":{\"id\":%d,\"orderCode\":%s,\"username\":%s,\"recipientName\":%s,\"recipientPhone\":%s,\"deliveryAddress\":%s,\"voucherCode\":%s,\"subtotal\":%.0f,\"discountAmount\":%.0f,\"shippingFee\":%.0f,\"totalAmount\":%.0f,\"formattedSubtotal\":%s,\"formattedDiscount\":%s,\"formattedShipping\":%s,\"formattedTotal\":%s,\"paymentMethodCode\":%s,\"paymentMethodName\":%s,\"paymentStatus\":%s,\"orderStatus\":%s,\"orderStatusText\":%s,\"note\":%s,\"cancelReason\":%s,\"transactionId\":%s,\"createdAt\":%s,\"items\":%s}}",
+                    order.getId(),
+                    escapeJson(order.getOrderCode()),
+                    escapeJson(order.getUsername()),
+                    escapeJson(order.getRecipientName()),
+                    escapeJson(order.getRecipientPhone()),
+                    escapeJson(order.getDeliveryAddress()),
+                    escapeJson(order.getVoucherCode() != null ? order.getVoucherCode() : ""),
+                    order.getSubtotal(),
+                    order.getDiscountAmount(),
+                    order.getShippingFee(),
+                    order.getTotalAmount(),
+                    escapeJson(order.getFormattedSubtotal()),
+                    escapeJson(order.getFormattedDiscount()),
+                    escapeJson(order.getFormattedShipping()),
+                    escapeJson(order.getFormattedTotal()),
+                    escapeJson(order.getPaymentMethodCode()),
+                    escapeJson(order.getPaymentMethodName()),
+                    escapeJson(order.getPaymentStatus()),
+                    escapeJson(order.getOrderStatus()),
+                    escapeJson(order.getOrderStatusText()),
+                    escapeJson(order.getNote() != null ? order.getNote() : ""),
+                    escapeJson(order.getCancelReason()),
+                    escapeJson(order.getTransactionId() != null ? order.getTransactionId() : ""),
+                    escapeJson(order.getCreatedAt()),
+                    itemsJson.toString()
+            );
+            sendResponse(exchange, 200, "application/json; charset=UTF-8", json);
+        }
+    }
+
+    /**
+     * API Admin Xác nhận đơn hàng (/api/admin/orders/confirm)
+     * Chuyển trạng thái từ "Chờ xác nhận" (CHO_XAC_NHAN) sang "Đang xử lý" (DANG_XU_LY)
+     */
+    static class ApiAdminOrderConfirmHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendResponse(exchange, 405, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Method Not Allowed\"}");
+                return;
+            }
+
+            User user = getAuthenticatedUser(exchange);
+            if (user == null || !"ADMIN".equalsIgnoreCase(user.getRole())) {
+                sendResponse(exchange, 403, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Bạn không có quyền thực hiện thao tác này!\"}");
+                return;
+            }
+
+            String body = readRequestBody(exchange);
+            String orderCode = extractJsonString(body, "orderCode");
+            if (orderCode == null || orderCode.trim().isEmpty()) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Thiếu mã đơn hàng!\"}");
+                return;
+            }
+
+            DataStore.OrderResult result = DataStore.confirmOrder(orderCode);
+            int statusCode = result.isSuccess() ? 200 : 400;
+            sendResponse(exchange, statusCode, "application/json; charset=UTF-8",
+                    String.format("{\"success\":%b,\"message\":%s}", result.isSuccess(), escapeJson(result.getMessage())));
+        }
+    }
+
+    /**
+     * API Admin Cập nhật trạng thái giao hàng (/api/admin/orders/update-status)
+     * Chuyển đổi trạng thái theo luồng: DANG_XU_LY -> DANG_GIAO -> HOAN_THANH
+     */
+    static class ApiAdminOrderStatusHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendResponse(exchange, 405, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Method Not Allowed\"}");
+                return;
+            }
+
+            User user = getAuthenticatedUser(exchange);
+            if (user == null || !"ADMIN".equalsIgnoreCase(user.getRole())) {
+                sendResponse(exchange, 403, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Bạn không có quyền thực hiện thao tác này!\"}");
+                return;
+            }
+
+            String body = readRequestBody(exchange);
+            String orderCode = extractJsonString(body, "orderCode");
+            String status = extractJsonString(body, "status");
+            if (orderCode == null || orderCode.trim().isEmpty() || status == null || status.trim().isEmpty()) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Thiếu mã đơn hàng hoặc trạng thái cần chuyển!\"}");
+                return;
+            }
+
+            DataStore.OrderResult result = DataStore.updateDeliveryStatus(orderCode, status);
+            int statusCode = result.isSuccess() ? 200 : 400;
+            sendResponse(exchange, statusCode, "application/json; charset=UTF-8",
+                    String.format("{\"success\":%b,\"message\":%s}", result.isSuccess(), escapeJson(result.getMessage())));
+        }
+    }
+
+    /**
+     * API Admin Hủy đơn hàng (/api/admin/orders/cancel)
+     * Ghi nhận lý do hủy và tự động hoàn trả tồn kho nguyên tử
+     */
+    static class ApiAdminOrderCancelHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendResponse(exchange, 405, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Method Not Allowed\"}");
+                return;
+            }
+
+            User user = getAuthenticatedUser(exchange);
+            if (user == null || !"ADMIN".equalsIgnoreCase(user.getRole())) {
+                sendResponse(exchange, 403, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Bạn không có quyền thực hiện thao tác này!\"}");
+                return;
+            }
+
+            String body = readRequestBody(exchange);
+            String orderCode = extractJsonString(body, "orderCode");
+            String reason = extractJsonString(body, "reason");
+            if (orderCode == null || orderCode.trim().isEmpty()) {
+                sendResponse(exchange, 400, "application/json; charset=UTF-8", "{\"success\":false,\"message\":\"Thiếu mã đơn hàng!\"}");
+                return;
+            }
+
+            DataStore.OrderResult result = DataStore.cancelOrder(orderCode, user.getUsername(), true, reason);
+            int statusCode = result.isSuccess() ? 200 : 400;
+            sendResponse(exchange, statusCode, "application/json; charset=UTF-8",
+                    String.format("{\"success\":%b,\"message\":%s}", result.isSuccess(), escapeJson(result.getMessage())));
         }
     }
 

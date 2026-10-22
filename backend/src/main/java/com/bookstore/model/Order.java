@@ -25,6 +25,7 @@ public class Order {
     private String paymentStatus;     // PENDING, PAID, FAILED
     private String orderStatus;       // CHO_XAC_NHAN, DANG_XU_LY, DANG_GIAO, HOAN_THANH, DA_HUY
     private String note;
+    private String cancelReason;
     private String transactionId;
     private String createdAt;
     private List<OrderItem> items = new ArrayList<>();
@@ -36,6 +37,16 @@ public class Order {
                  double discountAmount, double shippingFee, double totalAmount, String paymentMethodCode,
                  String paymentMethodName, String paymentStatus, String orderStatus, String note,
                  String transactionId, String createdAt) {
+        this(id, orderCode, username, addressId, recipientName, recipientPhone, deliveryAddress,
+             voucherCode, subtotal, discountAmount, shippingFee, totalAmount, paymentMethodCode,
+             paymentMethodName, paymentStatus, orderStatus, note, "", transactionId, createdAt);
+    }
+
+    public Order(int id, String orderCode, String username, int addressId, String recipientName,
+                 String recipientPhone, String deliveryAddress, String voucherCode, double subtotal,
+                 double discountAmount, double shippingFee, double totalAmount, String paymentMethodCode,
+                 String paymentMethodName, String paymentStatus, String orderStatus, String note,
+                 String cancelReason, String transactionId, String createdAt) {
         this.id = id;
         this.orderCode = orderCode;
         this.username = username;
@@ -53,6 +64,7 @@ public class Order {
         this.paymentStatus = paymentStatus;
         this.orderStatus = orderStatus;
         this.note = note;
+        this.cancelReason = cancelReason;
         this.transactionId = transactionId;
         this.createdAt = createdAt;
     }
@@ -107,6 +119,9 @@ public class Order {
 
     public String getNote() { return note; }
     public void setNote(String note) { this.note = note; }
+
+    public String getCancelReason() { return cancelReason != null ? cancelReason : ""; }
+    public void setCancelReason(String cancelReason) { this.cancelReason = cancelReason; }
 
     public String getTransactionId() { return transactionId; }
     public void setTransactionId(String transactionId) { this.transactionId = transactionId; }

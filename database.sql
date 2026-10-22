@@ -268,6 +268,7 @@ CREATE TABLE `don_hang` (
     `payment_status` VARCHAR(50) NOT NULL DEFAULT 'PENDING',  -- 'PENDING', 'PAID', 'FAILED'
     `order_status` VARCHAR(50) NOT NULL DEFAULT 'CHO_XAC_NHAN', -- 'CHO_XAC_NHAN', 'DANG_XU_LY', 'DANG_GIAO', 'HOAN_THANH', 'DA_HUY'
     `note` TEXT,
+    `cancel_reason` VARCHAR(500),
     `transaction_id` VARCHAR(100),
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (`username`) REFERENCES `users`(`username`) ON DELETE CASCADE

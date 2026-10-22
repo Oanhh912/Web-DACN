@@ -254,6 +254,7 @@
                         <div class="order-status-nav" id="orderStatusNav">
                             <button class="order-status-tab active" onclick="filterOrdersByStatus('ALL', this)">Tất cả (<span id="cntAll">0</span>)</button>
                             <button class="order-status-tab" onclick="filterOrdersByStatus('CHO_XAC_NHAN', this)">Chờ xác nhận (<span id="cntPending">0</span>)</button>
+                            <button class="order-status-tab" onclick="filterOrdersByStatus('DANG_XU_LY', this)">Đang xử lý (<span id="cntProcessing">0</span>)</button>
                             <button class="order-status-tab" onclick="filterOrdersByStatus('DANG_GIAO', this)">Đang giao (<span id="cntShipping">0</span>)</button>
                             <button class="order-status-tab" onclick="filterOrdersByStatus('HOAN_THANH', this)">Hoàn thành (<span id="cntDelivered">0</span>)</button>
                             <button class="order-status-tab" onclick="filterOrdersByStatus('DA_HUY', this)">Đã hủy (<span id="cntCancelled">0</span>)</button>
@@ -544,6 +545,7 @@
         function updateStatusCounts() {
             let cntAll = allOrdersList.length;
             let cntPending = 0;
+            let cntProcessing = 0;
             let cntShipping = 0;
             let cntDelivered = 0;
             let cntCancelled = 0;
@@ -551,13 +553,16 @@
             allOrdersList.forEach(o => {
                 const st = normalizeStatus(o.orderStatus);
                 if (st === 'CHO_XAC_NHAN') cntPending++;
+                else if (st === 'DANG_XU_LY') cntProcessing++;
                 else if (st === 'DANG_GIAO') cntShipping++;
-                else if (st === 'HOAN_THANH') cntDelivered++;
+                else if (st === 'HOAN_THANH' || st === 'DA_GIAO') cntDelivered++;
                 else if (st === 'DA_HUY') cntCancelled++;
             });
 
             document.getElementById('cntAll').innerText = cntAll;
             document.getElementById('cntPending').innerText = cntPending;
+            const procEl = document.getElementById('cntProcessing');
+            if (procEl) procEl.innerText = cntProcessing;
             document.getElementById('cntShipping').innerText = cntShipping;
             document.getElementById('cntDelivered').innerText = cntDelivered;
             document.getElementById('cntCancelled').innerText = cntCancelled;
@@ -606,13 +611,15 @@
                 const st = normalizeStatus(o.orderStatus);
                 let statusBadgeHtml = '';
                 if (st === 'DANG_GIAO') {
-                    statusBadgeHtml = `<span class="order-card-status-badge status-badge-shipping">ĐANG GIAO HÀNG</span>`;
+                    statusBadgeHtml = `<span class="order-card-status-badge status-badge-shipping"><i class="fas fa-truck-fast"></i> ĐANG GIAO HÀNG</span>`;
+                } else if (st === 'DANG_XU_LY') {
+                    statusBadgeHtml = `<span class="order-card-status-badge" style="background:#e0f2fe; color:#0369a1; padding:4px 10px; border-radius:20px; font-weight:700; font-size:11px;"><i class="fas fa-boxes-packing"></i> ĐANG XỬ LÝ</span>`;
                 } else if (st === 'CHO_XAC_NHAN') {
-                    statusBadgeHtml = `<span class="order-card-status-badge status-badge-pending">CHỜ XÁC NHẬN</span>`;
-                } else if (st === 'HOAN_THANH') {
-                    statusBadgeHtml = `<span class="order-card-status-badge status-badge-delivered">GIAO THÀNH CÔNG</span>`;
+                    statusBadgeHtml = `<span class="order-card-status-badge status-badge-pending"><i class="fas fa-hourglass-half"></i> CHỜ XÁC NHẬN</span>`;
+                } else if (st === 'HOAN_THANH' || st === 'DA_GIAO') {
+                    statusBadgeHtml = `<span class="order-card-status-badge status-badge-delivered"><i class="fas fa-check-double"></i> GIAO THÀNH CÔNG</span>`;
                 } else if (st === 'DA_HUY') {
-                    statusBadgeHtml = `<span class="order-card-status-badge status-badge-cancelled">ĐÃ HỦY</span>`;
+                    statusBadgeHtml = `<span class="order-card-status-badge status-badge-cancelled"><i class="fas fa-ban"></i> ĐÃ HỦY</span>`;
                 } else {
                     statusBadgeHtml = `<span class="order-card-status-badge status-badge-pending">${escHtml(o.orderStatus)}</span>`;
                 }
@@ -625,7 +632,7 @@
                         totalItemsCount += (item.quantity || 1);
                         const imgSrc = item.bookImage ? item.bookImage : 'images/default-book.jpg';
                         const formattedPrice = new Intl.NumberFormat('vi-VN').format(item.price || 0) + ' đ';
-                        const reviewBtnHtml = (st === 'HOAN_THANH') ? `
+                        const reviewBtnHtml = (st === 'HOAN_THANH' || st === 'DA_GIAO') ? `
                             <button type="button" class="btn-review-item" onclick="openReviewModalForItem(${item.bookId}, '${escHtml(item.bookTitle)}', '${escHtml(o.orderCode)}')" style="margin-top: 6px; background: #0284c7; color: white; border: none; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
                                 <i class="fas fa-star" style="color: #f59e0b;"></i> Đánh giá
                             </button>
@@ -660,6 +667,16 @@
                         </div>`;
                 }
 
+                // Banner lý do hủy nếu đơn đã hủy
+                let cancelReasonBanner = '';
+                if (st === 'DA_HUY' && o.cancelReason) {
+                    cancelReasonBanner = `
+                        <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin: 12px 16px 0 16px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-circle-exclamation" style="font-size: 16px;"></i>
+                            <span><strong>Lý do hủy:</strong> ${escHtml(o.cancelReason)}</span>
+                        </div>`;
+                }
+
                 // Actions
                 let actionBtnsHtml = '';
                 if (st === 'DANG_GIAO') {
@@ -669,8 +686,12 @@
                 } else if (st === 'CHO_XAC_NHAN') {
                     actionBtnsHtml = `
                         <a href="order-success?code=${encodeURIComponent(o.orderCode)}" class="btn-order-outline" target="_blank">Xem chi tiết</a>
-                        <button type="button" class="btn-order-danger" onclick="cancelOrderModal('${escHtml(o.orderCode)}')">Hủy đơn hàng</button>`;
-                } else if (st === 'HOAN_THANH') {
+                        <button type="button" class="btn-order-danger" onclick="cancelOrderModal('${escHtml(o.orderCode)}')">Yêu cầu hủy đơn hàng</button>`;
+                } else if (st === 'DANG_XU_LY') {
+                    actionBtnsHtml = `
+                        <a href="order-success?code=${encodeURIComponent(o.orderCode)}" class="btn-order-outline" target="_blank">Xem chi tiết</a>
+                        <span style="font-size: 12px; color: #64748b; font-style: italic;"><i class="fas fa-box"></i> Đang chuẩn bị đóng gói</span>`;
+                } else if (st === 'HOAN_THANH' || st === 'DA_GIAO') {
                     actionBtnsHtml = `
                         <button type="button" class="btn-order-outline" onclick="buyAgainOrder('${escHtml(o.orderCode)}')">Mua lại</button>
                         <button type="button" class="btn-order-primary" onclick="openReviewModal('${escHtml(o.orderCode)}')">Đánh giá</button>
@@ -692,6 +713,8 @@
                                 <div>TRẠNG THÁI: ${statusBadgeHtml}</div>
                             </div>
                         </div>
+
+                        ${cancelReasonBanner}
 
                         <div class="order-card-items">
                             ${itemsHtml}
@@ -717,7 +740,7 @@
 
         function showSupportInfo(e) {
             e.preventDefault();
-            alert('📞 Hotline Hỗ Trợ Đơn Hàng Bookora: 1900 6868\\nEmail: support@bookora.vn\\nGiờ làm việc: 8:00 - 21:00 hàng ngày.');
+            alert('📞 Hotline Hỗ Trợ Đơn Hàng Bookora: 1900 6868\nEmail: support@bookora.vn\nGiờ làm việc: 8:00 - 21:00 hàng ngày.');
         }
 
         function confirmReceivedOrder(code) {
@@ -730,13 +753,31 @@
             }
         }
 
-        function cancelOrderModal(code) {
-            if (confirm(`Bạn có chắc chắn muốn hủy đơn hàng #${code}?`)) {
-                alert(`Đơn hàng #${code} đã được hủy thành công.`);
-                const ord = allOrdersList.find(o => o.orderCode === code);
-                if (ord) ord.orderStatus = 'DA_HUY';
-                updateStatusCounts();
-                renderFilteredOrders();
+        // Hủy đơn hàng gọi trực tiếp API Backend và hiển thị đúng thông báo theo nghiệp vụ
+        async function cancelOrderModal(code) {
+            const reason = prompt(`Nhập lý do bạn muốn yêu cầu hủy đơn hàng #${code}:`, "Đổi ý, không có nhu cầu mua nữa");
+            if (reason === null) return; // Người dùng ấn Hủy trên hộp thoại
+
+            try {
+                const res = await fetch('/api/orders/cancel', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        orderCode: code,
+                        reason: reason.trim() || 'Khách hàng yêu cầu hủy đơn hàng'
+                    })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message || 'Đơn hàng đã được hủy thành công.');
+                    loadMyOrders();
+                } else {
+                    alert(data.message || 'Không thể hủy đơn hàng ở trạng thái hiện tại.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Không thể kết nối đến máy chủ.');
             }
         }
 

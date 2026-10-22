@@ -103,31 +103,50 @@
                 </div>
             </div>
 
+            <!-- Khối cảnh báo đơn hàng bị hủy (nếu có) -->
+            <div id="cancelledOrderBanner" class="cancelled-banner-card" style="display: none; background: #fee2e2; border: 1px solid #f87171; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; color: #991b1b;">
+                <div style="display: flex; align-items: flex-start; gap: 14px;">
+                    <i class="fas fa-triangle-exclamation" style="font-size: 24px; margin-top: 2px;"></i>
+                    <div style="flex: 1;">
+                        <h4 style="margin: 0 0 6px 0; font-size: 16px; font-weight: 700;">ĐƠN HÀNG ĐÃ BỊ HỦY</h4>
+                        <p style="margin: 0; font-size: 14px;">Lý do: <strong id="cancelledReasonText">Đơn hàng đã bị hủy theo yêu cầu.</strong></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Khối trạng thái đơn hàng -->
+            <div class="order-status-card" style="background: white; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="color: #64748b; font-size: 14px;">Trạng thái đơn hàng:</span>
+                    <span id="currentStatusBadge" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 9999px; font-weight: 700; font-size: 13px;">--</span>
+                </div>
+                <div id="cancelOrderActionWrap" style="display: none;">
+                    <button type="button" id="btnCustomerCancel" onclick="requestCancelOrder()" style="background: #fff; color: #dc2626; border: 1.5px solid #dc2626; padding: 8px 18px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-ban"></i> Yêu cầu hủy đơn hàng
+                    </button>
+                </div>
+            </div>
+
             <!-- Khối tiến trình đơn hàng (Tracking Steps) -->
-            <div class="order-timeline-card">
-                <div class="timeline-step step-done">
+            <div class="order-timeline-card" id="orderTimelineCard">
+                <div class="timeline-step step-done" id="step1">
                     <div class="step-circle"><i class="fas fa-file-invoice"></i></div>
-                    <div class="step-label">Đặt hàng</div>
+                    <div class="step-label">Chờ xác nhận</div>
                 </div>
-                <div class="timeline-line line-done"></div>
-                <div class="timeline-step step-done" id="timelinePayStep">
-                    <div class="step-circle"><i class="fas fa-wallet"></i></div>
-                    <div class="step-label" id="timelinePayLabel">Thanh toán</div>
-                </div>
-                <div class="timeline-line"></div>
-                <div class="timeline-step">
+                <div class="timeline-line" id="line1"></div>
+                <div class="timeline-step" id="step2">
                     <div class="step-circle"><i class="fas fa-boxes-packing"></i></div>
-                    <div class="step-label">Đóng gói</div>
+                    <div class="step-label">Đang xử lý</div>
                 </div>
-                <div class="timeline-line"></div>
-                <div class="timeline-step">
+                <div class="timeline-line" id="line2"></div>
+                <div class="timeline-step" id="step3">
                     <div class="step-circle"><i class="fas fa-truck-fast"></i></div>
                     <div class="step-label">Đang giao</div>
                 </div>
-                <div class="timeline-line"></div>
-                <div class="timeline-step">
+                <div class="timeline-line" id="line3"></div>
+                <div class="timeline-step" id="step4">
                     <div class="step-circle"><i class="fas fa-circle-check"></i></div>
-                    <div class="step-label">Hoàn thành</div>
+                    <div class="step-label">Đã giao hàng</div>
                 </div>
             </div>
 
@@ -199,11 +218,11 @@
 
             <!-- Các nút hành động tiếp theo -->
             <div class="success-actions-bar">
+                <a href="profile?tab=orders" class="btn-action-viewcart" style="background: #2563eb; color: white;">
+                    <i class="fas fa-clipboard-list"></i> Đơn Hàng Của Tôi
+                </a>
                 <a href="home" class="btn-action-home">
                     <i class="fas fa-reply"></i> Tiếp Tục Mua Sắm Sách
-                </a>
-                <a href="cart" class="btn-action-viewcart">
-                    <i class="fas fa-bag-shopping"></i> Xem Lại Giỏ Hàng
                 </a>
             </div>
         </div>
@@ -237,7 +256,13 @@
 
     <script src="/js/app.js?v=20260927_checkout"></script>
     <script>
+        let currentOrderData = null;
+
         document.addEventListener('DOMContentLoaded', async () => {
+            await loadOrder();
+        });
+
+        async function loadOrder() {
             const urlParams = new URLSearchParams(window.location.search);
             const code = urlParams.get('code');
             if (!code) {
@@ -251,13 +276,14 @@
                 if (res.ok) {
                     const data = await res.json();
                     if (data && data.success && data.order) {
+                        currentOrderData = data.order;
                         renderOrderDetails(data.order);
                     }
                 }
             } catch (e) {
                 console.error('Error fetching order:', e);
             }
-        });
+        }
 
         function renderOrderDetails(order) {
             document.getElementById('infoRecipientName').textContent = order.recipientName || 'Khách hàng';
@@ -269,12 +295,72 @@
             const badgeEl = document.getElementById('infoPaymentStatusBadge');
             if (order.paymentStatus === 'PAID') {
                 badgeEl.innerHTML = '<span class="badge-status-paid"><i class="fas fa-circle-check"></i> Đã thanh toán trực tuyến</span>';
-                document.getElementById('timelinePayLabel').textContent = 'Đã thanh toán';
-                document.getElementById('timelinePayStep').classList.add('step-done');
             } else if (order.paymentStatus === 'FAILED') {
                 badgeEl.innerHTML = '<span class="badge-status-failed"><i class="fas fa-circle-xmark"></i> Thanh toán thất bại</span>';
             } else {
                 badgeEl.innerHTML = '<span class="badge-status-pending"><i class="fas fa-clock"></i> Chưa thanh toán (Thanh toán khi nhận hàng)</span>';
+            }
+
+            // Order Status Badge & Timeline
+            const statusBadge = document.getElementById('currentStatusBadge');
+            const cancelWrap = document.getElementById('cancelOrderActionWrap');
+            const banner = document.getElementById('cancelledOrderBanner');
+            const timelineCard = document.getElementById('orderTimelineCard');
+
+            // Reset timeline steps
+            ['step1', 'step2', 'step3', 'step4'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.className = 'timeline-step';
+            });
+            ['line1', 'line2', 'line3'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.className = 'timeline-line';
+            });
+
+            const status = order.orderStatus || 'CHO_XAC_NHAN';
+
+            if (status === 'CHO_XAC_NHAN') {
+                statusBadge.innerHTML = '<span style="background: #fef3c7; color: #b45309; padding: 6px 12px; border-radius: 9999px;"><i class="fas fa-clock"></i> Chờ xác nhận</span>';
+                cancelWrap.style.display = 'block';
+                banner.style.display = 'none';
+                timelineCard.style.display = 'flex';
+                document.getElementById('step1').classList.add('step-done');
+            } else if (status === 'DANG_XU_LY') {
+                statusBadge.innerHTML = '<span style="background: #e0e7ff; color: #3730a3; padding: 6px 12px; border-radius: 9999px;"><i class="fas fa-boxes-packing"></i> Đang xử lý</span>';
+                cancelWrap.style.display = 'none';
+                banner.style.display = 'none';
+                timelineCard.style.display = 'flex';
+                document.getElementById('step1').classList.add('step-done');
+                document.getElementById('line1').classList.add('line-done');
+                document.getElementById('step2').classList.add('step-done');
+            } else if (status === 'DANG_GIAO') {
+                statusBadge.innerHTML = '<span style="background: #dbeafe; color: #1e40af; padding: 6px 12px; border-radius: 9999px;"><i class="fas fa-truck-fast"></i> Đang giao hàng</span>';
+                cancelWrap.style.display = 'none';
+                banner.style.display = 'none';
+                timelineCard.style.display = 'flex';
+                document.getElementById('step1').classList.add('step-done');
+                document.getElementById('line1').classList.add('line-done');
+                document.getElementById('step2').classList.add('step-done');
+                document.getElementById('line2').classList.add('line-done');
+                document.getElementById('step3').classList.add('step-done');
+            } else if (status === 'HOAN_THANH') {
+                statusBadge.innerHTML = '<span style="background: #d1fae5; color: #065f46; padding: 6px 12px; border-radius: 9999px;"><i class="fas fa-circle-check"></i> Đã giao thành công</span>';
+                cancelWrap.style.display = 'none';
+                banner.style.display = 'none';
+                timelineCard.style.display = 'flex';
+                document.getElementById('step1').classList.add('step-done');
+                document.getElementById('line1').classList.add('line-done');
+                document.getElementById('step2').classList.add('step-done');
+                document.getElementById('line2').classList.add('line-done');
+                document.getElementById('step3').classList.add('step-done');
+                document.getElementById('line3').classList.add('line-done');
+                document.getElementById('step4').classList.add('step-done');
+            } else if (status === 'DA_HUY') {
+                statusBadge.innerHTML = '<span style="background: #fee2e2; color: #991b1b; padding: 6px 12px; border-radius: 9999px;"><i class="fas fa-ban"></i> Đã hủy</span>';
+                cancelWrap.style.display = 'none';
+                banner.style.display = 'block';
+                document.getElementById('cancelledReasonText').textContent = order.cancelReason || 'Đơn hàng đã bị hủy theo quy định hoặc yêu cầu của khách hàng.';
+                timelineCard.style.display = 'none';
             }
 
             if (order.transactionId) {
@@ -310,6 +396,34 @@
             }
             document.getElementById('totShipping').textContent = order.formattedShipping;
             document.getElementById('totGrandTotal').textContent = order.formattedTotal;
+        }
+
+        async function requestCancelOrder() {
+            if (!currentOrderData) return;
+            const orderCode = currentOrderData.orderCode;
+            const reason = prompt('Vui lòng nhập lý do hủy đơn hàng (không bắt buộc):', 'Tôi muốn thay đổi thông tin đặt hàng');
+            if (reason === null) return; // User clicked Cancel in prompt
+
+            try {
+                const res = await fetch('/api/orders/cancel', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        orderCode: orderCode,
+                        reason: reason.trim() || 'Khách hàng yêu cầu hủy đơn'
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Đơn hàng đã được hủy thành công.');
+                    await loadOrder();
+                } else {
+                    alert(data.message || 'Không thể hủy đơn hàng ở trạng thái hiện tại.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Không thể hủy đơn hàng ở trạng thái hiện tại.');
+            }
         }
 
         function copyOrderCode() {
