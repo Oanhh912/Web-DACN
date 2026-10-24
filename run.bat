@@ -25,7 +25,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0compile.ps1"
 
 if %ERRORLEVEL% NEQ 0 (
     echo.
-    echo [LOI] Khong the bien dich ma Java. Kiem tra JDK (can Java 11+).
+    echo [LOI] Khong the bien dich ma Java. Kiem tra JDK - can Java 11 tro len.
     pause
     exit /b 1
 )

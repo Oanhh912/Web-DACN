@@ -8,7 +8,10 @@
             "mainClass": "com.bookstore.server.BookstoreApp",
             "projectName": "Web_DACN",
             "classPaths": [
+                "${workspaceFolder}/backend/build/classes",
                 "${workspaceFolder}/build/classes",
+                "${workspaceFolder}/backend/lib/servlet-api.jar",
+                "${workspaceFolder}/backend/lib/mysql-connector-j.jar",
                 "${workspaceFolder}/lib/servlet-api.jar",
                 "${workspaceFolder}/lib/mysql-connector-j.jar"
             ]
