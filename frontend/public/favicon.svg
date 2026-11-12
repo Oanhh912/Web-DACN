@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1b4b" />
+      <stop offset="50%" stop-color="#312e81" />
+      <stop offset="100%" stop-color="#4338ca" />
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fde68a" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+    <linearGradient id="ribbon" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ef4444" />
+      <stop offset="100%" stop-color="#dc2626" />
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#bg)" stroke="#f59e0b" stroke-width="1.5" stroke-opacity="0.5"/>
+  <path d="M14 43.5 C19 41.5 26 41.5 31 44.5 L31 20 C26 17.5 19 17.5 14 19.5 Z" fill="#ffffff" fill-opacity="0.95" />
+  <path d="M50 43.5 C45 41.5 38 41.5 33 44.5 L33 20 C38 17.5 45 17.5 50 19.5 Z" fill="#f8fafc" fill-opacity="0.95" />
+  <path d="M12 45 C18 43 27 43 32 46.5 C37 43 46 43 52 45 L52 47.5 C46 45.5 37 45.5 32 48.5 C27 45.5 18 45.5 12 47.5 Z" fill="url(#gold)" />
+  <path d="M30 16 L34 16 L34 33 L32 30.5 L30 33 Z" fill="url(#ribbon)" />
+</svg>
+

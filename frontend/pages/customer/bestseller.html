@@ -1,0 +1,1440 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sách Bán Chạy - Bookora | Bảng Xếp Hạng Sách Được Yêu Thích Nhất</title>
+    <meta name="description" content="Khám phá bảng xếp hạng những cuốn sách bán chạy nhất tại Bookora. Cập nhật liên tục từ doanh số thực tế của hệ thống.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css?v=20261018_square">
+    <style>
+        /* ===== HERO BANNER SECTION (THEO PHONG CÁCH NHÀ SÁCH ẤM ÁP) ===== */
+        .bs-hero-banner {
+            background: linear-gradient(120deg, #1e1b4b 0%, #2e2875 40%, #4338ca 100%);
+            padding: 50px 0 44px;
+            position: relative;
+            overflow: hidden;
+            color: white;
+            border-bottom: 3px solid #f59e0b;
+        }
+        .bs-hero-banner::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 15% 50%, rgba(245,158,11,0.18) 0%, transparent 45%),
+                        radial-gradient(circle at 85% 30%, rgba(239,68,68,0.15) 0%, transparent 40%);
+            pointer-events: none;
+        }
+        .bs-banner-grid {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 36px;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+        }
+        .bs-banner-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(245,158,11,0.2);
+            border: 1px solid rgba(245,158,11,0.4);
+            color: #fde68a;
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+        }
+        .bs-banner-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.9rem;
+            font-weight: 800;
+            color: #ffffff;
+            line-height: 1.15;
+            margin: 0 0 12px;
+            text-shadow: 0 2px 16px rgba(0,0,0,0.3);
+        }
+        .bs-banner-title .highlight {
+            color: #fde68a;
+            background: linear-gradient(135deg, #fde68a, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .bs-banner-subtitle {
+            font-size: 1.1rem;
+            color: #e0e7ff;
+            line-height: 1.6;
+            margin: 0 0 20px;
+            max-width: 640px;
+        }
+        .bs-banner-features {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .bs-banner-feature-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            color: #f8fafc;
+            backdrop-filter: blur(6px);
+        }
+        .bs-banner-feature-item i {
+            color: #f59e0b;
+            font-size: 15px;
+        }
+        .bs-banner-side-card {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 18px;
+            padding: 22px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.25);
+            position: relative;
+        }
+        .bs-banner-side-badge {
+            width: 70px;
+            height: 70px;
+            margin: 0 auto 12px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            box-shadow: 0 4px 20px rgba(245,158,11,0.4);
+            border: 2px solid #fef3c7;
+        }
+        .bs-banner-side-title {
+            font-size: 17px;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 6px;
+        }
+        .bs-banner-side-desc {
+            font-size: 13px;
+            color: #c7d2fe;
+            line-height: 1.5;
+        }
+
+        /* ===== TOP 3 SECTION (THEO MẪU ẢNH 2) ===== */
+        .bs-top3-section {
+            background: #ffffff;
+            padding: 44px 0 38px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .bs-section-header {
+            margin-bottom: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .bs-section-title-wrap h2 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 0 0 6px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            letter-spacing: -0.5px;
+        }
+        .bs-section-title-wrap p {
+            color: #64748b;
+            font-size: 14px;
+            margin: 0;
+        }
+        .bs-top3-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+        .bs-top3-card {
+            background: #ffffff;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.06);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            position: relative;
+            cursor: pointer;
+        }
+        .bs-top3-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+        }
+        .bs-top3-card.rank-1 {
+            border-top: 4px solid #f59e0b;
+        }
+        .bs-top3-card.rank-2 {
+            border-top: 4px solid #94a3b8;
+        }
+        .bs-top3-card.rank-3 {
+            border-top: 4px solid #cd7c3f;
+        }
+        .bs-top3-cover-wrap {
+            position: relative;
+            background: #f8fafc;
+            height: 280px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: 16px;
+        }
+        .bs-top3-cover-wrap img {
+            max-height: 100%;
+            max-width: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+            transition: transform 0.3s ease;
+        }
+        .bs-top3-card:hover .bs-top3-cover-wrap img {
+            transform: scale(1.04);
+        }
+        .bs-top3-fav-btn {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.9);
+            border: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            font-size: 15px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: all 0.2s;
+            z-index: 5;
+        }
+        .bs-top3-fav-btn:hover {
+            color: #ef4444;
+            background: white;
+            transform: scale(1.1);
+        }
+        .bs-top3-body {
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+        .bs-top3-rank-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .bs-top-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 4px 12px;
+            border-radius: 12px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .bs-top-pill.pill-1 {
+            background: #dcfce7;
+            color: #15803d;
+            border: 1px solid #bbf7d0;
+        }
+        .bs-top-pill.pill-2 {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+        }
+        .bs-top-pill.pill-3 {
+            background: #ffedd5;
+            color: #c2410c;
+            border: 1px solid #fed7aa;
+        }
+        .bs-top3-rank-sub {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 600;
+        }
+        .bs-top3-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.4;
+            margin-bottom: 6px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            min-height: 44px;
+        }
+        .bs-top3-author {
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+        .bs-top3-publisher {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-bottom: 8px;
+        }
+        .bs-top3-price-row {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            margin: 8px 0;
+        }
+        .bs-top3-price {
+            font-size: 19px;
+            font-weight: 800;
+            color: #dc2626;
+        }
+        .bs-top3-orig-price {
+            font-size: 13px;
+            color: #94a3b8;
+            text-decoration: line-through;
+        }
+        .bs-top3-sold {
+            font-size: 12px;
+            font-weight: 700;
+            color: #ea580c;
+            background: #fff7ed;
+            padding: 3px 8px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            width: fit-content;
+            margin-bottom: 12px;
+        }
+        .bs-top3-btn {
+            width: 100%;
+            padding: 11px;
+            background: #1e1b4b;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .bs-top3-btn:hover {
+            background: #3730a3;
+        }
+
+        /* ===== CATALOG SECTION (THEO MẪU ẢNH 3 - 4 SẢN PHẨM / HÀNG) ===== */
+        .bs-catalog-section {
+            padding: 40px 0 60px;
+            background: #f8fafc;
+        }
+        .bs-catalog-layout {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            gap: 28px;
+            align-items: start;
+        }
+
+        /* Filter Sidebar */
+        .bs-filter-sidebar {
+            background: white;
+            border-radius: 14px;
+            border: 1px solid #e2e8f0;
+            padding: 22px;
+            position: sticky;
+            top: 90px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        }
+        .bs-filter-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: #1e1b4b;
+            margin: 0 0 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .bs-filter-group {
+            margin-bottom: 18px;
+        }
+        .bs-filter-group-label {
+            font-size: 12px;
+            font-weight: 800;
+            color: #475569;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .bs-filter-select {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #374151;
+            background: #f9fafb;
+            outline: none;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        .bs-filter-select:focus { border-color: #4338ca; }
+        .bs-price-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .bs-price-input {
+            width: 100%;
+            padding: 9px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #374151;
+            background: #f9fafb;
+            outline: none;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+        .bs-price-input:focus { border-color: #4338ca; }
+        .bs-filter-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid #f1f5f9;
+        }
+        .btn-bs-apply {
+            padding: 11px;
+            background: #1e1b4b;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-bs-apply:hover { background: #3730a3; }
+        .btn-bs-clear {
+            padding: 10px;
+            background: white;
+            color: #64748b;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-bs-clear:hover { background: #f1f5f9; border-color: #94a3b8; }
+
+        /* Main Content Header (Theo Ảnh 3) */
+        .bs-ranking-header-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            background: white;
+            padding: 16px 20px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+        .bs-ranking-title-group h2 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 0 0 4px;
+            letter-spacing: -0.5px;
+        }
+        .bs-ranking-title-group p {
+            color: #64748b;
+            font-size: 13px;
+            margin: 0;
+        }
+        .bs-ranking-controls {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+        .bs-density-badge {
+            background: #f1f5f9;
+            color: #475569;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .bs-sort-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .bs-sort-wrap label {
+            font-size: 13px;
+            color: #475569;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        #bsSortSelect {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #374151;
+            background: #f9fafb;
+            outline: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        #bsSortSelect:focus { border-color: #4338ca; }
+
+        /* Lưới 4 sản phẩm / hàng trên Desktop (Theo Ảnh 3) */
+        .bs-main-content .book-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr) !important;
+            gap: 18px !important;
+        }
+
+        /* Thẻ sách trong Catalog */
+        .book-card-wrap {
+            position: relative;
+        }
+        .bs-book-rank {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: #ef4444;
+            color: white;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 6px;
+            z-index: 10;
+            letter-spacing: 0.3px;
+            box-shadow: 0 2px 8px rgba(239,68,68,0.3);
+        }
+        .bs-book-rank.top-gold { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .bs-book-rank.top-silver { background: linear-gradient(135deg, #94a3b8, #64748b); }
+        .bs-book-rank.top-bronze { background: linear-gradient(135deg, #cd7c3f, #a0522d); }
+        .bs-sold-count {
+            font-size: 12px;
+            color: #ea580c;
+            font-weight: 700;
+            margin-top: 4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Loading & Empty */
+        .bs-loading {
+            text-align: center;
+            padding: 60px 20px;
+            display: none;
+        }
+        .bs-loading.active { display: block; }
+        .bs-loading-spinner {
+            width: 44px;
+            height: 44px;
+            border: 4px solid #e2e8f0;
+            border-top-color: #1e1b4b;
+            border-radius: 50%;
+            animation: bsSpin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+        @keyframes bsSpin { to { transform: rotate(360deg); } }
+        .bs-loading p { color: #64748b; font-size: 14px; font-weight: 600; }
+        .bs-empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: #94a3b8;
+            display: none;
+            background: white;
+            border-radius: 12px;
+            border: 1px dashed #cbd5e1;
+        }
+        .bs-empty.active { display: block; }
+        .bs-empty i { font-size: 44px; margin-bottom: 12px; color: #cbd5e1; }
+        .bs-empty h3 { font-size: 17px; color: #475569; margin-bottom: 6px; }
+        .bs-empty p { font-size: 13px; color: #94a3b8; }
+
+        /* Pagination */
+        .bs-pagination {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 36px;
+            flex-wrap: wrap;
+        }
+        .bs-page-btn {
+            width: 38px;
+            height: 38px;
+            border: 1px solid #d1d5db;
+            background: white;
+            color: #374151;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.18s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .bs-page-btn:hover:not(:disabled) {
+            background: #1e1b4b;
+            color: white;
+            border-color: #1e1b4b;
+        }
+        .bs-page-btn.active {
+            background: #1e1b4b;
+            color: white;
+            border-color: #1e1b4b;
+            font-weight: 800;
+        }
+        .bs-page-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 1200px) {
+            .bs-main-content .book-grid {
+                grid-template-columns: repeat(3, 1fr) !important;
+            }
+        }
+        @media (max-width: 992px) {
+            .bs-banner-grid { grid-template-columns: 1fr; }
+            .bs-banner-side-card { display: none; }
+            .bs-catalog-layout { grid-template-columns: 1fr; }
+            .bs-filter-sidebar { position: static; }
+        }
+        @media (max-width: 768px) {
+            .bs-banner-title { font-size: 2.2rem; }
+            .bs-top3-grid { grid-template-columns: 1fr; gap: 16px; }
+            .bs-top3-cover-wrap { height: 220px; }
+            .bs-main-content .book-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 12px !important;
+            }
+            .bs-ranking-header-bar { flex-direction: column; align-items: flex-start; }
+        }
+        @media (max-width: 480px) {
+            .bs-banner-title { font-size: 1.8rem; }
+            .bs-main-content .book-grid {
+                grid-template-columns: 1fr !important;
+            }
+        }
+    </style>
+    <!-- Bookora Brand Favicon -->
+    <!-- Bookora Brand Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20261112">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=20261112">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=20261112">
+    <link rel="apple-touch-icon" href="/favicon.png?v=20261112">
+    <link rel="shortcut icon" href="/favicon.ico?v=20261112">
+</head>
+<body>
+    <!-- 1. HEADER & NAVIGATION -->
+    <header class="main-header">
+        <div class="navbar-container">
+            <!-- Logo -->
+            <a href="home" class="site-logo">
+                <div class="logo-icon">
+                    <i class="fas fa-book-bookmark"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>Bookora</h1>
+                    <span>Tiệm Sách Tri Thức</span>
+                </div>
+            </a>
+
+            <!-- Thanh tìm kiếm sách -->
+            <form action="home" method="GET" class="search-form" id="searchForm">
+                <div class="search-input-wrap">
+                    <input type="text" id="searchInput" name="q" class="search-input"
+                           placeholder="Tìm kiếm theo tựa sách, tác giả, NXB, mã sách (MS001)..."
+                           value="${searchKeyword}" autocomplete="off">
+                    <button type="button" class="btn-search" id="btnSearchSubmit" title="Tìm kiếm">
+                        Tìm kiếm
+                    </button>
+                </div>
+                <div class="search-suggestions-dropdown" id="searchSuggestionsDropdown"></div>
+            </form>
+
+            <!-- Hotline tư vấn Bookora -->
+            <div class="header-hotline">
+                <div class="hotline-icon">
+                    <i class="fas fa-phone-volume"></i>
+                </div>
+                <div class="hotline-text">
+                    <small>Tư vấn bán hàng</small>
+                    <strong>028.73008182</strong>
+                </div>
+            </div>
+
+            <!-- Khối hành động: Giỏ hàng & User Profile / Đăng nhập Đăng ký -->
+            <div class="header-actions">
+                <!-- Nút mở giỏ hàng -->
+                <div class="cart-dropdown-wrapper" id="cartDropdownWrapper">
+                    <button type="button" class="btn-cart-toggle" id="btnCartToggle" onclick="toggleCartPopover(event)" title="Xem giỏ hàng">
+                        <i class="fas fa-bag-shopping"></i>
+                        <span class="cart-badge" id="cartBadge" style="display: none;">0</span>
+                    </button>
+
+                    <!-- Popover giỏ hàng -->
+                    <div class="cart-popover" id="cartPopover">
+                        <div class="cart-popover-caret"></div>
+                        <div class="cart-popover-items" id="cartPopoverItems"></div>
+                        <div class="cart-popover-divider"></div>
+                        <div class="cart-popover-total-row">
+                            <span class="cart-popover-total-label">TỔNG TIỀN:</span>
+                            <span class="cart-popover-total-val" id="cartPopoverTotal">0đ</span>
+                        </div>
+                        <div class="cart-popover-actions">
+                            <a href="cart" class="btn-popover-view-cart">XEM GIỎ HÀNG</a>
+                            <button type="button" class="btn-popover-checkout" onclick="proceedToCheckout()">THANH TOÁN</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ${HEADER_AUTH} -->
+            </div>
+        </div>
+
+        <!-- THANH ĐIỀU HƯỚNG CHÍNH -->
+        <nav class="main-nav-bar">
+            <div class="nav-bar-container">
+                <ul class="nav-menu-list">
+                    <li class="nav-menu-item">
+                        <a href="home" class="nav-menu-link">
+                            <i class="fas fa-house"></i> TRANG CHỦ
+                        </a>
+                    </li>
+                    <li class="nav-menu-item">
+                        <a href="about" class="nav-menu-link">
+                            <i class="fas fa-circle-info"></i> GIỚI THIỆU
+                        </a>
+                    </li>
+                    <li class="nav-menu-item nav-dropdown-item" id="navCategoryDropdownWrapper">
+                        <a href="category?name=Tất cả" class="nav-menu-link nav-dropdown-toggle">
+                            <i class="fas fa-list-ul"></i> DANH MỤC SÁCH <i class="fas fa-chevron-down nav-caret"></i>
+                        </a>
+                        <div class="nav-category-dropdown" id="navCategoryDropdown">
+                            <div class="nav-dropdown-header">
+                                <span><i class="fas fa-layer-group"></i> Danh Mục Sách</span>
+                            </div>
+                            <div class="nav-category-vertical-list">
+                                <a href="category?name=Văn học" class="nav-cat-list-link"><i class="fas fa-book-open"></i> Văn học</a>
+                                <a href="category?name=Kinh tế" class="nav-cat-list-link"><i class="fas fa-chart-line"></i> Kinh tế</a>
+                                <a href="category?name=Kỹ năng sống" class="nav-cat-list-link"><i class="fas fa-seedling"></i> Kỹ năng sống</a>
+                                <a href="category?name=Tâm lý học" class="nav-cat-list-link"><i class="fas fa-brain"></i> Tâm lý học</a>
+                                <a href="category?name=Công nghệ thông tin" class="nav-cat-list-link"><i class="fas fa-laptop-code"></i> Công nghệ thông tin</a>
+                                <a href="category?name=Tâm linh & Đời sống" class="nav-cat-list-link"><i class="fas fa-spa"></i> Tâm linh & Đời sống</a>
+                                <a href="category?name=Khoa học" class="nav-cat-list-link"><i class="fas fa-atom"></i> Khoa học</a>
+                                <a href="category?name=Trinh thám" class="nav-cat-list-link"><i class="fas fa-mask"></i> Trinh thám & Bí ẩn</a>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="nav-menu-item">
+                        <a href="bestseller" class="nav-menu-link active">
+                            <i class="fas fa-fire" style="color: #ef4444;"></i> SÁCH BÁN CHẠY
+                        </a>
+                    </li>
+                    <li class="nav-menu-item">
+                        <a href="promotions" class="nav-menu-link">
+                            <i class="fas fa-gift" style="color: #f59e0b;"></i> KHUYẾN MÃI
+                            <span class="nav-badge-hot">HOT</span>
+                        </a>
+                    </li>
+                    <li class="nav-menu-item">
+                        <a href="contact" class="nav-menu-link">
+                            <i class="fas fa-headset" style="color: #06b6d4;"></i> LIÊN HỆ
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <!-- 2. BANNER GIỚI THIỆU SÁCH BÁN CHẠY (THEO MẪU ẢNH 1) -->
+    <section class="bs-hero-banner">
+        <div class="container">
+            <div class="bs-banner-grid">
+                <div>
+                    <span class="bs-banner-tag"><i class="fas fa-crown"></i> Bảng Xếp Hạng Bookora</span>
+                    <h1 class="bs-banner-title">
+                        SÁCH BÁN CHẠY
+                    </h1>
+                    <p class="bs-banner-subtitle">
+                        Khám phá những cuốn sách được độc giả yêu thích và lựa chọn nhiều nhất tại Bookora.
+                        Dữ liệu được thống kê minh bạch dựa trên số lượng đơn hàng hoàn tất thực tế.
+                    </p>
+                    <div class="bs-banner-features">
+                        <div class="bs-banner-feature-item">
+                            <i class="fas fa-chart-line"></i> Thống kê doanh số thực tế
+                        </div>
+                        <div class="bs-banner-feature-item">
+                            <i class="fas fa-rotate"></i> Cập nhật theo thời gian thực
+                        </div>
+                        <div class="bs-banner-feature-item">
+                            <i class="fas fa-certificate"></i> 100% sách chính hãng bản quyền
+                        </div>
+                    </div>
+                </div>
+                <div class="bs-banner-side-card">
+                    <div class="bs-banner-side-badge">
+                        🏆
+                    </div>
+                    <div class="bs-banner-side-title">TOP SÁCH BÁN CHẠY</div>
+                    <p class="bs-banner-side-desc">Những cuốn sách truyền cảm hứng, lan tỏa tri thức đang dẫn đầu tại Bookora tuần này.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. TOP 3 SÁCH ĐƯỢC YÊU THÍCH NHẤT (THEO MẪU ẢNH 2) -->
+    <section class="bs-top3-section" id="bsTop3Section">
+        <div class="container">
+            <div class="bs-section-header">
+                <div class="bs-section-title-wrap">
+                    <h2><i class="fas fa-trophy" style="color:#f59e0b;"></i> TOP 3 SÁCH ĐƯỢC YÊU THÍCH NHẤT</h2>
+                    <p>Bộ ba tác phẩm xuất sắc sở hữu lượt mua và đánh giá cao nhất</p>
+                </div>
+            </div>
+            <div class="bs-top3-grid" id="top3Grid">
+                <!-- Render bằng JavaScript từ API /api/bestseller -->
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. KHU VỰC BẢNG XẾP HẠNG & DANH SÁCH SÁCH (THEO MẪU ẢNH 3 - 4 SẢN PHẨM / HÀNG) -->
+    <section class="bs-catalog-section">
+        <div class="container bs-catalog-layout">
+
+            <!-- Sidebar Filters -->
+            <aside class="bs-filter-sidebar">
+                <h3 class="bs-filter-title">
+                    <i class="fas fa-filter" style="color:#1e1b4b;"></i> Bộ Lọc Bán Chạy
+                </h3>
+
+                <!-- Lọc theo danh mục -->
+                <div class="bs-filter-group">
+                    <div class="bs-filter-group-label">Danh mục sách</div>
+                    <select id="bsFilterCategory" class="bs-filter-select">
+                        <option value="">Tất cả danh mục</option>
+                        <option value="Văn học">Văn học</option>
+                        <option value="Kinh tế">Kinh tế</option>
+                        <option value="Kỹ năng sống">Kỹ năng sống</option>
+                        <option value="Tâm lý học">Tâm lý học</option>
+                        <option value="Công nghệ thông tin">Công nghệ thông tin</option>
+                        <option value="Tâm linh & Đời sống">Tâm linh & Đời sống</option>
+                        <option value="Khoa học">Khoa học</option>
+                        <option value="Trinh thám">Trinh thám & Bí ẩn</option>
+                    </select>
+                </div>
+
+                <!-- Lọc theo tác giả -->
+                <div class="bs-filter-group">
+                    <div class="bs-filter-group-label">Tác giả</div>
+                    <select id="bsFilterAuthor" class="bs-filter-select">
+                        <option value="">Tất cả tác giả</option>
+                    </select>
+                </div>
+
+                <!-- Lọc theo NXB -->
+                <div class="bs-filter-group">
+                    <div class="bs-filter-group-label">Nhà xuất bản</div>
+                    <select id="bsFilterPublisher" class="bs-filter-select">
+                        <option value="">Tất cả nhà xuất bản</option>
+                    </select>
+                </div>
+
+                <!-- Lọc theo khoảng giá -->
+                <div class="bs-filter-group">
+                    <div class="bs-filter-group-label">Khoảng giá (VNĐ)</div>
+                    <div class="bs-price-row">
+                        <input type="number" id="bsFilterMinPrice" class="bs-price-input" placeholder="Từ" min="0">
+                        <input type="number" id="bsFilterMaxPrice" class="bs-price-input" placeholder="Đến" min="0">
+                    </div>
+                </div>
+
+                <!-- Nút áp dụng / Xóa bộ lọc -->
+                <div class="bs-filter-actions">
+                    <button class="btn-bs-apply" onclick="applyBsFilters()">
+                        <i class="fas fa-check"></i> Áp dụng bộ lọc
+                    </button>
+                    <button class="btn-bs-clear" onclick="clearBsFilters()">
+                        <i class="fas fa-rotate-left"></i> Đặt lại mặc định
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Main Content: Header Bảng xếp hạng + Toolbar + Grid -->
+            <div class="bs-main-content">
+                <!-- Header Bảng Xếp Hạng (Chuẩn theo Ảnh 3) -->
+                <div class="bs-ranking-header-bar">
+                    <div class="bs-ranking-title-group">
+                        <h2>TẤT CẢ SÁCH BÁN CHẠY</h2>
+                        <p>Khám phá bảng xếp hạng • <span id="bsTotalCount">Đang tải...</span></p>
+                    </div>
+                    <div class="bs-ranking-controls">
+                        <span class="bs-density-badge"><i class="fas fa-grip"></i> 4 sản phẩm / hàng</span>
+                        <div class="bs-sort-wrap">
+                            <label for="bsSortSelect"><i class="fas fa-arrow-down-short-wide"></i> Sắp xếp:</label>
+                            <select id="bsSortSelect">
+                                <option value="bestseller">Bán chạy nhất</option>
+                                <option value="price_asc">Giá tăng dần</option>
+                                <option value="price_desc">Giá giảm dần</option>
+                                <option value="rating">Đánh giá cao nhất</option>
+                                <option value="newest">Mới nhất</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loading indicator -->
+                <div id="bsLoading" class="bs-loading">
+                    <div class="bs-loading-spinner"></div>
+                    <p>Đang tải dữ liệu bảng xếp hạng sách bán chạy...</p>
+                </div>
+
+                <!-- Empty state khi không tìm thấy sách -->
+                <div id="bsEmpty" class="bs-empty">
+                    <i class="fas fa-box-open"></i>
+                    <h3>Chưa có dữ liệu sách bán chạy phù hợp</h3>
+                    <p>Hãy thử thay đổi tiêu chí lọc hoặc tìm kiếm theo danh mục khác.</p>
+                </div>
+
+                <!-- Lưới hiển thị sách: Mỗi hàng 4 sản phẩm -->
+                <div class="book-grid" id="bsBookGrid"></div>
+
+                <!-- Phân trang -->
+                <div class="bs-pagination" id="bsPagination"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. FOOTER (ĐỒNG NHẤT VỚI HỆ THỐNG BOOKORA) -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <div class="footer-col">
+                <div class="site-logo" style="margin-bottom: 12px;">
+                    <div class="logo-icon" style="background: white; color: var(--primary);">
+                        <i class="fas fa-book-bookmark"></i>
+                    </div>
+                    <div class="logo-text">
+                        <h1 style="color: white;">Bookora</h1>
+                        <span style="color: #fde68a;">Tiệm Sách Tri Thức</span>
+                    </div>
+                </div>
+                <p class="footer-desc">
+                    Nơi lan tỏa tình yêu sách và nâng tầm tri thức Việt. Cam kết 100% sách có bản quyền từ các nhà xuất bản uy tín hàng đầu.
+                </p>
+                <div style="font-size: 13px; color: #94a3b8; margin-top: 10px; line-height: 1.6;">
+                    <p style="margin: 4px 0;"><i class="fas fa-location-dot" style="color: var(--accent); margin-right: 6px;"></i> Số 25, ngõ 68 phố Cầu Giấy, phường Quan Hoa, quận Cầu Giấy, TP. Hà Nội</p>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h4>Về Chúng Tôi</h4>
+                <ul>
+                    <li><a href="about">Giới thiệu nhà sách</a></li>
+                    <li><a href="home#catalog">Hệ thống cửa hàng</a></li>
+                    <li><a href="about">Tuyển dụng</a></li>
+                    <li><a href="contact">Liên hệ hợp tác</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Hỗ Trợ Khách Hàng</h4>
+                <ul>
+                    <li><a href="promotions">Chính sách đổi trả</a></li>
+                    <li><a href="promotions">Phương thức vận chuyển</a></li>
+                    <li><a href="cart">Hướng dẫn thanh toán</a></li>
+                    <li><a href="about">Bảo mật thông tin</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Kết Nối Với Chúng Tôi</h4>
+                <p style="font-size: 14px; margin-bottom: 12px;">Nhận tin khuyến mãi mới nhất qua email:</p>
+                <div style="display: flex; gap: 8px;">
+                    <input type="email" placeholder="Email của bạn..." style="padding: 10px 14px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: white; font-size: 13px; width: 100%; outline: none;">
+                    <button type="button" style="background: var(--accent); color: white; border: none; padding: 0 14px; border-radius: 8px; cursor: pointer;" onclick="alert('Đã đăng ký nhận bản tin khuyến mãi!')">Gửi</button>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2026 Bookora - Đồ án chuyên ngành Web Bán Sách Java. Phát triển hoàn chỉnh cho trải nghiệm học tập và nghiên cứu.</p>
+        </div>
+    </footer>
+
+    <!-- 6. MODAL CHI TIẾT NHANH (QUICK VIEW) -->
+    <div class="modal-overlay" id="quickViewModal">
+        <div class="modal-dialog">
+            <button type="button" class="modal-close" onclick="closeQuickView()" title="Đóng">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="modal-content-grid">
+                <div class="modal-book-cover">
+                    <img src="" alt="Bìa sách" id="modalCover">
+                </div>
+                <div class="modal-details">
+                    <div class="modal-meta-top">
+                        <span class="modal-category" id="modalCategory">Thể loại</span>
+                        <span class="modal-code" id="modalCode"><i class="fas fa-barcode"></i> Mã: MS001</span>
+                    </div>
+                    <h2 class="modal-title" id="modalTitle">Tựa Sách</h2>
+                    <div class="modal-price-row">
+                        <span class="modal-price" id="modalPrice">0 đ</span>
+                        <span class="modal-price-orig" id="modalOriginalPrice" style="text-decoration: line-through; color: #94a3b8; font-size: 14px; margin-left: 10px;"></span>
+                        <span class="modal-discount-tag" id="modalDiscountTag" style="display:none; margin-left: 8px; font-size: 11px; background: #f59e0b; color: white; padding: 2px 6px; border-radius: 4px; font-weight: 700;"></span>
+                    </div>
+                    <div class="modal-meta-grid">
+                        <div class="modal-meta-item">
+                            <i class="fas fa-feather-alt"></i>
+                            <span>Tác giả: <strong id="modalAuthor">Tác giả</strong></span>
+                        </div>
+                        <div class="modal-meta-item">
+                            <i class="fas fa-building-columns"></i>
+                            <span>NXB: <strong id="modalPublisher">NXB Trẻ</strong></span>
+                        </div>
+                        <div class="modal-meta-item">
+                            <i class="fas fa-star" style="color: #f59e0b;"></i>
+                            <span>Đánh giá: <strong id="modalRating">5.0</strong> <span id="modalReviewCount" style="color: #64748b; font-size: 12px;">(120 đánh giá)</span></span>
+                        </div>
+                        <div class="modal-meta-item">
+                            <i class="fas fa-boxes-stacked"></i>
+                            <span>Tồn kho: <strong id="modalStockText">Còn hàng</strong></span>
+                        </div>
+                    </div>
+                    <div class="modal-stock-badge-wrap">
+                        <span class="modal-stock-badge in-stock" id="modalStockBadge">
+                            <i class="fas fa-check-circle"></i> Còn hàng trong kho
+                        </span>
+                    </div>
+                    <div class="modal-promo-box" id="modalPromoBox">
+                        <i class="fas fa-gift"></i>
+                        <span id="modalPromotion">Ưu đãi: Tặng kèm Bookmark độc quyền Bookora</span>
+                    </div>
+                    <p class="modal-desc" id="modalDesc">Mô tả tóm tắt nội dung cuốn sách...</p>
+                    <div class="modal-actions" id="modalActionsWrap">
+                        <div class="qty-control" id="modalQtyControl">
+                            <button type="button" class="btn-qty" onclick="changeModalQty(-1)"><i class="fas fa-minus"></i></button>
+                            <input type="text" id="modalQty" class="qty-input" value="1" readonly>
+                            <button type="button" class="btn-qty" onclick="changeModalQty(1)"><i class="fas fa-plus"></i></button>
+                        </div>
+                        <button type="button" class="btn-modal-cart btn-modal-add-cart" id="btnModalAddToCart" onclick="addModalBookToCart()">
+                            <i class="fas fa-cart-plus"></i> Thêm Vào Giỏ Hàng
+                        </button>
+                        <button type="button" class="btn-modal-cart btn-modal-buy-now" id="btnModalBuyNow" style="background: #2c3e50;" onclick="buyNowFromModal()">
+                            <i class="fas fa-bolt"></i> Mua Ngay
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal backdrop -->
+    <div class="nav-info-modal-backdrop" id="navInfoModalBackdrop" onclick="closeAllInfoModals()"></div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Scripts dùng chung -->
+    <script src="/js/app.js?v=20260926_10"></script>
+
+    <!-- Script điều khiển nghiệp vụ Trang Sách Bán Chạy -->
+    <script>
+        // ==================== STATE QUẢN LÝ ====================
+        let bsCurrentPage = 1;
+        const bsPageSize = 12; // 12 sách = 3 hàng x 4 sản phẩm
+        let bsTotalPages = 1;
+        let bsFilters = {
+            category: '',
+            author: '',
+            publisher: '',
+            minPrice: '',
+            maxPrice: '',
+            sort: 'bestseller'
+        };
+        let bsTop3Rendered = false;
+
+        // ==================== FORMAT TIỀN TỆ & DOANH SỐ ====================
+        function bsFormatPrice(price) {
+            if (!price && price !== 0) return '0 đ';
+            return Math.round(price).toLocaleString('vi-VN') + ' đ';
+        }
+
+        function bsFormatSold(n) {
+            if (!n) return '0';
+            return n.toLocaleString('vi-VN');
+        }
+
+        // ==================== TẢI DỮ LIỆU SÁCH BÁN CHẠY ====================
+        async function loadBestSellers(page = 1) {
+            bsCurrentPage = page;
+
+            // Bật trạng thái loading
+            document.getElementById('bsLoading').classList.add('active');
+            document.getElementById('bsEmpty').classList.remove('active');
+            document.getElementById('bsBookGrid').innerHTML = '';
+            document.getElementById('bsPagination').innerHTML = '';
+            document.getElementById('bsTotalCount').innerHTML = 'Đang tải...';
+
+            const params = new URLSearchParams({
+                page: page,
+                pageSize: bsPageSize,
+                sort: bsFilters.sort
+            });
+            if (bsFilters.category) params.append('category', bsFilters.category);
+            if (bsFilters.author) params.append('author', bsFilters.author);
+            if (bsFilters.publisher) params.append('publisher', bsFilters.publisher);
+            if (bsFilters.minPrice) params.append('minPrice', bsFilters.minPrice);
+            if (bsFilters.maxPrice) params.append('maxPrice', bsFilters.maxPrice);
+
+            try {
+                const resp = await fetch('/api/bestseller?' + params.toString());
+                const data = await resp.json();
+
+                document.getElementById('bsLoading').classList.remove('active');
+
+                if (!data.success || !data.books || data.books.length === 0) {
+                    document.getElementById('bsEmpty').classList.add('active');
+                    document.getElementById('bsTotalCount').innerHTML = '0 sách';
+                    document.getElementById('bsTop3Section').style.display = 'none';
+                    return;
+                }
+
+                const books = data.books;
+                const total = data.total || books.length;
+                bsTotalPages = data.totalPages || Math.ceil(total / bsPageSize);
+
+                // Khu vực Top 3 sách bán chạy nhất
+                const hasAnySold = books.some(b => b.soldCount > 0);
+                if (bsFilters.sort === 'bestseller' && page === 1 && !bsTop3Rendered && books.length >= 1 && hasAnySold) {
+                    renderTop3(books.slice(0, 3));
+                    document.getElementById('bsTop3Section').style.display = '';
+                    bsTop3Rendered = true;
+                } else if (bsFilters.sort !== 'bestseller' || !hasAnySold) {
+                    document.getElementById('bsTop3Section').style.display = 'none';
+                }
+
+                // Render danh sách sách theo dạng lưới 4 cột
+                renderBsBookGrid(books);
+
+                // Cập nhật thông số số lượng
+                const startIdx = (page - 1) * bsPageSize + 1;
+                const endIdx = Math.min(page * bsPageSize, total);
+                document.getElementById('bsTotalCount').innerHTML =
+                    `Tìm thấy <strong>${total}</strong> cuốn sách`;
+
+                // Render thanh phân trang
+                renderBsPagination(page, bsTotalPages);
+
+            } catch (err) {
+                console.error('Error loading bestsellers:', err);
+                document.getElementById('bsLoading').classList.remove('active');
+                document.getElementById('bsEmpty').classList.add('active');
+                document.getElementById('bsTotalCount').innerHTML = 'Lỗi kết nối';
+                document.getElementById('bsTop3Section').style.display = 'none';
+            }
+        }
+
+        // ==================== RENDER KHU VỰC TOP 3 (THEO MẪU ẢNH 2) ====================
+        function renderTop3(books) {
+            const grid = document.getElementById('top3Grid');
+            if (!books || books.length === 0) {
+                grid.innerHTML = '';
+                return;
+            }
+
+            const rankLabels = ['TOP 1', 'TOP 2', 'TOP 3'];
+            const rankClasses = ['rank-1', 'rank-2', 'rank-3'];
+            const pillClasses = ['pill-1', 'pill-2', 'pill-3'];
+
+            grid.innerHTML = books.map((book, i) => {
+                const rank = i + 1;
+                const img = book.image || '/images/default-book.jpg';
+                const inStock = book.stock > 0;
+                const priceHtml = book.originalPrice && book.originalPrice > book.price
+                    ? `<span class="bs-top3-price">${bsFormatPrice(book.price)}</span>
+                       <span class="bs-top3-orig-price">${bsFormatPrice(book.originalPrice)}</span>`
+                    : `<span class="bs-top3-price">${bsFormatPrice(book.price)}</span>`;
+
+                const isWished = typeof window.wishlist !== 'undefined' && window.wishlist instanceof Set
+                    ? window.wishlist.has(book.id)
+                    : (book.isWishlisted || false);
+                const bookmarkClass = isWished ? 'fas fa-bookmark' : 'far fa-bookmark';
+                const bookmarkStyle = isWished ? 'color:#ef4444' : '';
+
+                return `
+                <div class="bs-top3-card ${rankClasses[i]}" onclick="goToBookDetail(${book.id})">
+                    <div class="bs-top3-cover-wrap">
+                        <img src="${img}" alt="${escapeHtml(book.title)}" onerror="this.src='/images/default-book.jpg'">
+                        <button class="bs-top3-fav-btn" onclick="event.stopPropagation(); toggleWishlist(${book.id})" title="Thêm vào yêu thích">
+                            <i class="${bookmarkClass}" style="${bookmarkStyle}"></i>
+                        </button>
+                    </div>
+                    <div class="bs-top3-body">
+                        <div class="bs-top3-rank-row">
+                            <span class="bs-top-pill ${pillClasses[i]}">
+                                ${i === 0 ? '👑' : (i === 1 ? '🥈' : '🥉')} ${rankLabels[i]}
+                            </span>
+                            <span class="bs-top3-rank-sub">Sách xếp hạng ${rank}</span>
+                        </div>
+                        <h3 class="bs-top3-title" title="${escapeHtml(book.title)}">${escapeHtml(book.title)}</h3>
+                        <div class="bs-top3-author"><i class="fas fa-feather-alt" style="margin-right:4px;"></i>${escapeHtml(book.author || '')}</div>
+                        <div class="bs-top3-publisher"><i class="fas fa-building-columns" style="margin-right:4px;"></i>${escapeHtml(book.publisher || 'NXB Trẻ')}</div>
+                        <div class="bs-top3-price-row">${priceHtml}</div>
+                        ${book.soldCount > 0 ? `<div class="bs-top3-sold"><i class="fas fa-fire"></i> Đã bán: ${bsFormatSold(book.soldCount)} cuốn</div>` : ''}
+                        <button class="bs-top3-btn" onclick="event.stopPropagation(); ${inStock ? `addToCart(${book.id})` : `alert('Sách hiện đã hết hàng trong kho!')`}" ${!inStock ? 'style="opacity:0.6;cursor:not-allowed;"' : ''}>
+                            <i class="fas ${inStock ? 'fa-cart-plus' : 'fa-ban'}"></i> ${inStock ? 'Thêm vào giỏ hàng' : 'Hết hàng'}
+                        </button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // ==================== RENDER DANH SÁCH SÁCH GRID (4 SẢN PHẨM / HÀNG) ====================
+        function renderBsBookGrid(books) {
+            const grid = document.getElementById('bsBookGrid');
+            if (!books || books.length === 0) {
+                grid.innerHTML = '';
+                return;
+            }
+
+            grid.innerHTML = books.map((book, i) => {
+                const globalRank = (bsCurrentPage - 1) * bsPageSize + i + 1;
+                const img = book.image || '/images/default-book.jpg';
+                const inStock = book.stock > 0;
+
+                let rankClass = '';
+                let rankLabel = `TOP ${globalRank}`;
+                if (globalRank === 1) rankClass = 'top-gold';
+                else if (globalRank === 2) rankClass = 'top-silver';
+                else if (globalRank === 3) rankClass = 'top-bronze';
+
+                const discountHtml = book.discountPercent > 0
+                    ? `<span class="book-badge-discount">-${book.discountPercent}%</span>` : '';
+                const origPriceHtml = book.originalPrice && book.originalPrice > book.price
+                    ? `<span class="book-price-orig">${bsFormatPrice(book.originalPrice)}</span>` : '';
+                const soldHtml = book.soldCount > 0
+                    ? `<div class="bs-sold-count"><i class="fas fa-fire"></i>Đã bán: ${bsFormatSold(book.soldCount)} cuốn</div>` : '';
+                const stockBadge = inStock
+                    ? `<span class="book-badge-stock">Còn hàng</span>`
+                    : `<span class="book-badge-stock out">Hết hàng</span>`;
+
+                const isWished = typeof window.wishlist !== 'undefined' && window.wishlist instanceof Set
+                    ? window.wishlist.has(book.id)
+                    : (book.isWishlisted || false);
+                const heartClass = isWished ? 'fas fa-heart' : 'far fa-heart';
+                const heartStyle = isWished ? 'color:#ef4444' : '';
+
+                return `
+                <div class="book-card-wrap">
+                    <span class="bs-book-rank ${rankClass}">${rankLabel}</span>
+                    <div class="book-card" data-book-id="${book.id}">
+                        <div class="book-cover-wrap" onclick="goToBookDetail(${book.id})" style="cursor:pointer;">
+                            <img src="${img}" alt="${escapeHtml(book.title)}" class="book-cover" loading="lazy"
+                                 onerror="this.src='/images/default-book.jpg'">
+                            <div class="book-badges">
+                                ${discountHtml}
+                                ${stockBadge}
+                            </div>
+                            <div class="book-actions-hover">
+                                <button class="btn-wishlist" onclick="event.stopPropagation(); toggleWishlist(${book.id})" title="Yêu thích">
+                                    <i class="${heartClass}" style="${heartStyle}"></i>
+                                </button>
+                                <button class="btn-quick-view" onclick="event.stopPropagation(); openQuickView(${book.id})" title="Xem nhanh">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="book-info">
+                            <div class="book-category">${escapeHtml(book.category || '')}</div>
+                            <h3 class="book-title" title="${escapeHtml(book.title)}" onclick="goToBookDetail(${book.id})" style="cursor: pointer;">${escapeHtml(book.title)}</h3>
+                            <div class="book-author"><i class="fas fa-feather-alt" style="margin-right:4px;"></i>${escapeHtml(book.author || '')}</div>
+                            <div class="book-publisher" style="font-size:12px;color:#94a3b8;margin-bottom:4px;"><i class="fas fa-building-columns" style="margin-right:4px;"></i>${escapeHtml(book.publisher || 'NXB Trẻ')}</div>
+                            <div class="book-rating">
+                                <span class="stars">${renderStars(book.rating || 5.0)}</span>
+                                <span class="review-count">(${book.reviewCount || 0})</span>
+                            </div>
+                            <div class="book-price-row">
+                                <span class="book-price">${bsFormatPrice(book.price)}</span>
+                                ${origPriceHtml}
+                            </div>
+                            ${soldHtml}
+                            <button class="btn-add-cart" onclick="addToCart(${book.id})"
+                                ${!inStock ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>
+                                <i class="fas ${inStock ? 'fa-cart-plus' : 'fa-ban'}"></i>
+                                ${inStock ? 'Thêm vào giỏ' : 'Hết hàng'}
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // ==================== RENDER ĐÁNH GIÁ SAO ====================
+        function renderStars(rating) {
+            const full = Math.floor(rating);
+            const half = rating - full >= 0.5 ? 1 : 0;
+            const empty = 5 - full - half;
+            let html = '';
+            for (let i = 0; i < full; i++) html += '<i class="fas fa-star" style="color:#f59e0b;font-size:12px;"></i>';
+            if (half) html += '<i class="fas fa-star-half-alt" style="color:#f59e0b;font-size:12px;"></i>';
+            for (let i = 0; i < empty; i++) html += '<i class="far fa-star" style="color:#cbd5e1;font-size:12px;"></i>';
+            return html;
+        }
+
+        // ==================== ESCAPE AN TOÀN HTML ====================
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        // ==================== THANH PHÂN TRANG ====================
+        function renderBsPagination(currentPage, totalPages) {
+            const container = document.getElementById('bsPagination');
+            if (totalPages <= 1) { container.innerHTML = ''; return; }
+
+            let html = '';
+
+            html += `<button class="bs-page-btn" onclick="loadBestSellers(${currentPage - 1})"
+                ${currentPage <= 1 ? 'disabled' : ''} title="Trang trước">
+                <i class="fas fa-chevron-left"></i>
+            </button>`;
+
+            const delta = 2;
+            const range = [];
+            for (let i = Math.max(1, currentPage - delta); i <= Math.min(totalPages, currentPage + delta); i++) {
+                range.push(i);
+            }
+            if (range[0] > 1) {
+                html += `<button class="bs-page-btn" onclick="loadBestSellers(1)">1</button>`;
+                if (range[0] > 2) html += `<button class="bs-page-btn" disabled>...</button>`;
+            }
+            range.forEach(p => {
+                html += `<button class="bs-page-btn ${p === currentPage ? 'active' : ''}"
+                    onclick="loadBestSellers(${p})">${p}</button>`;
+            });
+            if (range[range.length - 1] < totalPages) {
+                if (range[range.length - 1] < totalPages - 1) html += `<button class="bs-page-btn" disabled>...</button>`;
+                html += `<button class="bs-page-btn" onclick="loadBestSellers(${totalPages})">${totalPages}</button>`;
+            }
+
+            html += `<button class="bs-page-btn" onclick="loadBestSellers(${currentPage + 1})"
+                ${currentPage >= totalPages ? 'disabled' : ''} title="Trang sau">
+                <i class="fas fa-chevron-right"></i>
+            </button>`;
+
+            container.innerHTML = html;
+        }
+
+        // ==================== BỘ LỌC TƯƠNG TÁC ====================
+        function applyBsFilters() {
+            bsFilters.category = document.getElementById('bsFilterCategory').value;
+            bsFilters.author = document.getElementById('bsFilterAuthor').value;
+            bsFilters.publisher = document.getElementById('bsFilterPublisher').value;
+            bsFilters.minPrice = document.getElementById('bsFilterMinPrice').value;
+            bsFilters.maxPrice = document.getElementById('bsFilterMaxPrice').value;
+            bsCurrentPage = 1;
+            bsTop3Rendered = false;
+            loadBestSellers(1);
+        }
+
+        function clearBsFilters() {
+            document.getElementById('bsFilterCategory').value = '';
+            document.getElementById('bsFilterAuthor').value = '';
+            document.getElementById('bsFilterPublisher').value = '';
+            document.getElementById('bsFilterMinPrice').value = '';
+            document.getElementById('bsFilterMaxPrice').value = '';
+            bsFilters = { category: '', author: '', publisher: '', minPrice: '', maxPrice: '', sort: 'bestseller' };
+            document.getElementById('bsSortSelect').value = 'bestseller';
+            bsCurrentPage = 1;
+            bsTop3Rendered = false;
+            loadBestSellers(1);
+        }
+
+        // ==================== SẮP XẾP ====================
+        document.getElementById('bsSortSelect').addEventListener('change', function() {
+            bsFilters.sort = this.value;
+            bsCurrentPage = 1;
+            bsTop3Rendered = false;
+            loadBestSellers(1);
+        });
+
+        // ==================== TỰ ĐỘNG NẠP CÁC TÙY CHỌN BỘ LỌC TỪ DATABASE ====================
+        async function loadFilterOptions() {
+            try {
+                const resp = await fetch('/api/books?meta=true&pageSize=1');
+                const data = await resp.json();
+                if (data.authors) {
+                    const authorSel = document.getElementById('bsFilterAuthor');
+                    data.authors.forEach(a => {
+                        const opt = document.createElement('option');
+                        opt.value = a; opt.textContent = a;
+                        authorSel.appendChild(opt);
+                    });
+                }
+                if (data.publishers) {
+                    const pubSel = document.getElementById('bsFilterPublisher');
+                    data.publishers.forEach(p => {
+                        const opt = document.createElement('option');
+                        opt.value = p; opt.textContent = p;
+                        pubSel.appendChild(opt);
+                    });
+                }
+            } catch (e) {
+                console.warn('Lỗi nạp metadata bộ lọc:', e);
+            }
+        }
+
+        // ==================== KHỞI CHẠY TRANG ====================
+        document.addEventListener('DOMContentLoaded', function() {
+            loadBestSellers(1);
+            loadFilterOptions();
+        });
+    </script>
+</body>
+</html>

@@ -2932,17 +2932,7 @@ public class DataStore {
         if (orderCode == null || orderCode.trim().isEmpty()) return null;
         String cleanCode = orderCode.trim();
 
-        // 1. Tìm trong memory
-        for (Order o : memoryOrders) {
-            if (cleanCode.equalsIgnoreCase(o.getOrderCode())) {
-                if (username == null || "admin".equalsIgnoreCase(username) || o.getUsername().equalsIgnoreCase(username)) {
-                    return o;
-                }
-                return null; // Không thuộc tài khoản
-            }
-        }
-
-        // 2. Tìm trong MySQL
+        // 1. Tìm trong MySQL (Nguồn dữ liệu chuẩn)
         String sql = "SELECT id, order_code, username, address_id, recipient_name, recipient_phone, delivery_address, voucher_code, subtotal, discount_amount, shipping_fee, total_amount, payment_method_code, payment_method_name, payment_status, order_status, note, cancel_reason, transaction_id, created_at FROM don_hang WHERE order_code = ?";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -3011,6 +3001,16 @@ public class DataStore {
                 }
             }
         } catch (SQLException ignored) {}
+
+        // 2. Fallback sang memory nếu chưa lưu hoặc mất kết nối DB
+        for (Order o : memoryOrders) {
+            if (cleanCode.equalsIgnoreCase(o.getOrderCode())) {
+                if (username == null || "admin".equalsIgnoreCase(username) || o.getUsername().equalsIgnoreCase(username)) {
+                    return o;
+                }
+                return null; // Không thuộc tài khoản
+            }
+        }
 
         return null;
     }
@@ -3414,7 +3414,10 @@ public class DataStore {
             ps.setString(1, targetStatus);
             ps.setString(2, targetStatus);
             ps.setString(3, orderCode.trim());
-            ps.executeUpdate();
+            int rows = ps.executeUpdate();
+            if (rows <= 0) {
+                return new OrderResult(false, "Không thể cập nhật trạng thái đơn hàng (Đơn hàng không tồn tại hoặc đã bị xóa).", order);
+            }
         } catch (SQLException e) {
             return new OrderResult(false, "Lỗi cơ sở dữ liệu: " + e.getMessage(), order);
         }

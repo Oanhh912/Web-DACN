@@ -992,6 +992,10 @@ public class BookstoreApp {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             User user = getAuthenticatedUser(exchange);
+            if (user == null) {
+                redirect(exchange, "/login?redirect=/cart&require_login=true");
+                return;
+            }
             String html = renderCartPage(user);
             sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
         }

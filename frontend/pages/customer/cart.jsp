@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+﻿<%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="com.bookstore.model.User" %>
 <%
     User currentUser = (User) session.getAttribute("user");
@@ -12,6 +12,12 @@
     <title>Giỏ Hàng Của Bạn - Bookora | Tiệm Sách Tri Thức</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css?v=20261018_square">
+    <!-- Bookora Brand Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20261112">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=20261112">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=20261112">
+    <link rel="apple-touch-icon" href="/favicon.png?v=20261112">
+    <link rel="shortcut icon" href="/favicon.ico?v=20261112">
 </head>
 <body>
 

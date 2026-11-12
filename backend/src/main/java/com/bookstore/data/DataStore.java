@@ -1419,6 +1419,181 @@ public class DataStore {
     }
 
     /**
+     * Tìm kiếm và lọc sách đa tiêu chí mở rộng (hỗ trợ nhiều danh mục, nhiều tác giả, nhiều NXB cùng lúc)
+     */
+    public static List<Book> searchBooksMulti(String keyword, List<String> categories, List<String> authors, List<String> publishers, 
+                                              Double minPrice, Double maxPrice, String stockStatus) {
+        List<Book> list = new ArrayList<>();
+        String kw = keyword == null ? "" : keyword.trim();
+        String stock = stockStatus == null ? "" : stockStatus.trim();
+
+        // Chuẩn hóa và lọc bỏ danh mục rỗng hoặc 'Tất cả'
+        List<String> validCategories = new ArrayList<>();
+        if (categories != null) {
+            for (String c : categories) {
+                if (c != null && !c.trim().isEmpty() && !"Tất cả".equalsIgnoreCase(c.trim()) && !validCategories.contains(c.trim())) {
+                    validCategories.add(c.trim());
+                }
+            }
+        }
+
+        // Chuẩn hóa và lọc bỏ tác giả rỗng hoặc 'Tất cả'
+        List<String> validAuthors = new ArrayList<>();
+        if (authors != null) {
+            for (String a : authors) {
+                if (a != null && !a.trim().isEmpty() && !"Tất cả".equalsIgnoreCase(a.trim()) && !validAuthors.contains(a.trim())) {
+                    validAuthors.add(a.trim());
+                }
+            }
+        }
+
+        // Chuẩn hóa và lọc bỏ NXB rỗng hoặc 'Tất cả'
+        List<String> validPublishers = new ArrayList<>();
+        if (publishers != null) {
+            for (String p : publishers) {
+                if (p != null && !p.trim().isEmpty() && !"Tất cả".equalsIgnoreCase(p.trim()) && !validPublishers.contains(p.trim())) {
+                    validPublishers.add(p.trim());
+                }
+            }
+        }
+
+        StringBuilder sql = new StringBuilder("SELECT id, code, title, author, publisher, price, original_price, category, stock, rating, review_count, image, description, promotion, is_bestseller, publish_year, page_count, weight, dimensions, cover_format FROM books WHERE 1=1 ");
+        List<Object> params = new ArrayList<>();
+
+        if (!kw.isEmpty()) {
+            String kwNorm = removeDiacritics(kw);
+            boolean isGenericBook = "sach".equals(kwNorm) || "book".equals(kwNorm);
+            if (!isGenericBook) {
+                sql.append("AND (LOWER(title) LIKE ? OR LOWER(author) LIKE ? OR LOWER(publisher) LIKE ? OR LOWER(code) LIKE ? OR LOWER(category) LIKE ? OR LOWER(description) LIKE ?) ");
+                String kwPattern = "%" + kw.toLowerCase() + "%";
+                params.add(kwPattern);
+                params.add(kwPattern);
+                params.add(kwPattern);
+                params.add(kwPattern);
+                params.add(kwPattern);
+                params.add(kwPattern);
+            }
+        }
+
+        if (!validCategories.isEmpty()) {
+            sql.append("AND category IN (");
+            for (int i = 0; i < validCategories.size(); i++) {
+                if (i > 0) sql.append(",");
+                sql.append("?");
+                params.add(validCategories.get(i));
+            }
+            sql.append(") ");
+        }
+
+        if (!validAuthors.isEmpty()) {
+            sql.append("AND author IN (");
+            for (int i = 0; i < validAuthors.size(); i++) {
+                if (i > 0) sql.append(",");
+                sql.append("?");
+                params.add(validAuthors.get(i));
+            }
+            sql.append(") ");
+        }
+
+        if (!validPublishers.isEmpty()) {
+            sql.append("AND publisher IN (");
+            for (int i = 0; i < validPublishers.size(); i++) {
+                if (i > 0) sql.append(",");
+                sql.append("?");
+                params.add(validPublishers.get(i));
+            }
+            sql.append(") ");
+        }
+
+        if (minPrice != null && minPrice > 0) {
+            sql.append("AND price >= ? ");
+            params.add(minPrice);
+        }
+
+        if (maxPrice != null && maxPrice > 0) {
+            sql.append("AND price <= ? ");
+            params.add(maxPrice);
+        }
+
+        if ("in_stock".equalsIgnoreCase(stock)) {
+            sql.append("AND stock > 0 ");
+        } else if ("out_of_stock".equalsIgnoreCase(stock)) {
+            sql.append("AND stock <= 0 ");
+        }
+
+        sql.append("ORDER BY id ASC");
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(extractBookFromResultSet(rs));
+                }
+            }
+            return list;
+        } catch (SQLException e) {
+            System.err.println("⚠️ MySQL searchBooksMulti lỗi (" + e.getMessage() + "). Dùng bộ nhớ tạm.");
+            List<Book> fallback = new ArrayList<>();
+            for (Book b : memoryBooks) {
+                boolean matchKw = kw.isEmpty()
+                        || (b.getTitle() != null && b.getTitle().toLowerCase().contains(kw.toLowerCase()))
+                        || (b.getAuthor() != null && b.getAuthor().toLowerCase().contains(kw.toLowerCase()))
+                        || (b.getPublisher() != null && b.getPublisher().toLowerCase().contains(kw.toLowerCase()))
+                        || (b.getCode() != null && b.getCode().toLowerCase().contains(kw.toLowerCase()))
+                        || (b.getCategory() != null && b.getCategory().toLowerCase().contains(kw.toLowerCase()));
+
+                boolean matchCat = validCategories.isEmpty();
+                if (!matchCat && b.getCategory() != null) {
+                    for (String vc : validCategories) {
+                        if (b.getCategory().equalsIgnoreCase(vc)) {
+                            matchCat = true;
+                            break;
+                        }
+                    }
+                }
+
+                boolean matchAuth = validAuthors.isEmpty();
+                if (!matchAuth && b.getAuthor() != null) {
+                    for (String va : validAuthors) {
+                        if (b.getAuthor().equalsIgnoreCase(va)) {
+                            matchAuth = true;
+                            break;
+                        }
+                    }
+                }
+
+                boolean matchPub = validPublishers.isEmpty();
+                if (!matchPub && b.getPublisher() != null) {
+                    for (String vp : validPublishers) {
+                        if (b.getPublisher().equalsIgnoreCase(vp)) {
+                            matchPub = true;
+                            break;
+                        }
+                    }
+                }
+
+                boolean matchMinPrice = (minPrice == null || minPrice <= 0 || b.getPrice() >= minPrice);
+                boolean matchMaxPrice = (maxPrice == null || maxPrice <= 0 || b.getPrice() <= maxPrice);
+
+                boolean matchStock = true;
+                if ("in_stock".equalsIgnoreCase(stock)) {
+                    matchStock = (b.getStock() > 0);
+                } else if ("out_of_stock".equalsIgnoreCase(stock)) {
+                    matchStock = (b.getStock() <= 0);
+                }
+
+                if (matchKw && matchCat && matchAuth && matchPub && matchMinPrice && matchMaxPrice && matchStock) {
+                    fallback.add(b);
+                }
+            }
+            return fallback;
+        }
+    }
+
+    /**
      * Lấy danh sách đối tượng Category từ MySQL / Memory kèm tính toán số lượng sách
      */
     public static List<Category> getAllCategoriesList() {
@@ -1700,6 +1875,94 @@ public class DataStore {
             }
         }
         return publishers;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // BEST SELLER
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Wrapper: Sách bán chạy = Book + tổng số lượng đã bán (từ đơn HOAN_THANH)
+     */
+    public static class BestSellerBook {
+        public final Book book;
+        public final int soldCount;
+        public BestSellerBook(Book book, int soldCount) {
+            this.book = book;
+            this.soldCount = soldCount;
+        }
+    }
+
+    /**
+     * Lấy danh sách sách bán chạy, sắp xếp theo tổng số lượng bán (HOAN_THANH/DA_GIAO) giảm dần.
+     * Nếu trùng số lượng bán thì ưu tiên doanh thu cao hơn, sau đó là ID sách.
+     * Thử DB trước, fallback về memory nếu DB lỗi.
+     */
+    public static List<BestSellerBook> getBestSellerBooks() {
+        List<BestSellerBook> result = new ArrayList<>();
+
+        // ── DB path ──────────────────────────────────────────────────────────
+        String sql =
+            "SELECT b.id, b.code, b.title, b.author, b.publisher, b.price, b.original_price, " +
+            "b.category, b.stock, b.rating, b.review_count, b.image, b.description, " +
+            "b.promotion, b.is_bestseller, b.publish_year, b.page_count, b.weight, " +
+            "b.dimensions, b.cover_format, " +
+            "COALESCE(sales.sold_qty, 0) AS total_sold " +
+            "FROM books b " +
+            "LEFT JOIN (" +
+            "    SELECT ct.book_id, SUM(ct.quantity) AS sold_qty, SUM(ct.subtotal) AS total_revenue " +
+            "    FROM ct_don_hang ct " +
+            "    JOIN don_hang dh ON dh.id = ct.order_id " +
+            "    WHERE UPPER(dh.order_status) IN ('HOAN_THANH', 'DA_GIAO') " +
+            "    GROUP BY ct.book_id " +
+            ") sales ON sales.book_id = b.id " +
+            "ORDER BY total_sold DESC, sales.total_revenue DESC, b.id ASC";
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                Book book = extractBookFromResultSet(rs);
+                int soldCount = rs.getInt("total_sold");
+                result.add(new BestSellerBook(book, soldCount));
+            }
+            if (!result.isEmpty()) {
+                return result;
+            }
+        } catch (SQLException e) {
+            System.err.println("⚠️ MySQL getBestSellerBooks lỗi: " + e.getMessage());
+        }
+
+        // ── Memory fallback ───────────────────────────────────────────────────
+        Map<Integer, Integer> soldMap = new HashMap<>();
+        Map<Integer, Double> revMap = new HashMap<>();
+        synchronized (memoryOrders) {
+            for (Order o : memoryOrders) {
+                String st = o.getOrderStatus() != null ? o.getOrderStatus().toUpperCase() : "";
+                if (("HOAN_THANH".equals(st) || "DA_GIAO".equals(st)) && o.getItems() != null) {
+                    for (OrderItem item : o.getItems()) {
+                        soldMap.merge(item.getBookId(), item.getQuantity(), Integer::sum);
+                        revMap.merge(item.getBookId(), item.getSubtotal(), Double::sum);
+                    }
+                }
+            }
+        }
+
+        List<Book> allBooks = getAllBooks();
+        for (Book b : allBooks) {
+            int sold = soldMap.getOrDefault(b.getId(), 0);
+            result.add(new BestSellerBook(b, sold));
+        }
+        result.sort((a, x) -> {
+            int cmp = Integer.compare(x.soldCount, a.soldCount);
+            if (cmp != 0) return cmp;
+            double revA = revMap.getOrDefault(a.book.getId(), a.soldCount * a.book.getPrice());
+            double revX = revMap.getOrDefault(x.book.getId(), x.soldCount * x.book.getPrice());
+            int revCmp = Double.compare(revX, revA);
+            if (revCmp != 0) return revCmp;
+            return Integer.compare(a.book.getId(), x.book.getId());
+        });
+        return result;
     }
 
     /**
@@ -2932,17 +3195,7 @@ public class DataStore {
         if (orderCode == null || orderCode.trim().isEmpty()) return null;
         String cleanCode = orderCode.trim();
 
-        // 1. Tìm trong memory
-        for (Order o : memoryOrders) {
-            if (cleanCode.equalsIgnoreCase(o.getOrderCode())) {
-                if (username == null || "admin".equalsIgnoreCase(username) || o.getUsername().equalsIgnoreCase(username)) {
-                    return o;
-                }
-                return null; // Không thuộc tài khoản
-            }
-        }
-
-        // 2. Tìm trong MySQL
+        // 1. Tìm trong MySQL (Nguồn dữ liệu chuẩn)
         String sql = "SELECT id, order_code, username, address_id, recipient_name, recipient_phone, delivery_address, voucher_code, subtotal, discount_amount, shipping_fee, total_amount, payment_method_code, payment_method_name, payment_status, order_status, note, cancel_reason, transaction_id, created_at FROM don_hang WHERE order_code = ?";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -3011,6 +3264,16 @@ public class DataStore {
                 }
             }
         } catch (SQLException ignored) {}
+
+        // 2. Fallback sang memory nếu chưa lưu hoặc mất kết nối DB
+        for (Order o : memoryOrders) {
+            if (cleanCode.equalsIgnoreCase(o.getOrderCode())) {
+                if (username == null || "admin".equalsIgnoreCase(username) || o.getUsername().equalsIgnoreCase(username)) {
+                    return o;
+                }
+                return null; // Không thuộc tài khoản
+            }
+        }
 
         return null;
     }
@@ -3414,7 +3677,10 @@ public class DataStore {
             ps.setString(1, targetStatus);
             ps.setString(2, targetStatus);
             ps.setString(3, orderCode.trim());
-            ps.executeUpdate();
+            int rows = ps.executeUpdate();
+            if (rows <= 0) {
+                return new OrderResult(false, "Không thể cập nhật trạng thái đơn hàng (Đơn hàng không tồn tại hoặc đã bị xóa).", order);
+            }
         } catch (SQLException e) {
             return new OrderResult(false, "Lỗi cơ sở dữ liệu: " + e.getMessage(), order);
         }

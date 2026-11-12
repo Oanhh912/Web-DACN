@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -6,6 +6,13 @@
     <title>Hồ Sơ Tài Khoản - Bookora | Tiệm Sách Tri Thức</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css?v=20261018_square">
+    <!-- Bookora Brand Favicon -->
+    <!-- Bookora Brand Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20261112">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=20261112">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=20261112">
+    <link rel="apple-touch-icon" href="/favicon.png?v=20261112">
+    <link rel="shortcut icon" href="/favicon.ico?v=20261112">
 </head>
 <body>
 
@@ -240,14 +247,19 @@
                 <!-- ================= TAB 3: ĐƠN HÀNG CỦA TÔI ================= -->
                 <div class="profile-tab-pane" id="paneOrders">
                     <div class="profile-card">
-                        <div class="profile-card-header" style="margin-bottom: 20px;">
-                            <div class="profile-card-header-icon" style="background: #ede9fe; color: #7c3aed;">
-                                <i class="fas fa-box-open"></i>
+                        <div class="profile-card-header" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                            <div style="display: flex; align-items: center; gap: 14px;">
+                                <div class="profile-card-header-icon" style="background: #ede9fe; color: #7c3aed;">
+                                    <i class="fas fa-box-open"></i>
+                                </div>
+                                <div>
+                                    <h3 class="profile-card-title" style="text-transform: uppercase;">Quản Lý Đơn Hàng</h3>
+                                    <p class="profile-card-desc">Theo dõi trạng thái các đơn hàng bạn đã đặt tại Bookora (Đồng bộ trực tiếp từ Database)</p>
+                                </div>
                             </div>
-                            <div>
-                                <h3 class="profile-card-title" style="text-transform: uppercase;">Quản Lý Đơn Hàng</h3>
-                                <p class="profile-card-desc">Theo dõi trạng thái các đơn hàng bạn đã đặt tại Bookora</p>
-                            </div>
+                            <button type="button" class="btn-refresh-orders" onclick="loadMyOrders(true)" style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 13px; color: #334155; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f8fafc'">
+                                <i class="fas fa-rotate"></i> Làm mới dữ liệu
+                            </button>
                         </div>
 
                         <!-- THANH LỌC TRẠNG THÁI -->
@@ -452,7 +464,7 @@
                 document.getElementById('tabNavOrders').classList.add('active');
                 document.getElementById('paneOrders').classList.add('active');
                 history.replaceState(null, null, '#orders');
-                loadMyOrders();
+                loadMyOrders(true);
             } else {
                 document.getElementById('tabNavProfile').classList.add('active');
                 document.getElementById('paneProfile').classList.add('active');
@@ -484,10 +496,15 @@
         let currentStatusFilter = 'ALL';
         let ordersLoaded = false;
 
-        async function loadMyOrders() {
-            if (ordersLoaded) return;
+        async function loadMyOrders(force = false) {
+            if (ordersLoaded && !force) return;
             const loadingEl = document.getElementById('ordersLoading');
             const listWrap = document.getElementById('ordersListWrap');
+
+            if (force) {
+                loadingEl.style.display = 'block';
+                listWrap.style.display = 'none';
+            }
 
             try {
                 const res = await fetch('/api/orders/my-orders');
@@ -682,7 +699,9 @@
                 if (st === 'DANG_GIAO') {
                     actionBtnsHtml = `
                         <a href="order-success?code=${encodeURIComponent(o.orderCode)}" class="btn-order-outline" target="_blank">Xem chi tiết</a>
-                        <button type="button" class="btn-order-primary" onclick="confirmReceivedOrder('${escHtml(o.orderCode)}')">Đã nhận được hàng</button>`;
+                        <span style="font-size: 12px; color: #0284c7; font-weight: 600; padding: 6px 12px; background: #e0f2fe; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-truck-fast"></i> Đang giao đến bạn
+                        </span>`;
                 } else if (st === 'CHO_XAC_NHAN') {
                     actionBtnsHtml = `
                         <a href="order-success?code=${encodeURIComponent(o.orderCode)}" class="btn-order-outline" target="_blank">Xem chi tiết</a>
@@ -743,16 +762,6 @@
             alert('📞 Hotline Hỗ Trợ Đơn Hàng Bookora: 1900 6868\nEmail: support@bookora.vn\nGiờ làm việc: 8:00 - 21:00 hàng ngày.');
         }
 
-        function confirmReceivedOrder(code) {
-            if (confirm(`Bạn xác nhận đã nhận thành công đơn hàng #${code}?`)) {
-                alert(`Cảm ơn bạn! Đơn hàng #${code} đã được cập nhật thành HOÀN THÀNH.`);
-                const ord = allOrdersList.find(o => o.orderCode === code);
-                if (ord) ord.orderStatus = 'HOAN_THANH';
-                updateStatusCounts();
-                renderFilteredOrders();
-            }
-        }
-
         // Hủy đơn hàng gọi trực tiếp API Backend và hiển thị đúng thông báo theo nghiệp vụ
         async function cancelOrderModal(code) {
             const reason = prompt(`Nhập lý do bạn muốn yêu cầu hủy đơn hàng #${code}:`, "Đổi ý, không có nhu cầu mua nữa");
@@ -771,7 +780,8 @@
                 const data = await res.json();
                 if (data.success) {
                     alert(data.message || 'Đơn hàng đã được hủy thành công.');
-                    loadMyOrders();
+                    ordersLoaded = false;
+                    await loadMyOrders(true);
                 } else {
                     alert(data.message || 'Không thể hủy đơn hàng ở trạng thái hiện tại.');
                 }
@@ -781,9 +791,17 @@
             }
         }
 
-        function buyAgainOrder(code) {
+        async function buyAgainOrder(code) {
+            const ord = allOrdersList.find(o => o.orderCode === code);
+            if (ord && ord.items && ord.items.length > 0) {
+                for (const it of ord.items) {
+                    if (typeof addToCart === 'function') {
+                        await addToCart(it.bookId, it.quantity || 1);
+                    }
+                }
+            }
             alert(`Đã thêm lại các sản phẩm trong đơn hàng #${code} vào Giỏ hàng!`);
-            window.location.href = 'cart.html';
+            window.location.href = '/cart';
         }
 
         function escHtml(str) {

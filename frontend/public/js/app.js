@@ -4,13 +4,63 @@
  */
 
 // Quản lý người dùng hiện tại & phân tách dữ liệu riêng biệt
-function getActiveUsername() {
-    if (window.CURRENT_USER && window.CURRENT_USER.username) {
-        return window.CURRENT_USER.username.trim().toLowerCase();
+function isUserLoggedIn() {
+    if (window.CURRENT_USER && window.CURRENT_USER.username && window.CURRENT_USER.role !== 'GUEST') {
+        return true;
     }
-    const metaEl = document.querySelector('.dropdown-header-info, .user-meta .user-fullname');
-    if (window.CURRENT_USERNAME) {
-        return window.CURRENT_USERNAME.trim().toLowerCase();
+    const metaEl = document.querySelector('.dropdown-header-info, .user-meta .user-fullname, .user-dropdown');
+    if (metaEl && window.CURRENT_USERNAME && window.CURRENT_USERNAME !== 'guest') {
+        return true;
+    }
+    return false;
+}
+
+function promptLoginRequired(actionText) {
+    const text = actionText || 'sử dụng tính năng này';
+    const currentUrl = window.location.pathname + window.location.search;
+
+    if (typeof showToast === 'function') {
+        showToast(`⚠️ Bạn đang là Khách. Vui lòng đăng nhập để ${text}!`);
+    }
+
+    let modal = document.getElementById('guestLoginPromptModal');
+    if (modal) modal.remove();
+
+    modal = document.createElement('div');
+    modal.id = 'guestLoginPromptModal';
+    modal.className = 'guest-login-prompt-backdrop';
+    modal.innerHTML = `
+        <div class="guest-login-prompt-box">
+            <button type="button" class="prompt-close-btn" onclick="document.getElementById('guestLoginPromptModal').remove()">&times;</button>
+            <div class="prompt-icon-wrap">
+                <i class="fas fa-user-lock"></i>
+            </div>
+            <h3 class="prompt-title">Yêu cầu Đăng nhập</h3>
+            <p class="prompt-desc">
+                Tính năng này chỉ dành cho thành viên của <strong>Bookora</strong>.<br>
+                Vui lòng đăng nhập hoặc tạo tài khoản để <strong>${escapeHtml(text)}</strong>.
+            </p>
+            <div class="prompt-actions">
+                <button type="button" class="btn-prompt-cancel" onclick="document.getElementById('guestLoginPromptModal').remove()">Để sau</button>
+                <a href="login?redirect=${encodeURIComponent(currentUrl)}" class="btn-prompt-login">
+                    <i class="fas fa-arrow-right-to-bracket"></i> Đăng nhập ngay
+                </a>
+            </div>
+            <div class="prompt-footer">
+                Chưa có tài khoản? <a href="register" style="color: #e05828; font-weight: 700;">Đăng ký miễn phí</a>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.remove();
+    });
+}
+
+function getActiveUsername() {
+    if (isUserLoggedIn() && window.CURRENT_USER && window.CURRENT_USER.username) {
+        return window.CURRENT_USER.username.trim().toLowerCase();
     }
     return 'guest';
 }
@@ -31,6 +81,7 @@ function getOrderNoteStorageKey(username) {
 }
 
 function loadCartFromStorage(username) {
+    if (!isUserLoggedIn()) return [];
     const key = getCartStorageKey(username);
     try {
         const raw = localStorage.getItem(key);
@@ -39,12 +90,12 @@ function loadCartFromStorage(username) {
     return [];
 }
 
-let cart = loadCartFromStorage();
+let cart = [];
 let syncCartTimer = null;
 
 async function syncCartToBackend(items) {
     const user = getActiveUsername();
-    if (user === 'guest') return;
+    if (!isUserLoggedIn() || user === 'guest') return;
     try {
         await fetch('/api/cart', {
             method: 'POST',
@@ -57,26 +108,14 @@ async function syncCartToBackend(items) {
 }
 
 async function initUserDataContext() {
-    // Dọn dẹp legacy global keys nếu có
+    // Luôn dọn dẹp dữ liệu guest nếu có để đảm bảo khách vãng lai không bao giờ giữ cart hay wishlist cũ
     try {
-        const legacyCart = localStorage.getItem('bookstore_cart');
-        const legacyWl = localStorage.getItem('bookora_wishlist');
-        const activeUser = getActiveUsername();
-        if (legacyCart && legacyCart !== '[]') {
-            const userCartKey = getCartStorageKey(activeUser);
-            if (!localStorage.getItem(userCartKey)) {
-                localStorage.setItem(userCartKey, legacyCart);
-            }
-        }
-        if (legacyWl && legacyWl !== '[]') {
-            const userWlKey = getWishlistStorageKey(activeUser);
-            if (!localStorage.getItem(userWlKey)) {
-                localStorage.setItem(userWlKey, legacyWl);
-            }
-        }
+        localStorage.removeItem('bookstore_cart_guest');
+        localStorage.removeItem('bookora_wishlist_guest');
         localStorage.removeItem('bookstore_cart');
         localStorage.removeItem('bookora_wishlist');
         localStorage.removeItem('bookstore_order_note');
+        localStorage.removeItem('bookstore_order_note_guest');
     } catch (e) {}
 
     // Nếu chưa có CURRENT_USER trong window, gọi /api/me
@@ -85,64 +124,69 @@ async function initUserDataContext() {
             const res = await fetch('/api/me');
             if (res.ok) {
                 const data = await res.json();
-                if (data && data.username) {
+                if (data && data.username && data.role !== 'GUEST') {
                     window.CURRENT_USER = data;
                 }
             }
         } catch (e) {}
     }
 
+    if (!isUserLoggedIn()) {
+        cart = [];
+        updateCartUI();
+        if (typeof wlRefreshUI === 'function') wlRefreshUI();
+        return;
+    }
+
     const activeUser = getActiveUsername();
     cart = loadCartFromStorage(activeUser);
 
     // Đồng bộ giỏ hàng & wishlist từ máy chủ nếu đã đăng nhập
-    if (activeUser !== 'guest') {
-        try {
-            const res = await fetch('/api/cart');
-            if (res.ok) {
-                const data = await res.json();
-                if (data && data.success && Array.isArray(data.items)) {
-                    if (data.items.length > 0 || cart.length === 0) {
-                        cart = data.items.map(it => ({
-                            id: it.id,
-                            code: it.code || ('MS' + String(it.id).padStart(3, '0')),
-                            title: it.title,
-                            image: it.image,
-                            price: it.price,
-                            formattedPrice: formatVNCurrency(it.price),
-                            quantity: it.quantity,
-                            stock: it.stock !== undefined ? it.stock : 10,
-                            author: it.author || '',
-                            publisher: it.publisher || '',
-                            category: it.category || ''
-                        }));
-                        localStorage.setItem(getCartStorageKey(activeUser), JSON.stringify(cart));
-                    } else if (cart.length > 0) {
-                        syncCartToBackend(cart);
-                    }
-                }
-            }
-        } catch (e) {
-            console.warn('[Bookora] Lỗi tải giỏ hàng từ máy chủ:', e);
-        }
-
-        try {
-            const resWl = await fetch('/api/wishlist');
-            if (resWl.ok) {
-                const dataWl = await resWl.json();
-                if (dataWl && dataWl.success && Array.isArray(dataWl.items)) {
-                    const wlList = dataWl.items.map(b => ({
-                        id: b.id,
-                        title: b.title,
-                        image: b.image,
-                        price: b.price || formatVNCurrency(b.priceNum || 0)
+    try {
+        const res = await fetch('/api/cart');
+        if (res.ok) {
+            const data = await res.json();
+            if (data && data.success && Array.isArray(data.items)) {
+                if (data.items.length > 0 || cart.length === 0) {
+                    cart = data.items.map(it => ({
+                        id: it.id,
+                        code: it.code || ('MS' + String(it.id).padStart(3, '0')),
+                        title: it.title,
+                        image: it.image,
+                        price: it.price,
+                        formattedPrice: formatVNCurrency(it.price),
+                        quantity: it.quantity,
+                        stock: it.stock !== undefined ? it.stock : 10,
+                        author: it.author || '',
+                        publisher: it.publisher || '',
+                        category: it.category || ''
                     }));
-                    wlSave(wlList, activeUser);
+                    localStorage.setItem(getCartStorageKey(activeUser), JSON.stringify(cart));
+                } else if (cart.length > 0) {
+                    syncCartToBackend(cart);
                 }
             }
-        } catch (e) {
-            console.warn('[Bookora] Lỗi tải yêu thích từ máy chủ:', e);
         }
+    } catch (e) {
+        console.warn('[Bookora] Lỗi tải giỏ hàng từ máy chủ:', e);
+    }
+
+    try {
+        const resWl = await fetch('/api/wishlist');
+        if (resWl.ok) {
+            const dataWl = await resWl.json();
+            if (dataWl && dataWl.success && Array.isArray(dataWl.items)) {
+                const wlList = dataWl.items.map(b => ({
+                    id: b.id,
+                    title: b.title,
+                    image: b.image,
+                    price: b.price || formatVNCurrency(b.priceNum || 0)
+                }));
+                wlSave(wlList, activeUser);
+            }
+        }
+    } catch (e) {
+        console.warn('[Bookora] Lỗi tải yêu thích từ máy chủ:', e);
     }
 
     updateCartUI();
@@ -1231,6 +1275,11 @@ function changeModalQty(delta) {
 }
 
 function addModalBookToCart() {
+    if (!isUserLoggedIn()) {
+        closeQuickView();
+        promptLoginRequired('thêm sách vào giỏ hàng');
+        return;
+    }
     if (!currentModalBook) return;
     if (currentModalBook.isOutOfStock) {
         notifyOutOfStock(currentModalBook.title);
@@ -1247,6 +1296,11 @@ function addModalItemToCart() {
 }
 
 function buyNowFromModal() {
+    if (!isUserLoggedIn()) {
+        closeQuickView();
+        promptLoginRequired('mua sách ngay');
+        return;
+    }
     if (!currentModalBook) return;
     if (currentModalBook.isOutOfStock) {
         notifyOutOfStock(currentModalBook.title);
@@ -1582,6 +1636,10 @@ function hideCartPopover() {
 }
 
 async function addToCart(bookId, quantity = 1) {
+    if (!isUserLoggedIn()) {
+        promptLoginRequired('thêm sách vào giỏ hàng');
+        return;
+    }
     if (!bookId) return;
     bookId = Number(bookId);
     quantity = Math.max(1, parseInt(quantity) || 1);
@@ -1740,6 +1798,7 @@ async function addToCart(bookId, quantity = 1) {
 }
 
 function saveCart() {
+    if (!isUserLoggedIn()) return;
     const user = getActiveUsername();
     localStorage.setItem(getCartStorageKey(user), JSON.stringify(cart));
     if (user !== 'guest') {
@@ -1751,8 +1810,13 @@ function saveCart() {
 }
 
 function updateCartUI() {
+    const cartWrapper = document.getElementById('cartDropdownWrapper');
+    if (cartWrapper) {
+        cartWrapper.style.display = '';
+    }
+
     const badge = document.getElementById('cartBadge');
-    const totalCount = cart.reduce((sum, item) => sum + (parseInt(item.quantity) || 1), 0);
+    const totalCount = isUserLoggedIn() ? cart.reduce((sum, item) => sum + (parseInt(item.quantity) || 1), 0) : 0;
     if (badge) {
         badge.textContent = totalCount;
         badge.style.display = totalCount > 0 ? 'flex' : 'none';
@@ -1778,6 +1842,9 @@ function renderCartPopoverItems() {
             <div class="cart-popover-empty">
                 <i class="fas fa-bag-shopping"></i>
                 <p>Giỏ hàng của bạn đang trống</p>
+                ${!isUserLoggedIn() 
+                    ? '<div style="margin-top: 8px; font-size: 13px; color: #64748b;"><a href="login" style="color: #e05828; font-weight: 700;">Đăng nhập</a> để xem giỏ hàng của bạn</div>' 
+                    : ''}
             </div>
         `;
         totalVal.textContent = '0đ';
@@ -1823,6 +1890,10 @@ function removeFromCart(bookId) {
 }
 
 function proceedToCheckout() {
+    if (!isUserLoggedIn()) {
+        promptLoginRequired('thanh toán đơn hàng');
+        return;
+    }
     if (!cart || cart.length === 0) {
         showToast('Giỏ hàng trống! Hãy chọn ít nhất một cuốn sách để đặt hàng.');
         return;
@@ -1989,6 +2060,10 @@ function onDetailAddToCart() {
 
 // Mua ngay từ trang chi tiết
 function onDetailBuyNow() {
+    if (!isUserLoggedIn()) {
+        promptLoginRequired('mua sách ngay');
+        return;
+    }
     const infoCol = document.querySelector('.detail-info-column');
     if (!infoCol) return;
     const bookId = parseInt(infoCol.getAttribute('data-id'));
@@ -2750,10 +2825,18 @@ function wlGetStorageKey() {
 }
 
 function wlGet() {
+    if (!isUserLoggedIn()) return [];
     try { return JSON.parse(localStorage.getItem(wlGetStorageKey())) || []; } catch (e) { return []; }
 }
-function wlSave(list) { localStorage.setItem(wlGetStorageKey(), JSON.stringify(list)); }
-function wlHas(id) { return wlGet().some(b => String(b.id) === String(id)); }
+function wlSave(list, user) {
+    if (!isUserLoggedIn() && !user) return;
+    const key = user ? getWishlistStorageKey(user) : wlGetStorageKey();
+    localStorage.setItem(key, JSON.stringify(list));
+}
+function wlHas(id) {
+    if (!isUserLoggedIn()) return false;
+    return wlGet().some(b => String(b.id) === String(id));
+}
 function wlEsc(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
         .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -2770,6 +2853,10 @@ function wlReadCard(card) {
 }
 
 function wlToggle(book) {
+    if (!isUserLoggedIn()) {
+        promptLoginRequired('lưu sách vào danh sách yêu thích');
+        return false;
+    }
     let list = wlGet();
     const idx = list.findIndex(b => String(b.id) === String(book.id));
     if (idx >= 0) { list.splice(idx, 1); } else { list.push(book); }
@@ -2790,9 +2877,12 @@ function wlToggle(book) {
 }
 
 function wlRefreshUI() {
-    const list = wlGet();
+    const wlWrapper = document.getElementById('wishlistDropdownWrapper');
+    if (wlWrapper) wlWrapper.style.display = '';
+
+    const list = isUserLoggedIn() ? wlGet() : [];
     document.querySelectorAll('.btn-wishlist-heart, .btn-detail-wishlist').forEach(btn => {
-        const active = wlHas(btn.getAttribute('data-id'));
+        const active = isUserLoggedIn() && wlHas(btn.getAttribute('data-id'));
         btn.classList.toggle('active', active);
         const icon = btn.querySelector('i');
         if (icon) icon.className = (active ? 'fas' : 'far') + ' fa-heart';
@@ -2801,19 +2891,26 @@ function wlRefreshUI() {
     const badge = document.getElementById('wishlistBadge');
     if (badge) {
         badge.textContent = list.length;
-        badge.style.display = list.length ? 'flex' : 'none';
+        badge.style.display = (isUserLoggedIn() && list.length > 0) ? 'flex' : 'none';
     }
     const toggle = document.getElementById('btnWishlistToggle');
-    if (toggle) toggle.classList.toggle('has-items', list.length > 0);
+    if (toggle) toggle.classList.toggle('has-items', isUserLoggedIn() && list.length > 0);
     renderWishlistPopover();
 }
 
 function renderWishlistPopover() {
     const box = document.getElementById('wishlistItems');
     if (!box) return;
-    const list = wlGet();
+    const list = isUserLoggedIn() ? wlGet() : [];
     if (!list.length) {
-        box.innerHTML = '<div class="wishlist-empty"><i class="far fa-heart"></i>Chưa có cuốn sách yêu thích nào.<br>Bấm vào hình trái tim trên sách để lưu lại nhé!</div>';
+        box.innerHTML = `
+            <div class="wishlist-empty">
+                <i class="far fa-heart"></i>
+                Chưa có cuốn sách yêu thích nào.<br>
+                ${!isUserLoggedIn() 
+                    ? '<span style="font-size: 12px; color: #64748b; display: inline-block; margin-top: 6px;">Vui lòng <a href="login" style="color: #e05828; font-weight: 700;">đăng nhập</a> để lưu sách yêu thích nhé!</span>' 
+                    : '<span style="font-size: 12px; color: #64748b;">Bấm vào hình trái tim trên sách để lưu lại nhé!</span>'}
+            </div>`;
         return;
     }
     box.innerHTML = list.map(b => `
@@ -2911,6 +3008,10 @@ function wlInjectHearts(root) {
         btn.innerHTML = '<i class="far fa-heart"></i>';
         btn.addEventListener('click', ev => {
             ev.stopPropagation();
+            if (!isUserLoggedIn()) {
+                promptLoginRequired('lưu sách vào danh sách yêu thích');
+                return;
+            }
             wlToggle(wlReadCard(card));
         });
         wrap.appendChild(btn);
@@ -2926,6 +3027,10 @@ function wlInjectHearts(root) {
         btn.setAttribute('data-id', id);
         btn.innerHTML = '<i class="far fa-heart"></i>';
         btn.addEventListener('click', () => {
+            if (!isUserLoggedIn()) {
+                promptLoginRequired('lưu sách vào danh sách yêu thích');
+                return;
+            }
             const imgEl = document.getElementById('detailBookImage');
             const priceEl = document.querySelector('.detail-price-red');
             wlToggle({

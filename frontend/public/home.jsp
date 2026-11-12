@@ -1,4 +1,4 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+﻿<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="com.bookstore.model.User, com.bookstore.model.Book, com.bookstore.data.DataStore, java.util.List" %>
 <%
     User currentUser = (User) request.getAttribute("currentUser");
@@ -29,6 +29,12 @@
     <title>Trang Chủ - Bookora | Tiệm Sách Tri Thức</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css?v=20261018_square">
+    <!-- Bookora Brand Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20261112">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=20261112">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=20261112">
+    <link rel="apple-touch-icon" href="/favicon.png?v=20261112">
+    <link rel="shortcut icon" href="/favicon.ico?v=20261112">
 </head>
 <body>
 
@@ -162,7 +168,7 @@
                         </a>
                     </li>
                     <li class="nav-menu-item nav-dropdown-item" id="navCategoryDropdownWrapper">
-                        <a href="javascript:void(0)" class="nav-menu-link nav-dropdown-toggle" onclick="toggleNavCategoryDropdown(event)">
+                        <a href="category?name=Tất cả" class="nav-menu-link nav-dropdown-toggle">
                             <i class="fas fa-list-ul"></i> DANH MỤC SÁCH <i class="fas fa-chevron-down nav-caret"></i>
                         </a>
                         <!-- Dropdown tổng hợp danh mục sách thực tế của Bookora -->
@@ -171,7 +177,6 @@
                                 <span><i class="fas fa-layer-group"></i> Danh Mục Sách</span>
                             </div>
                             <div class="nav-category-vertical-list">
-                                <a href="category?name=Tất cả" class="nav-cat-list-link"><i class="fas fa-border-all"></i> Tất cả sách</a>
                                 <a href="category?name=Văn học" class="nav-cat-list-link"><i class="fas fa-book-open"></i> Văn học</a>
                                 <a href="category?name=Kinh tế" class="nav-cat-list-link"><i class="fas fa-chart-line"></i> Kinh tế</a>
                                 <a href="category?name=Kỹ năng sống" class="nav-cat-list-link"><i class="fas fa-seedling"></i> Kỹ năng sống</a>

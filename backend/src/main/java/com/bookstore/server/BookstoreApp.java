@@ -157,6 +157,9 @@ public class BookstoreApp {
         server.createContext("/api/admin/chatbot/content/edit", new ApiAdminChatbotEditHandler());
         server.createContext("/api/admin/chatbot/content/delete", new ApiAdminChatbotDeleteHandler());
         server.createContext("/api/admin/chatbot/content/sync", new ApiAdminChatbotSyncHandler());
+        server.createContext("/bestseller", new BestSellerHandler());
+        server.createContext("/bestseller.html", new BestSellerHandler());
+        server.createContext("/api/bestseller", new ApiBestSellerHandler());
         server.createContext("/db", new DatabaseViewerHandler());
         server.createContext("/admin", new AdminHandler());
         server.createContext("/admin/books", new AdminHandler());
@@ -214,6 +217,8 @@ public class BookstoreApp {
                 redirect(exchange, "/home");
             } else if (path.equals("/category") || path.equals("/category.html")) {
                 new CategoryHandler().handle(exchange);
+            } else if (path.equals("/bestseller") || path.equals("/bestseller.html")) {
+                new BestSellerHandler().handle(exchange);
             } else {
                 new StaticFileHandler().handle(exchange);
             }
@@ -992,6 +997,10 @@ public class BookstoreApp {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             User user = getAuthenticatedUser(exchange);
+            if (user == null) {
+                redirect(exchange, "/login?redirect=/cart&require_login=true");
+                return;
+            }
             String html = renderCartPage(user);
             sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
         }
@@ -4752,14 +4761,71 @@ public class BookstoreApp {
             }
 
             String query = exchange.getRequestURI().getQuery();
-            String category = "Tất cả";
+            List<String> categories = new ArrayList<>();
+            List<String> authors = new ArrayList<>();
+            List<String> publishers = new ArrayList<>();
+            Double minPrice = null;
+            Double maxPrice = null;
             String sort = "newest";
+
             if (query != null) {
                 Map<String, String> qp = parseQueryString(query);
+                Map<String, List<String>> qpMulti = parseQueryStringMulti(query);
+
+                if (qpMulti.containsKey("categories")) {
+                    for (String val : qpMulti.get("categories")) {
+                        for (String c : val.split(",")) {
+                            if (!c.trim().isEmpty() && !categories.contains(c.trim())) categories.add(c.trim());
+                        }
+                    }
+                }
+                if (qpMulti.containsKey("category")) {
+                    for (String val : qpMulti.get("category")) {
+                        for (String c : val.split(",")) {
+                            if (!c.trim().isEmpty() && !categories.contains(c.trim())) categories.add(c.trim());
+                        }
+                    }
+                }
                 if (qp.containsKey("name") && !qp.get("name").trim().isEmpty()) {
-                    category = qp.get("name").trim();
-                } else if (qp.containsKey("category") && !qp.get("category").trim().isEmpty()) {
-                    category = qp.get("category").trim();
+                    String n = qp.get("name").trim();
+                    if (!categories.contains(n)) categories.add(n);
+                }
+
+                if (qpMulti.containsKey("authors")) {
+                    for (String val : qpMulti.get("authors")) {
+                        for (String a : val.split(",")) {
+                            if (!a.trim().isEmpty() && !authors.contains(a.trim())) authors.add(a.trim());
+                        }
+                    }
+                }
+                if (qpMulti.containsKey("author")) {
+                    for (String val : qpMulti.get("author")) {
+                        for (String a : val.split(",")) {
+                            if (!a.trim().isEmpty() && !authors.contains(a.trim())) authors.add(a.trim());
+                        }
+                    }
+                }
+
+                if (qpMulti.containsKey("publishers")) {
+                    for (String val : qpMulti.get("publishers")) {
+                        for (String p : val.split(",")) {
+                            if (!p.trim().isEmpty() && !publishers.contains(p.trim())) publishers.add(p.trim());
+                        }
+                    }
+                }
+                if (qpMulti.containsKey("publisher")) {
+                    for (String val : qpMulti.get("publisher")) {
+                        for (String p : val.split(",")) {
+                            if (!p.trim().isEmpty() && !publishers.contains(p.trim())) publishers.add(p.trim());
+                        }
+                    }
+                }
+
+                if (qp.containsKey("minPrice")) {
+                    try { minPrice = Double.parseDouble(qp.get("minPrice")); } catch (NumberFormatException ignored) {}
+                }
+                if (qp.containsKey("maxPrice")) {
+                    try { maxPrice = Double.parseDouble(qp.get("maxPrice")); } catch (NumberFormatException ignored) {}
                 }
                 if (qp.containsKey("sort") && !qp.get("sort").trim().isEmpty()) {
                     sort = qp.get("sort").trim();
@@ -4767,7 +4833,7 @@ public class BookstoreApp {
             }
 
             User user = getAuthenticatedUser(exchange);
-            String html = renderCategoryPage(user, category, sort);
+            String html = renderCategoryPage(user, categories, authors, publishers, minPrice, maxPrice, sort);
             sendResponse(exchange, 200, "text/html; charset=UTF-8", html);
         }
     }
@@ -4809,19 +4875,65 @@ public class BookstoreApp {
         public void handle(HttpExchange exchange) throws IOException {
             String query = exchange.getRequestURI().getQuery();
             String keyword = "";
-            String category = "Tất cả";
-            String author = "Tất cả";
-            String publisher = "Tất cả";
+            List<String> categories = new ArrayList<>();
+            List<String> authors = new ArrayList<>();
+            List<String> publishers = new ArrayList<>();
             String stockStatus = "all";
             Double minPrice = null;
             Double maxPrice = null;
+            String sort = "newest";
 
             if (query != null) {
                 Map<String, String> qp = parseQueryString(query);
+                Map<String, List<String>> qpMulti = parseQueryStringMulti(query);
+
                 if (qp.containsKey("q")) keyword = qp.get("q");
-                if (qp.containsKey("category")) category = qp.get("category");
-                if (qp.containsKey("author")) author = qp.get("author");
-                if (qp.containsKey("publisher")) publisher = qp.get("publisher");
+
+                if (qpMulti.containsKey("categories")) {
+                    for (String val : qpMulti.get("categories")) {
+                        for (String c : val.split(",")) {
+                            if (!c.trim().isEmpty() && !categories.contains(c.trim())) categories.add(c.trim());
+                        }
+                    }
+                }
+                if (qpMulti.containsKey("category")) {
+                    for (String val : qpMulti.get("category")) {
+                        for (String c : val.split(",")) {
+                            if (!c.trim().isEmpty() && !categories.contains(c.trim())) categories.add(c.trim());
+                        }
+                    }
+                }
+
+                if (qpMulti.containsKey("authors")) {
+                    for (String val : qpMulti.get("authors")) {
+                        for (String a : val.split(",")) {
+                            if (!a.trim().isEmpty() && !authors.contains(a.trim())) authors.add(a.trim());
+                        }
+                    }
+                }
+                if (qpMulti.containsKey("author")) {
+                    for (String val : qpMulti.get("author")) {
+                        for (String a : val.split(",")) {
+                            if (!a.trim().isEmpty() && !authors.contains(a.trim())) authors.add(a.trim());
+                        }
+                    }
+                }
+
+                if (qpMulti.containsKey("publishers")) {
+                    for (String val : qpMulti.get("publishers")) {
+                        for (String p : val.split(",")) {
+                            if (!p.trim().isEmpty() && !publishers.contains(p.trim())) publishers.add(p.trim());
+                        }
+                    }
+                }
+                if (qpMulti.containsKey("publisher")) {
+                    for (String val : qpMulti.get("publisher")) {
+                        for (String p : val.split(",")) {
+                            if (!p.trim().isEmpty() && !publishers.contains(p.trim())) publishers.add(p.trim());
+                        }
+                    }
+                }
+
                 if (qp.containsKey("stockStatus")) stockStatus = qp.get("stockStatus");
                 if (qp.containsKey("minPrice")) {
                     try { minPrice = Double.parseDouble(qp.get("minPrice")); } catch (NumberFormatException ignored) {}
@@ -4829,9 +4941,23 @@ public class BookstoreApp {
                 if (qp.containsKey("maxPrice")) {
                     try { maxPrice = Double.parseDouble(qp.get("maxPrice")); } catch (NumberFormatException ignored) {}
                 }
+                if (qp.containsKey("sort")) sort = qp.get("sort");
             }
 
-            List<Book> books = DataStore.searchBooks(keyword, category, author, publisher, minPrice, maxPrice, stockStatus);
+            List<Book> books = DataStore.searchBooksMulti(keyword, categories, authors, publishers, minPrice, maxPrice, stockStatus);
+
+            if ("bestseller".equalsIgnoreCase(sort)) {
+                books.sort((a, b) -> Boolean.compare(b.isBestSeller(), a.isBestSeller()));
+            } else if ("price_asc".equalsIgnoreCase(sort)) {
+                books.sort(Comparator.comparingDouble(Book::getPrice));
+            } else if ("price_desc".equalsIgnoreCase(sort)) {
+                books.sort((a, b) -> Double.compare(b.getPrice(), a.getPrice()));
+            } else if ("rating".equalsIgnoreCase(sort)) {
+                books.sort((a, b) -> Double.compare(b.getRating(), a.getRating()));
+            } else {
+                books.sort((a, b) -> Integer.compare(b.getId(), a.getId()));
+            }
+
             StringBuilder sb = new StringBuilder("[");
             for (int i = 0; i < books.size(); i++) {
                 Book b = books.get(i);
@@ -5996,6 +6122,15 @@ public class BookstoreApp {
     }
 
     private static String renderCategoryPage(User user, String categoryName, String sortOrder) {
+        List<String> cats = new ArrayList<>();
+        if (categoryName != null && !categoryName.trim().isEmpty() && !"Tất cả".equalsIgnoreCase(categoryName.trim()) && !"Tất cả sách".equalsIgnoreCase(categoryName.trim())) {
+            cats.add(categoryName.trim());
+        }
+        return renderCategoryPage(user, cats, Collections.emptyList(), Collections.emptyList(), null, null, sortOrder);
+    }
+
+    private static String renderCategoryPage(User user, List<String> selectedCategories, List<String> selectedAuthors, 
+                                             List<String> selectedPublishers, Double minPrice, Double maxPrice, String sortOrder) {
         Path templatePath = WEBAPP_DIR.resolve("category.html");
         String content = "";
         try {
@@ -6085,12 +6220,56 @@ public class BookstoreApp {
             content = content.replace("${user.email}", "");
         }
 
-        List<Book> books;
-        if ("Tất cả".equalsIgnoreCase(categoryName) || "Tất cả sách".equalsIgnoreCase(categoryName)) {
-            books = new ArrayList<>(DataStore.getAllBooks());
-        } else {
-            books = DataStore.searchBooks("", categoryName, null, null, null, null, "all");
+        // Tạo danh sách checkbox Danh mục từ Database
+        List<String> allCategories = DataStore.getCategories();
+        StringBuilder catCbHtml = new StringBuilder();
+        for (String c : allCategories) {
+            if ("Tất cả".equalsIgnoreCase(c) || c.trim().isEmpty()) continue;
+            boolean checked = selectedCategories != null && selectedCategories.contains(c);
+            catCbHtml.append(String.format(
+                    "<label class=\"filter-checkbox-item\">\n" +
+                    "    <input type=\"checkbox\" name=\"categoryFilter\" value=\"%s\" %s>\n" +
+                    "    <span class=\"custom-checkbox\"></span>\n" +
+                    "    <span class=\"filter-label-text\">%s</span>\n" +
+                    "</label>\n",
+                    escapeAttr(c), checked ? "checked" : "", escapeHtml(c)
+            ));
         }
+
+        // Tạo danh sách checkbox Tác giả từ Database
+        List<String> allAuthors = DataStore.getAuthors();
+        StringBuilder authorCbHtml = new StringBuilder();
+        for (String a : allAuthors) {
+            if ("Tất cả".equalsIgnoreCase(a) || a.trim().isEmpty()) continue;
+            boolean checked = selectedAuthors != null && selectedAuthors.contains(a);
+            authorCbHtml.append(String.format(
+                    "<label class=\"filter-checkbox-item\">\n" +
+                    "    <input type=\"checkbox\" name=\"authorFilter\" value=\"%s\" %s>\n" +
+                    "    <span class=\"custom-checkbox\"></span>\n" +
+                    "    <span class=\"filter-label-text\">%s</span>\n" +
+                    "</label>\n",
+                    escapeAttr(a), checked ? "checked" : "", escapeHtml(a)
+            ));
+        }
+
+        // Tạo danh sách checkbox Nhà xuất bản từ Database
+        List<String> allPublishers = DataStore.getPublishers();
+        StringBuilder pubCbHtml = new StringBuilder();
+        for (String p : allPublishers) {
+            if ("Tất cả".equalsIgnoreCase(p) || p.trim().isEmpty()) continue;
+            boolean checked = selectedPublishers != null && selectedPublishers.contains(p);
+            pubCbHtml.append(String.format(
+                    "<label class=\"filter-checkbox-item\">\n" +
+                    "    <input type=\"checkbox\" name=\"publisherFilter\" value=\"%s\" %s>\n" +
+                    "    <span class=\"custom-checkbox\"></span>\n" +
+                    "    <span class=\"filter-label-text\">%s</span>\n" +
+                    "</label>\n",
+                    escapeAttr(p), checked ? "checked" : "", escapeHtml(p)
+            ));
+        }
+
+        // Tìm kiếm sách theo tiêu chí đa lựa chọn
+        List<Book> books = DataStore.searchBooksMulti("", selectedCategories, selectedAuthors, selectedPublishers, minPrice, maxPrice, "all");
 
         // Sorting
         if ("bestseller".equalsIgnoreCase(sortOrder)) {
@@ -6105,17 +6284,27 @@ public class BookstoreApp {
             books.sort((a, b) -> Integer.compare(b.getId(), a.getId()));
         }
 
+        // Tiêu đề trang
+        String categoryTitle = "Tất cả";
+        if (selectedCategories != null && !selectedCategories.isEmpty()) {
+            if (selectedCategories.size() == 1) {
+                categoryTitle = selectedCategories.get(0);
+            } else {
+                categoryTitle = String.join(", ", selectedCategories);
+            }
+        }
+
         StringBuilder gridHtml = new StringBuilder();
         if (books.isEmpty()) {
             gridHtml.append(
                     "<div class=\"no-books-found\" style=\"grid-column: 1 / -1;\">\n" +
-                    "    <div class=\"empty-icon-wrap\"><i class=\"fas fa-book-open\"></i></div>\n" +
-                    "    <h3 class=\"empty-title\">Chưa có sách nào trong danh mục này</h3>\n" +
-                    "    <p style=\"color: #64748b; font-size: 14px; margin-top: 6px;\">Hệ thống đang tiếp tục cập nhật các đầu sách mới nhất cho chuyên mục này.</p>\n" +
+                    "    <div class=\"empty-icon-wrap\"><i class=\"fas fa-filter-circle-xmark\"></i></div>\n" +
+                    "    <h3 class=\"empty-title\">Không tìm thấy sách phù hợp với bộ lọc</h3>\n" +
+                    "    <p style=\"color: #64748b; font-size: 14px; margin-top: 6px;\">Vui lòng thử điều chỉnh hoặc xóa bớt các tiêu chí lọc để tìm thêm sách phù hợp.</p>\n" +
                     "    <div class=\"empty-action\" style=\"margin-top: 16px;\">\n" +
-                    "        <a href=\"category?name=Tất cả\" class=\"btn-empty-reset\" style=\"text-decoration:none; display:inline-flex; align-items:center; gap:6px;\">\n" +
-                    "            <i class=\"fas fa-border-all\"></i> Xem tất cả sách\n" +
-                    "        </a>\n" +
+                    "        <button type=\"button\" class=\"btn-empty-reset\" onclick=\"resetCategoryFilter()\">\n" +
+                    "            <i class=\"fas fa-rotate-left\"></i> Xóa bộ lọc\n" +
+                    "        </button>\n" +
                     "    </div>\n" +
                     "</div>"
             );
@@ -6215,10 +6404,20 @@ public class BookstoreApp {
             }
         }
 
-        content = content.replace("${CATEGORY_TITLE}", escapeHtml(categoryName));
+        content = content.replace("<!-- ${CATEGORY_FILTER_CHECKBOXES} -->", catCbHtml.toString());
+        content = content.replace("<!-- ${AUTHOR_FILTER_CHECKBOXES} -->", authorCbHtml.toString());
+        content = content.replace("<!-- ${PUBLISHER_FILTER_CHECKBOXES} -->", pubCbHtml.toString());
+        content = content.replace("${CATEGORY_TITLE}", escapeHtml(categoryTitle));
         content = content.replace("${bookCount}", String.valueOf(books.size()));
         content = content.replace("<!-- ${CATEGORY_BOOK_GRID} -->", gridHtml.toString());
         content = content.replace("${searchKeyword}", "");
+
+        if (minPrice != null && minPrice > 0) {
+            content = content.replace("id=\"filterPriceMin\"", "id=\"filterPriceMin\" value=\"" + String.format("%.0f", minPrice) + "\"");
+        }
+        if (maxPrice != null && maxPrice > 0) {
+            content = content.replace("id=\"filterPriceMax\"", "id=\"filterPriceMax\" value=\"" + String.format("%.0f", maxPrice) + "\"");
+        }
 
         // Set selected in dropdown
         String selectedSort = (sortOrder != null) ? sortOrder : "newest";
@@ -6560,6 +6759,19 @@ public class BookstoreApp {
         return map;
     }
 
+    private static Map<String, List<String>> parseQueryStringMulti(String qs) {
+        Map<String, List<String>> map = new HashMap<>();
+        if (qs == null || qs.isEmpty()) return map;
+        String[] pairs = qs.split("&");
+        for (String pair : pairs) {
+            String[] kv = pair.split("=", 2);
+            String key = URLDecoder.decode(kv[0], StandardCharsets.UTF_8);
+            String val = kv.length > 1 ? URLDecoder.decode(kv[1], StandardCharsets.UTF_8) : "";
+            map.computeIfAbsent(key, k -> new ArrayList<>()).add(val);
+        }
+        return map;
+    }
+
     private static void redirect(HttpExchange exchange, String location) throws IOException {
         exchange.getResponseHeaders().set("Location", location);
         exchange.sendResponseHeaders(302, -1);
@@ -6624,6 +6836,232 @@ public class BookstoreApp {
         }
         sb.append("\"");
         return sb.toString();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // BEST SELLER PAGE
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Phục vụ trang HTML Sách Bán Chạy (/bestseller)
+     */
+    static class BestSellerHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            String path = exchange.getRequestURI().getPath();
+            if (path.startsWith("/bestseller/css/") || path.startsWith("/bestseller/js/") || path.startsWith("/bestseller/images/")) {
+                new StaticFileHandler().handle(exchange);
+                return;
+            }
+
+            User user = getAuthenticatedUser(exchange);
+
+            Path templatePath = WEBAPP_DIR.resolve("bestseller.html");
+            String content;
+            try {
+                content = Files.readString(templatePath, StandardCharsets.UTF_8);
+            } catch (IOException e) {
+                content = "<h1>bestseller.html not found</h1>";
+            }
+
+            if (user != null) {
+                // ── Auth header (logged-in user) ──────────────────────────────────
+                String topbarAuth = String.format(
+                        "<div class=\"topbar-auth-links\">" +
+                        "    <span class=\"topbar-welcome\"><i class=\"fas fa-circle-user\"></i> Xin chào, <strong>%s</strong></span>" +
+                        "    <span class=\"topbar-divider\">|</span>" +
+                        "    <a href=\"logout\" class=\"topbar-auth-btn\"><i class=\"fas fa-arrow-right-from-bracket\"></i> ĐĂNG XUẤT</a>" +
+                        "</div>",
+                        escapeAttr(user.getFullName())
+                );
+
+                String headerAuth = String.format(
+                        "<div class=\"user-dropdown\">\n" +
+                        "    <button type=\"button\" class=\"user-profile-trigger\" id=\"userMenuTrigger\">\n" +
+                        "        <img src=\"%s\" alt=\"Avatar\" class=\"user-avatar-img\" onerror=\"this.src='https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150';\">\n" +
+                        "        <div class=\"user-meta\">\n" +
+                        "            <div class=\"user-greeting\">Xin chào,</div>\n" +
+                        "            <div class=\"user-fullname\">%s</div>\n" +
+                        "        </div>\n" +
+                        "        <span class=\"user-role-tag\">%s</span>\n" +
+                        "        <i class=\"fas fa-chevron-down\" style=\"font-size: 11px; color: var(--text-muted); margin-left: 4px;\"></i>\n" +
+                        "    </button>\n" +
+                        "    <div class=\"user-menu-dropdown\" id=\"userMenuDropdown\">\n" +
+                        "        <div class=\"dropdown-header-info\">\n" +
+                        "            <div style=\"font-weight: 700; font-size: 13px; color: var(--primary);\">%s</div>\n" +
+                        "            <div class=\"dropdown-email\">%s</div>\n" +
+                        "        </div>\n" +
+                        "        <a href=\"profile\" class=\"dropdown-item\">\n" +
+                        "            <i class=\"fas fa-user-circle\"></i> Hồ sơ tài khoản\n" +
+                        "        </a>\n" +
+                        "        <a href=\"profile?tab=orders#orders\" class=\"dropdown-item\">\n" +
+                        "            <i class=\"fas fa-box-archive\"></i> Đơn hàng của tôi\n" +
+                        "        </a>\n" +
+                        "        <a href=\"javascript:void(0)\" class=\"dropdown-item\" onclick=\"openWishlistFromMenu(event)\">\n" +
+                        "            <i class=\"fas fa-heart\" style=\"color: #ef4444;\"></i> Danh sách yêu thích\n" +
+                        "        </a>\n" +
+                        "        <a href=\"logout\" class=\"dropdown-item logout\">\n" +
+                        "            <i class=\"fas fa-arrow-right-from-bracket\"></i> Đăng xuất\n" +
+                        "        </a>\n" +
+                        "    </div>\n" +
+                        "</div>",
+                        escapeAttr(user.getAvatar() != null ? user.getAvatar() : ""),
+                        escapeAttr(user.getFullName()),
+                        escapeAttr(user.getRole()),
+                        escapeAttr(user.getFullName()),
+                        escapeAttr(user.getEmail() != null ? user.getEmail() : "")
+                );
+
+                content = content.replace("<!-- ${TOPBAR_AUTH} -->", topbarAuth);
+                content = content.replace("<!-- ${HEADER_AUTH} -->", headerAuth);
+                content = content.replace("${user.fullName}", escapeAttr(user.getFullName()));
+                content = content.replace("${user.username}", escapeAttr(user.getUsername()));
+                content = content.replace("${user.role}", escapeAttr(user.getRole()));
+                content = content.replace("${user.avatar}", escapeAttr(user.getAvatar() != null ? user.getAvatar() : ""));
+                content = content.replace("${user.email}", escapeAttr(user.getEmail() != null ? user.getEmail() : ""));
+            } else {
+                String topbarAuth =
+                        "<div class=\"topbar-auth-links\">" +
+                        "    <span style=\"color: #cbd5e1;\"><i class=\"fas fa-truck-fast\"></i> Miễn phí vận chuyển từ 250.000 đ</span>" +
+                        "</div>";
+
+                String headerAuth =
+                        "<div class=\"guest-auth-buttons\">\n" +
+                        "    <a href=\"login\" class=\"btn-guest btn-guest-login\">\n" +
+                        "        <i class=\"fas fa-arrow-right-to-bracket\"></i>\n" +
+                        "        <span>Đăng Nhập</span>\n" +
+                        "    </a>\n" +
+                        "    <a href=\"register\" class=\"btn-guest btn-guest-register\">\n" +
+                        "        <i class=\"fas fa-user-plus\"></i>\n" +
+                        "        <span>Đăng Ký</span>\n" +
+                        "    </a>\n" +
+                        "</div>";
+
+                content = content.replace("<!-- ${TOPBAR_AUTH} -->", topbarAuth);
+                content = content.replace("<!-- ${HEADER_AUTH} -->", headerAuth);
+                content = content.replace("${user.fullName}", "");
+                content = content.replace("${user.username}", "");
+                content = content.replace("${user.role}", "");
+                content = content.replace("${user.avatar}", "");
+                content = content.replace("${user.email}", "");
+            }
+
+            content = content.replace("${searchKeyword}", "");
+            content = injectCurrentUserScript(content, user);
+            sendResponse(exchange, 200, "text/html; charset=UTF-8", content);
+        }
+    }
+
+    /**
+     * API JSON: Danh sách sách bán chạy với bộ lọc + phân trang
+     * GET /api/bestseller?category=&author=&publisher=&minPrice=&maxPrice=&sort=bestseller&page=1&pageSize=12
+     */
+    static class ApiBestSellerHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            String query = exchange.getRequestURI().getQuery();
+            Map<String, String> qp = (query != null) ? parseQueryString(query) : new HashMap<>();
+
+            String category  = qp.getOrDefault("category", "");
+            String author    = qp.getOrDefault("author", "");
+            String publisher = qp.getOrDefault("publisher", "");
+            String sort      = qp.getOrDefault("sort", "bestseller");
+            Double minPrice  = null;
+            Double maxPrice  = null;
+            int page         = 1;
+            int pageSize     = 12;
+
+            try { minPrice  = Double.parseDouble(qp.get("minPrice")); }  catch (Exception ignored) {}
+            try { maxPrice  = Double.parseDouble(qp.get("maxPrice")); }  catch (Exception ignored) {}
+            try { page      = Math.max(1, Integer.parseInt(qp.get("page"))); }     catch (Exception ignored) {}
+            try { pageSize  = Math.max(1, Integer.parseInt(qp.get("pageSize"))); } catch (Exception ignored) {}
+
+            // Load all best-seller data (sorted by soldCount DESC by default)
+            List<DataStore.BestSellerBook> all = DataStore.getBestSellerBooks();
+
+            // ── Filter ───────────────────────────────────────────────────────
+            List<DataStore.BestSellerBook> filtered = new ArrayList<>();
+            for (DataStore.BestSellerBook bs : all) {
+                Book b = bs.book;
+                if (!category.isEmpty() && !"Tất cả".equals(category)
+                        && !category.equalsIgnoreCase(b.getCategory())) continue;
+                if (!author.isEmpty() && !"Tất cả".equals(author)
+                        && !author.equalsIgnoreCase(b.getAuthor())) continue;
+                if (!publisher.isEmpty() && !"Tất cả".equals(publisher)
+                        && !publisher.equalsIgnoreCase(b.getPublisher())) continue;
+                if (minPrice != null && b.getPrice() < minPrice) continue;
+                if (maxPrice != null && b.getPrice() > maxPrice) continue;
+                filtered.add(bs);
+            }
+
+            // ── Sort ─────────────────────────────────────────────────────────
+            if ("price_asc".equalsIgnoreCase(sort)) {
+                filtered.sort((a, x) -> Double.compare(a.book.getPrice(), x.book.getPrice()));
+            } else if ("price_desc".equalsIgnoreCase(sort)) {
+                filtered.sort((a, x) -> Double.compare(x.book.getPrice(), a.book.getPrice()));
+            } else if ("rating".equalsIgnoreCase(sort)) {
+                filtered.sort((a, x) -> Double.compare(x.book.getRating(), a.book.getRating()));
+            } else if ("newest".equalsIgnoreCase(sort)) {
+                filtered.sort((a, x) -> Integer.compare(x.book.getId(), a.book.getId()));
+            }
+            // "bestseller" (default) already sorted by soldCount DESC from DataStore
+
+            // ── Paginate ─────────────────────────────────────────────────────
+            int total      = filtered.size();
+            int totalPages = (int) Math.ceil((double) total / pageSize);
+            int from       = Math.min((page - 1) * pageSize, total);
+            int to         = Math.min(from + pageSize, total);
+            List<DataStore.BestSellerBook> pageItems = filtered.subList(from, to);
+
+            // ── Rank: position in sorted-by-soldCount list ────────────────────
+            // Build a map bookId -> rank from the original "bestseller" ordering
+            Map<Integer, Integer> rankMap = new HashMap<>();
+            if ("bestseller".equalsIgnoreCase(sort)) {
+                for (int i = 0; i < filtered.size(); i++) {
+                    rankMap.put(filtered.get(i).book.getId(), i + 1);
+                }
+            } else {
+                // Rank still based on global bestseller order (all list)
+                for (int i = 0; i < all.size(); i++) {
+                    rankMap.put(all.get(i).book.getId(), i + 1);
+                }
+            }
+
+            // ── Build JSON ────────────────────────────────────────────────────
+            StringBuilder sb = new StringBuilder();
+            sb.append("{\"success\":true,\"books\":[");
+            for (int i = 0; i < pageItems.size(); i++) {
+                DataStore.BestSellerBook bs = pageItems.get(i);
+                Book b = bs.book;
+                int rank = rankMap.getOrDefault(b.getId(), 0);
+                if (i > 0) sb.append(",");
+                sb.append(String.format(
+                    "{\"id\":%d,\"title\":%s,\"author\":%s,\"publisher\":%s,\"category\":%s," +
+                    "\"price\":%.0f,\"originalPrice\":%.0f,\"discountPercent\":%d," +
+                    "\"image\":%s,\"stock\":%d,\"rating\":%.1f,\"reviewCount\":%d," +
+                    "\"soldCount\":%d,\"isBestSeller\":%b,\"rank\":%d}",
+                    b.getId(),
+                    escapeJson(b.getTitle()),
+                    escapeJson(b.getAuthor()),
+                    escapeJson(b.getPublisher()),
+                    escapeJson(b.getCategory()),
+                    b.getPrice(),
+                    b.getOriginalPrice(),
+                    b.getDiscountPercent(),
+                    escapeJson(b.getImage()),
+                    b.getStock(),
+                    b.getRating(),
+                    b.getReviewCount(),
+                    bs.soldCount,
+                    b.isBestSeller(),
+                    rank
+                ));
+            }
+            sb.append(String.format("],\"total\":%d,\"page\":%d,\"pageSize\":%d,\"totalPages\":%d}",
+                    total, page, pageSize, totalPages));
+
+            sendResponse(exchange, 200, "application/json; charset=UTF-8", sb.toString());
+        }
     }
 
     /**
