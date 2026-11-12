@@ -1,4 +1,4 @@
-﻿<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="com.bookstore.model.User" %>
 <%
     User currentUser = (User) session.getAttribute("currentUser");
@@ -30,7 +30,7 @@
 
     <!-- 1. HEADER CHÍNH -->
     <header class="main-header" style="position: sticky; top: 0; z-index: 100; background: var(--surface-glass); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border);">
-        <div class="header-container" style="max-width: 1280px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between;">
+        <div class="navbar-container">
             <a href="${pageContext.request.contextPath}/home" class="site-logo">
                 <div class="logo-icon">
                     <i class="fas fa-book-bookmark"></i>

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -523,11 +523,18 @@
         }
         #bsSortSelect:focus { border-color: #4338ca; }
 
-        /* Lưới 4 sản phẩm / hàng trên Desktop (Theo Ảnh 3) */
+        /* Lưới 4 sản phẩm / hàng trên Desktop (Theo Ảnh 3), 5 sản phẩm trên màn hình rộng */
         .bs-main-content .book-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr) !important;
             gap: 18px !important;
+        }
+
+        @media (min-width: 1560px) {
+            .bs-main-content .book-grid {
+                grid-template-columns: repeat(5, 1fr) !important;
+                gap: 18px !important;
+            }
         }
 
         /* Thẻ sách trong Catalog */
