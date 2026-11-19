@@ -66,7 +66,7 @@
                             <span class="cart-popover-total-val" id="cartPopoverTotal">0đ</span>
                         </div>
                         <div class="cart-popover-actions">
-                            <a href="cart" class="btn-popover-view-cart">XEM GIỎ HÀNG</a>
+                            <a href="/cart" class="btn-popover-view-cart">XEM GIỎ HÀNG</a>
                             <button type="button" class="btn-popover-checkout" onclick="proceedToCheckout()">THANH TOÁN</button>
                         </div>
                     </div>
@@ -88,16 +88,16 @@
                                 <div style="font-weight: 700; font-size: 13px; color: var(--primary);"><%= currentUser.getFullName() %></div>
                                 <div class="dropdown-email"><%= currentUser.getEmail() %></div>
                             </div>
-                            <a href="profile" class="dropdown-item"><i class="fas fa-user-circle"></i> Hồ sơ tài khoản</a>
-                            <a href="cart" class="dropdown-item"><i class="fas fa-bag-shopping"></i> Giỏ hàng của tôi</a>
+                            <a href="/profile" class="dropdown-item"><i class="fas fa-user-circle"></i> Hồ sơ tài khoản</a>
+                            <a href="/cart" class="dropdown-item"><i class="fas fa-bag-shopping"></i> Giỏ hàng của tôi</a>
                             <a href="javascript:void(0)" class="dropdown-item" onclick="openWishlistFromMenu(event)"><i class="fas fa-heart" style="color: #ef4444;"></i> Danh sách yêu thích</a>
                             <a href="logout" class="dropdown-item logout"><i class="fas fa-arrow-right-from-bracket"></i> Đăng xuất</a>
                         </div>
                     </div>
                 <% } else { %>
                     <div class="guest-auth-buttons">
-                        <a href="login" class="btn-guest btn-guest-login"><i class="fas fa-arrow-right-to-bracket"></i> <span>Đăng Nhập</span></a>
-                        <a href="register" class="btn-guest btn-guest-register"><i class="fas fa-user-plus"></i> <span>Đăng Ký</span></a>
+                        <a href="/login" class="btn-guest btn-guest-login"><i class="fas fa-arrow-right-to-bracket"></i> <span>Đăng Nhập</span></a>
+                        <a href="/register" class="btn-guest btn-guest-register"><i class="fas fa-user-plus"></i> <span>Đăng Ký</span></a>
                     </div>
                 <% } %>
             </div>
@@ -108,17 +108,17 @@
             <div class="nav-bar-container">
                 <ul class="nav-menu-list">
                     <li class="nav-menu-item">
-                        <a href="home" class="nav-menu-link">
+                        <a href="/home" class="nav-menu-link">
                             <i class="fas fa-house"></i> TRANG CHỦ
                         </a>
                     </li>
                     <li class="nav-menu-item">
-                        <a href="about" class="nav-menu-link">
+                        <a href="/about" class="nav-menu-link">
                             <i class="fas fa-circle-info"></i> GIỚI THIỆU
                         </a>
                     </li>
                     <li class="nav-menu-item nav-dropdown-item" id="navCategoryDropdownWrapper">
-                        <a href="category?name=Tất cả" class="nav-menu-link nav-dropdown-toggle">
+                        <a href="/category?name=Tất cả" class="nav-menu-link nav-dropdown-toggle">
                             <i class="fas fa-list-ul"></i> DANH MỤC SÁCH <i class="fas fa-chevron-down nav-caret"></i>
                         </a>
                         <!-- Dropdown tổng hợp danh mục sách thực tế của Bookora -->
@@ -127,30 +127,30 @@
                                 <span><i class="fas fa-layer-group"></i> Danh Mục Sách</span>
                             </div>
                             <div class="nav-category-vertical-list">
-                                <a href="category?name=Văn học" class="nav-cat-list-link"><i class="fas fa-book-open"></i> Văn học</a>
-                                <a href="category?name=Kinh tế" class="nav-cat-list-link"><i class="fas fa-chart-line"></i> Kinh tế</a>
-                                <a href="category?name=Kỹ năng sống" class="nav-cat-list-link"><i class="fas fa-seedling"></i> Kỹ năng sống</a>
-                                <a href="category?name=Tâm lý học" class="nav-cat-list-link"><i class="fas fa-brain"></i> Tâm lý học</a>
-                                <a href="category?name=Công nghệ thông tin" class="nav-cat-list-link"><i class="fas fa-laptop-code"></i> Công nghệ thông tin</a>
-                                <a href="category?name=Tâm linh & Đời sống" class="nav-cat-list-link"><i class="fas fa-spa"></i> Tâm linh & Đời sống</a>
-                                <a href="category?name=Khoa học" class="nav-cat-list-link"><i class="fas fa-atom"></i> Khoa học</a>
-                                <a href="category?name=Trinh thám" class="nav-cat-list-link"><i class="fas fa-mask"></i> Trinh thám & Bí ẩn</a>
+                                <a href="/category?name=Văn học" class="nav-cat-list-link"><i class="fas fa-book-open"></i> Văn học</a>
+                                <a href="/category?name=Kinh tế" class="nav-cat-list-link"><i class="fas fa-chart-line"></i> Kinh tế</a>
+                                <a href="/category?name=Kỹ năng sống" class="nav-cat-list-link"><i class="fas fa-seedling"></i> Kỹ năng sống</a>
+                                <a href="/category?name=Tâm lý học" class="nav-cat-list-link"><i class="fas fa-brain"></i> Tâm lý học</a>
+                                <a href="/category?name=Công nghệ thông tin" class="nav-cat-list-link"><i class="fas fa-laptop-code"></i> Công nghệ thông tin</a>
+                                <a href="/category?name=Tâm linh & Đời sống" class="nav-cat-list-link"><i class="fas fa-spa"></i> Tâm linh & Đời sống</a>
+                                <a href="/category?name=Khoa học" class="nav-cat-list-link"><i class="fas fa-atom"></i> Khoa học</a>
+                                <a href="/category?name=Trinh thám" class="nav-cat-list-link"><i class="fas fa-mask"></i> Trinh thám & Bí ẩn</a>
                             </div>
                         </div>
                     </li>
                     <li class="nav-menu-item">
-                        <a href="javascript:void(0)" class="nav-menu-link" onclick="handleNavBestSellers()">
+                        <a href="/bestseller" class="nav-menu-link">
                             <i class="fas fa-fire" style="color: #ef4444;"></i> SÁCH BÁN CHẠY
                         </a>
                     </li>
                     <li class="nav-menu-item">
-                        <a href="promotions" class="nav-menu-link">
+                        <a href="/promotions" class="nav-menu-link">
                             <i class="fas fa-gift" style="color: #f59e0b;"></i> KHUYẾN MÃI
                             <span class="nav-badge-hot">HOT</span>
                         </a>
                     </li>
                     <li class="nav-menu-item">
-                        <a href="contact" class="nav-menu-link">
+                        <a href="/contact" class="nav-menu-link">
                             <i class="fas fa-headset" style="color: #06b6d4;"></i> LIÊN HỆ
                         </a>
                     </li>
@@ -163,7 +163,7 @@
     <!-- 2. BREADCRUMBS NAVIGATION -->
     <nav class="breadcrumb-bar" aria-label="Breadcrumb">
         <div class="container breadcrumb-inner">
-            <a href="home" class="bc-link"><i class="fas fa-house"></i> Trang chủ</a>
+            <a href="/home" class="bc-link"><i class="fas fa-house"></i> Trang chủ</a>
             <span class="bc-sep"><i class="fas fa-chevron-right"></i></span>
             <a href="home?category=<%= book.getCategory() %>" class="bc-link"><%= book.getCategory() %></a>
             <span class="bc-sep"><i class="fas fa-chevron-right"></i></span>
@@ -531,7 +531,7 @@
                 <strong id="cartDrawerTotal" class="text-orange">0 đ</strong>
             </div>
             <div class="cart-drawer-actions">
-                <a href="cart" class="btn-drawer-cart">Xem chi tiết giỏ hàng</a>
+                <a href="/cart" class="btn-drawer-cart">Xem chi tiết giỏ hàng</a>
                 <button type="button" class="btn-drawer-checkout" onclick="proceedToCheckout()">Thanh toán ngay</button>
             </div>
         </div>

@@ -85,7 +85,25 @@ function loadCartFromStorage(username) {
     const key = getCartStorageKey(username);
     try {
         const raw = localStorage.getItem(key);
-        if (raw) return JSON.parse(raw);
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+                let changed = false;
+                parsed.forEach(item => {
+                    if (item.image && (item.image.includes('1532012164546') || item.id == 3)) {
+                        item.image = 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=500';
+                        changed = true;
+                    } else if (item.image && (item.image.includes('1507842229450') || item.id == 21)) {
+                        item.image = 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?w=500';
+                        changed = true;
+                    }
+                });
+                if (changed) {
+                    try { localStorage.setItem(key, JSON.stringify(parsed)); } catch(e){}
+                }
+            }
+            return parsed;
+        }
     } catch (e) {}
     return [];
 }
@@ -1274,6 +1292,31 @@ function changeModalQty(delta) {
     input.value = val;
 }
 
+function validateModalQtyInput(input) {
+    if (!input || !currentModalBook) return;
+    if (input.value === '') return;
+    let val = parseInt(input.value);
+    const maxStock = currentModalBook.stock > 0 ? currentModalBook.stock : 1;
+    if (val > maxStock) {
+        showStockLimitPopup(currentModalBook.title, maxStock);
+        input.value = maxStock;
+    }
+}
+
+function normalizeModalQtyInput(input) {
+    if (!input || !currentModalBook) return;
+    let val = parseInt(input.value);
+    const maxStock = currentModalBook.stock > 0 ? currentModalBook.stock : 1;
+    if (isNaN(val) || val < 1) {
+        input.value = 1;
+    } else if (val > maxStock) {
+        showStockLimitPopup(currentModalBook.title, maxStock);
+        input.value = maxStock;
+    } else {
+        input.value = val;
+    }
+}
+
 function addModalBookToCart() {
     if (!isUserLoggedIn()) {
         closeQuickView();
@@ -1391,6 +1434,13 @@ window.sendChatbotMessage = sendChatbotMessage;
 window.toggleCartPopover = toggleCartPopover;
 window.hideCartPopover = hideCartPopover;
 window.showCartPopoverAuto = showCartPopoverAuto;
+window.validateDetailQtyInput = validateDetailQtyInput;
+window.normalizeDetailQtyInput = normalizeDetailQtyInput;
+window.validateModalQtyInput = validateModalQtyInput;
+window.normalizeModalQtyInput = normalizeModalQtyInput;
+window.validateCartItemQtyInput = validateCartItemQtyInput;
+window.onCartInputQtyChange = onCartInputQtyChange;
+window.onCartInputQtyBlur = onCartInputQtyBlur;
 window.addToCart = addToCart;
 window.removeFromCart = removeFromCart;
 window.changeCartItemQty = changeCartItemQty;
@@ -1975,9 +2025,14 @@ function renderCartPageUI() {
                     <td class="cart-cell-price">${formatVNCurrency(item.price)}</td>
                     <td class="cart-cell-qty">
                         <div class="cart-stepper">
-                            <button type="button" class="btn-stepper" onclick="changeCartItemQty(${item.id}, -1)">-</button>
-                            <input type="text" class="stepper-val" value="${item.quantity}" readonly>
-                            <button type="button" class="btn-stepper" onclick="changeCartItemQty(${item.id}, 1)">+</button>
+                            <button type="button" class="btn-stepper" onclick="changeCartItemQty(${item.id}, -1)" title="Giảm số lượng">-</button>
+                            <input type="number" class="stepper-val" value="${item.quantity}" min="1" 
+                                   oninput="validateCartItemQtyInput(${item.id}, this)"
+                                   onchange="onCartInputQtyChange(${item.id}, this)"
+                                   onblur="onCartInputQtyBlur(${item.id}, this)"
+                                   onkeydown="if(event.key==='Enter'){this.blur();}" 
+                                   title="Nhập số lượng từ bàn phím">
+                            <button type="button" class="btn-stepper" onclick="changeCartItemQty(${item.id}, 1)" title="Tăng số lượng">+</button>
                         </div>
                     </td>
                     <td class="cart-cell-total">${formatVNCurrency(itemTotal)}</td>
@@ -2022,6 +2077,54 @@ async function changeCartItemQty(bookId, delta) {
     updateCartUI();
 }
 
+// Cập nhật số lượng sách bằng bàn phím trong Giỏ hàng
+async function validateCartItemQtyInput(bookId, input) {
+    if (!input) return;
+    if (input.value === '') return;
+    let val = parseInt(input.value);
+    if (isNaN(val) || val < 1) return;
+    const item = cart.find(i => i.id == bookId);
+    if (!item) return;
+    const stock = await getBookStock(bookId, item);
+    item.stock = stock;
+    if (val > stock) {
+        showStockLimitPopup(item.title, stock);
+        input.value = stock;
+    }
+}
+
+async function onCartInputQtyChange(bookId, input) {
+    const item = cart.find(i => i.id == bookId);
+    if (!item || !input) return;
+    let val = parseInt(input.value);
+    if (isNaN(val) || val <= 0) {
+        const confirmRemove = confirm(`Bạn có chắc muốn xóa "${item.title}" khỏi giỏ hàng?`);
+        if (confirmRemove) {
+            removeFromCart(bookId);
+        } else {
+            input.value = item.quantity;
+        }
+        return;
+    }
+    const stock = await getBookStock(bookId, item);
+    item.stock = stock;
+    if (val > stock) {
+        showStockLimitPopup(item.title, stock);
+        val = stock;
+        input.value = stock;
+    }
+    item.quantity = val;
+    saveCart();
+    updateCartUI();
+}
+
+function onCartInputQtyBlur(bookId, input) {
+    if (!input) return;
+    if (input.value === '' || parseInt(input.value) <= 0) {
+        onCartInputQtyChange(bookId, input);
+    }
+}
+
 // Điều chỉnh số lượng sách trên trang chi tiết
 async function adjustDetailQty(delta) {
     const input = document.getElementById('detailQuantityInput');
@@ -2045,6 +2148,49 @@ async function adjustDetailQty(delta) {
         return;
     }
     input.value = next;
+}
+
+// Kiểm tra và chuẩn hóa khi nhập số lượng từ bàn phím trên Trang Chi Tiết Sách
+async function validateDetailQtyInput(input) {
+    if (!input) return;
+    if (input.value === '') return;
+    let val = parseInt(input.value);
+    if (isNaN(val) || val < 1) return;
+    const infoCol = document.querySelector('.detail-info-column');
+    const bookId = infoCol ? parseInt(infoCol.getAttribute('data-id')) : 0;
+    let max = 999;
+    if (bookId) {
+        max = await getBookStock(bookId);
+    } else if (input.getAttribute('max')) {
+        max = parseInt(input.getAttribute('max')) || 999;
+    }
+    if (val > max) {
+        const title = infoCol ? (infoCol.getAttribute('data-title') || 'Sách') : 'Sách';
+        showStockLimitPopup(title, max);
+        input.value = max;
+    }
+}
+
+async function normalizeDetailQtyInput(input) {
+    if (!input) return;
+    let val = parseInt(input.value);
+    const infoCol = document.querySelector('.detail-info-column');
+    const bookId = infoCol ? parseInt(infoCol.getAttribute('data-id')) : 0;
+    let max = 999;
+    if (bookId) {
+        max = await getBookStock(bookId);
+    } else if (input.getAttribute('max')) {
+        max = parseInt(input.getAttribute('max')) || 999;
+    }
+    if (isNaN(val) || val < 1) {
+        input.value = 1;
+    } else if (val > max) {
+        const title = infoCol ? (infoCol.getAttribute('data-title') || 'Sách') : 'Sách';
+        showStockLimitPopup(title, max);
+        input.value = max;
+    } else {
+        input.value = val;
+    }
 }
 
 // Thêm vào giỏ từ trang chi tiết
@@ -2483,6 +2629,13 @@ window.toggleCartPopover = toggleCartPopover;
 window.showCartPopover = showCartPopover;
 window.showCartPopoverAuto = showCartPopoverAuto;
 window.hideCartPopover = hideCartPopover;
+window.validateDetailQtyInput = validateDetailQtyInput;
+window.normalizeDetailQtyInput = normalizeDetailQtyInput;
+window.validateModalQtyInput = validateModalQtyInput;
+window.normalizeModalQtyInput = normalizeModalQtyInput;
+window.validateCartItemQtyInput = validateCartItemQtyInput;
+window.onCartInputQtyChange = onCartInputQtyChange;
+window.onCartInputQtyBlur = onCartInputQtyBlur;
 window.addToCart = addToCart;
 window.saveCart = saveCart;
 window.updateCartUI = updateCartUI;

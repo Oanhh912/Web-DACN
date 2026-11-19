@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap');
 
 :root {
     --primary: #1e1b4b;        /* Deep Indigo */
@@ -73,21 +73,19 @@ button, input {
 .category-page-layout,
 .content-page-container,
 .contact-full-container,
-.detail-content-container,
-.detail-related-container,
 .checkout-container,
 .profile-header-container,
 .profile-page-main,
 .promo-ticker-wrap,
-.cart-page-section,
 .breadcrumb-inner,
 .breadcrumb-container,
 .footer-container,
 .footer-bottom,
 .promo-books-section,
 .vouchers-showcase-grid,
-.book-detail-page .container,
 .bs-banner-section .container,
+.bs-hero-banner .container,
+.bs-banner-container,
 .bs-top3-section .container,
 .bs-catalog-section .container,
 .bs-catalog-layout {
@@ -109,21 +107,19 @@ button, input {
     .category-page-layout,
     .content-page-container,
     .contact-full-container,
-    .detail-content-container,
-    .detail-related-container,
     .checkout-container,
     .profile-header-container,
     .profile-page-main,
     .promo-ticker-wrap,
-    .cart-page-section,
     .breadcrumb-inner,
     .breadcrumb-container,
     .footer-container,
     .footer-bottom,
     .promo-books-section,
     .vouchers-showcase-grid,
-    .book-detail-page .container,
     .bs-banner-section .container,
+    .bs-hero-banner .container,
+    .bs-banner-container,
     .bs-top3-section .container,
     .bs-catalog-section .container,
     .bs-catalog-layout {
@@ -143,21 +139,19 @@ button, input {
     .category-page-layout,
     .content-page-container,
     .contact-full-container,
-    .detail-content-container,
-    .detail-related-container,
     .checkout-container,
     .profile-header-container,
     .profile-page-main,
     .promo-ticker-wrap,
-    .cart-page-section,
     .breadcrumb-inner,
     .breadcrumb-container,
     .footer-container,
     .footer-bottom,
     .promo-books-section,
     .vouchers-showcase-grid,
-    .book-detail-page .container,
     .bs-banner-section .container,
+    .bs-hero-banner .container,
+    .bs-banner-container,
     .bs-top3-section .container,
     .bs-catalog-section .container,
     .bs-catalog-layout {
@@ -1270,11 +1264,10 @@ button, input {
 
 .category-filter-bar {
     display: flex;
-    gap: 10px;
-    overflow-x: auto;
-    padding-bottom: 12px;
+    width: 100%;
+    gap: 8px;
     margin-bottom: 24px;
-    scrollbar-width: thin;
+    align-items: stretch;
 }
 .category-filter-bar::-webkit-scrollbar {
     height: 4px;
@@ -1284,10 +1277,16 @@ button, input {
     border-radius: 4px;
 }
 .category-pill {
-    padding: 9px 20px;
+    flex: 1 1 0px;
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 10px 4px;
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius-full);
+    border-radius: 6px;
     font-size: 13px;
     font-weight: 600;
     color: var(--text-secondary);
@@ -1305,6 +1304,30 @@ button, input {
     border-color: var(--primary-light);
     color: white;
     box-shadow: 0 4px 12px rgba(49, 46, 129, 0.25);
+}
+
+@media (max-width: 1440px) and (min-width: 1024px) {
+    .category-filter-bar {
+        gap: 6px;
+    }
+    .category-pill {
+        font-size: 12px;
+        padding: 9px 2px;
+    }
+}
+
+@media (max-width: 1023px) {
+    .category-filter-bar {
+        overflow-x: auto;
+        scrollbar-width: thin;
+        padding-bottom: 8px;
+    }
+    .category-pill {
+        flex: 0 0 auto;
+        min-width: 100px;
+        padding: 9px 16px;
+        font-size: 13px;
+    }
 }
 
 /* ==========================================================================
@@ -1835,7 +1858,7 @@ button, input {
     color: #0f172a;
 }
 .qty-input, #modalQty, #modalQuantity {
-    width: 44px;
+    width: 48px;
     height: 100%;
     border: none;
     border-left: 1px solid #e2e8f0;
@@ -1844,8 +1867,23 @@ button, input {
     font-weight: 700;
     font-size: 14.5px;
     color: #0f172a;
+    background: #ffffff;
     outline: none;
     box-sizing: border-box;
+    cursor: text;
+    transition: all 0.15s ease;
+}
+.qty-input:focus, #modalQty:focus, #modalQuantity:focus {
+    background: #fff7ed;
+    color: #ea580c;
+    box-shadow: inset 0 0 0 1.5px #f97316;
+}
+.qty-input::-webkit-outer-spin-button,
+.qty-input::-webkit-inner-spin-button,
+#modalQty::-webkit-outer-spin-button,
+#modalQty::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
 }
 .btn-modal-cart, .btn-modal-add-cart {
     flex: 1;
@@ -2296,19 +2334,33 @@ button, input {
 }
 
 /* ==========================================================================
-   CART FULL PAGE STYLES (CHUẨN ẢNH MẪU 2)
+   CART FULL PAGE STYLES (CÂN BẰNG TRUNG TÂM & CHUẨN THẨM MỸ)
    ========================================================================== */
+.cart-page-wrapper {
+    background: #f8fafc;
+    min-height: 80vh;
+    padding: 24px 0 60px;
+}
+
 .cart-page-section {
-    width: 96%;
-    max-width: 1920px;
-    margin: 0 auto;
-    padding: 30px 0 80px;
-    min-height: 60vh;
+    width: 94% !important;
+    max-width: 1140px !important;
+    margin: 0 auto !important;
+    padding: 20px 0 60px;
+    box-sizing: border-box;
+}
+
+@media (min-width: 1366px) {
+    .cart-page-section {
+        width: 1140px !important;
+        max-width: 1140px !important;
+        margin: 0 auto !important;
+    }
 }
 
 .cart-header-block {
     text-align: center;
-    margin-bottom: 35px;
+    margin-bottom: 30px;
 }
 
 .cart-header-title {
@@ -2332,11 +2384,16 @@ button, input {
     border-radius: 2px;
 }
 
-/* Cart Table */
+/* Bảng sản phẩm trong giỏ hàng - Thiết kế dạng Card sạch đẹp */
 .cart-table-wrapper {
     width: 100%;
     overflow-x: auto;
     background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px 24px;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+    box-sizing: border-box;
 }
 
 .cart-table {
@@ -2346,25 +2403,27 @@ button, input {
 }
 
 .cart-table th {
-    padding: 14px 14px;
-    font-size: 14px;
+    padding: 14px 12px;
+    font-size: 13px;
     font-weight: 600;
-    color: #334155;
-    border-bottom: 1px solid #f1f5f9;
+    color: #475569;
+    border-bottom: 1px solid #e2e8f0;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
 }
 
 .cart-table th.col-product {
-    width: 48%;
+    width: 44%;
     padding-left: 0;
 }
 
 .cart-table th.col-price {
-    width: 15%;
+    width: 16%;
     text-align: center;
 }
 
 .cart-table th.col-qty {
-    width: 15%;
+    width: 18%;
     text-align: center;
 }
 
@@ -2379,9 +2438,13 @@ button, input {
 }
 
 .cart-table td {
-    padding: 18px 14px;
+    padding: 18px 12px;
     vertical-align: middle;
     border-bottom: 1px solid #f1f5f9;
+}
+
+.cart-table tr:last-child td {
+    border-bottom: none;
 }
 
 .cart-table td.col-product-cell {
@@ -2391,20 +2454,21 @@ button, input {
 .cart-prod-flex {
     display: flex;
     align-items: center;
-    gap: 18px;
+    gap: 16px;
 }
 
 .cart-prod-img {
     width: 72px;
-    height: 98px;
+    height: 96px;
     object-fit: cover;
-    border-radius: 4px;
+    border-radius: 6px;
     border: 1px solid #e2e8f0;
     flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
 
 .cart-prod-title {
-    font-size: 14.5px;
+    font-size: 15px;
     font-weight: 600;
     color: #1e293b;
     line-height: 1.4;
@@ -2419,27 +2483,27 @@ button, input {
 .cart-cell-price {
     text-align: center;
     font-size: 15px;
-    font-weight: 700;
-    color: #dc2626;
+    font-weight: 600;
+    color: #475569;
 }
 
 .cart-cell-qty {
     text-align: center;
 }
 
-/* Stepper [- 1 +] */
+/* Stepper [- 1 +] nhập từ bàn phím */
 .cart-stepper {
     display: inline-flex;
     align-items: center;
-    border: 1px solid #e2e8f0;
-    border-radius: 4px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
     background: #ffffff;
     overflow: hidden;
 }
 
 .btn-stepper {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     border: none;
     background: #f8fafc;
     color: #475569;
@@ -2457,16 +2521,31 @@ button, input {
 }
 
 .stepper-val {
-    width: 36px;
-    height: 28px;
+    width: 48px;
+    height: 32px;
     border: none;
-    border-left: 1px solid #e2e8f0;
-    border-right: 1px solid #e2e8f0;
+    border-left: 1px solid #cbd5e1;
+    border-right: 1px solid #cbd5e1;
     text-align: center;
-    font-size: 13.5px;
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 700;
     color: #1e293b;
+    background: #ffffff;
     outline: none;
+    cursor: text;
+    transition: all 0.15s ease;
+}
+
+.stepper-val:focus {
+    background: #fff7ed;
+    color: #ea580c;
+    box-shadow: inset 0 0 0 1.5px #f97316;
+}
+
+.stepper-val::-webkit-outer-spin-button,
+.stepper-val::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
 }
 
 .cart-cell-total {
@@ -2484,79 +2563,111 @@ button, input {
     background: none;
     border: none;
     color: #94a3b8;
-    font-size: 17px;
+    font-size: 16px;
     cursor: pointer;
     transition: var(--transition);
     padding: 6px;
+    border-radius: 4px;
 }
 
 .btn-cart-remove-row:hover {
     color: #dc2626;
-    transform: scale(1.2);
+    background: #fee2e2;
 }
 
-/* Bottom Grid 2 Columns */
+/* Bố cục 2 cột bên dưới: Cột trái (Ghi chú), Cột phải (Thông tin đơn hàng) */
 .cart-bottom-grid {
     display: grid;
-    grid-template-columns: 1.1fr 0.9fr;
-    gap: 48px;
-    margin-top: 40px;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+    margin-top: 32px;
+    align-items: start;
+}
+
+.cart-col-left {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+    box-sizing: border-box;
 }
 
 .cart-col-sec-title {
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 700;
     color: #1e293b;
     margin: 0 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .cart-note-textarea {
     width: 100%;
     height: 125px;
     padding: 14px 16px;
-    background: #f1f5f9;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
     font-family: inherit;
     font-size: 14px;
     color: #334155;
     resize: vertical;
     outline: none;
     transition: var(--transition);
+    box-sizing: border-box;
 }
 
 .cart-note-textarea:focus {
     background: #ffffff;
-    border-color: #94a3b8;
+    border-color: #f97316;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+}
+
+.cart-col-right {
+    box-sizing: border-box;
 }
 
 .cart-summary-box {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
     display: flex;
     flex-direction: column;
+    box-sizing: border-box;
 }
 
 .cart-summary-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
     font-size: 17px;
     color: #1e293b;
     margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px dashed #e2e8f0;
 }
 
 .cart-summary-total-label {
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 16px;
+    color: #0f172a;
 }
 
 .cart-summary-total-val {
     font-size: 22px;
-    font-weight: 700;
+    font-weight: 800;
     color: #dc2626;
-    margin-left: 6px;
 }
 
 .cart-summary-notices {
     font-size: 13px;
     color: #64748b;
     line-height: 1.6;
-    margin-bottom: 18px;
+    margin-bottom: 20px;
 }
 
 .cart-summary-notices p {
@@ -2564,32 +2675,33 @@ button, input {
 }
 
 .btn-cart-page-checkout {
-    display: inline-block;
-    width: auto;
-    min-width: 170px;
-    max-width: 220px;
+    display: block;
+    width: 100%;
     background: #1e293b;
     color: #ffffff !important;
     font-size: 14px;
     font-weight: 700;
     text-transform: uppercase;
     text-align: center;
-    padding: 12px 24px;
+    padding: 14px 24px;
     border: none;
-    border-radius: 4px;
+    border-radius: 8px;
     cursor: pointer;
     transition: var(--transition);
+    box-sizing: border-box;
+    letter-spacing: 0.5px;
 }
 
 .btn-cart-page-checkout:hover {
     background: #0f172a;
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.2);
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.25);
 }
 
 .link-continue-shopping {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
     color: #ea580c;
     font-size: 13.5px;
@@ -2597,6 +2709,7 @@ button, input {
     text-decoration: none;
     margin-top: 14px;
     transition: var(--transition);
+    width: 100%;
 }
 
 .link-continue-shopping:hover {
@@ -2604,10 +2717,14 @@ button, input {
     text-decoration: underline;
 }
 
-/* Empty cart state on cart page */
+/* Empty cart state */
 .cart-empty-view {
     text-align: center;
     padding: 60px 20px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
 }
 
 .cart-empty-view i {
@@ -2636,7 +2753,7 @@ button, input {
     background: #e67e00;
     color: white !important;
     padding: 10px 22px;
-    border-radius: 4px;
+    border-radius: 6px;
     text-decoration: none;
     font-weight: 700;
     font-size: 14px;
@@ -2645,7 +2762,7 @@ button, input {
 @media (max-width: 768px) {
     .cart-bottom-grid {
         grid-template-columns: 1fr;
-        gap: 28px;
+        gap: 20px;
     }
     .cart-table th.col-price,
     .cart-table td.cart-cell-price {
@@ -3884,6 +4001,23 @@ button, input {
     color: #991b1b;
 }
 
+.stock-pill-sold {
+    background: #fff7ed;
+    color: #ea580c;
+    border: 1px solid #fed7aa;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.stock-pill-sold i {
+    color: #ef4444;
+    font-size: 10px;
+}
+
 /* Badges trên bìa sách */
 .badge-stock {
     display: inline-flex;
@@ -4535,8 +4669,8 @@ button, input {
 }
 
 .book-detail-page .container {
-    width: 96%;
-    max-width: 1920px;
+    width: 94%;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 0 15px;
     box-sizing: border-box;
@@ -4551,10 +4685,10 @@ button, input {
 }
 
 .breadcrumb-inner {
-    width: 96%;
-    max-width: 1920px;
+    width: 94%;
+    max-width: 1200px;
     margin: 0 auto;
-    padding: 0 20px;
+    padding: 0 15px;
     display: flex;
     align-items: center;
     flex-wrap: wrap;
@@ -5307,23 +5441,29 @@ button, input {
 
 .nav-menu-list {
     display: flex;
-    align-items: center;
+    align-items: stretch;
+    width: 100%;
     list-style: none;
     margin: 0;
-    padding: 0;
-    gap: 4px;
-    flex-wrap: wrap;
+    padding: 6px 0;
+    gap: 8px;
 }
 
 .nav-menu-item {
+    flex: 1 1 0px;
+    min-width: 0;
     position: relative;
+    display: flex;
 }
 
 .nav-menu-link {
-    display: inline-flex;
+    width: 100%;
+    display: flex;
     align-items: center;
+    justify-content: center;
+    text-align: center;
     gap: 8px;
-    padding: 12px 16px;
+    padding: 12px 10px;
     font-size: 13.5px;
     font-weight: 700;
     color: #374151;
@@ -5334,6 +5474,7 @@ button, input {
     transition: all 0.2s ease;
     cursor: pointer;
     user-select: none;
+    white-space: nowrap;
 }
 
 .nav-menu-link:hover {
@@ -5344,6 +5485,35 @@ button, input {
 .nav-menu-link.active {
     color: var(--primary);
     background-color: #eef2ff;
+}
+
+@media (max-width: 1280px) and (min-width: 993px) {
+    .nav-menu-list {
+        gap: 6px;
+    }
+    .nav-menu-link {
+        font-size: 12.5px;
+        padding: 10px 6px;
+        gap: 6px;
+    }
+}
+
+@media (max-width: 992px) {
+    .nav-menu-list {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        padding-bottom: 6px;
+        gap: 6px;
+    }
+    .nav-menu-item {
+        flex: 0 0 auto;
+        min-width: max-content;
+    }
+    .nav-menu-link {
+        padding: 10px 14px;
+        font-size: 13px;
+    }
 }
 
 .nav-menu-link i {
@@ -5384,7 +5554,8 @@ button, input {
     position: absolute;
     top: calc(100% + 2px);
     left: 0;
-    width: 270px;
+    width: 100%;
+    min-width: 270px;
     background: #ffffff;
     border-radius: 8px;
     box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
@@ -7183,28 +7354,29 @@ button, input {
 }
 
 /* ==========================================================================
-   BOOK DETAIL PAGE STYLES (THEO FORM THIẾT KẾ VINABOOK - REFERENCE IMAGES 1, 2, 3)
+   BOOK DETAIL PAGE STYLES (CĂN GIỮA, THU GỌN VỪA VẶN THEO CHUẨN THƯƠNG MẠI ĐIỆN TỬ)
    ========================================================================== */
 .book-detail-page {
-    background-color: #ffffff;
+    background-color: #f8fafc;
 }
 
 .book-detail-main {
-    padding: 24px 0 60px;
+    padding: 20px 0 50px;
 }
 
 /* Breadcrumb styling */
 .breadcrumb-bar {
-    background: #f8fafc;
+    background: #ffffff;
     border-bottom: 1px solid #e2e8f0;
     padding: 12px 0;
+    margin-bottom: 24px;
 }
 
 .breadcrumb-inner {
-    width: 96%;
-    max-width: 1920px;
+    width: 94%;
+    max-width: 1200px;
     margin: 0 auto;
-    padding: 0 40px;
+    padding: 0 15px;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -7213,7 +7385,7 @@ button, input {
 
 @media (max-width: 768px) {
     .breadcrumb-inner {
-        padding: 0 16px;
+        padding: 0 12px;
     }
 }
 
@@ -7255,13 +7427,44 @@ button, input {
     text-overflow: ellipsis;
 }
 
-/* 1. THÔNG TIN SẢN PHẨM (LAYOUT 3 CỘT - ẢNH 1) */
+/* 1. THU GỌN & CĂN GIỮA TOÀN BỘ CÁC CONTAINER CỦA TRANG CHI TIẾT SÁCH */
+.book-detail-page .container,
+.book-detail-page .breadcrumb-inner,
+.book-detail-page .detail-content-container,
+.book-detail-page .detail-related-container,
+.book-detail-page .book-reviews-section {
+    width: 94% !important;
+    max-width: 1200px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding-left: 15px !important;
+    padding-right: 15px !important;
+    box-sizing: border-box !important;
+}
+
+@media (min-width: 1366px) {
+    .book-detail-page .container,
+    .book-detail-page .breadcrumb-inner,
+    .book-detail-page .detail-content-container,
+    .book-detail-page .detail-related-container,
+    .book-detail-page .book-reviews-section {
+        width: 1200px !important;
+        max-width: 1200px !important;
+    }
+}
+
+/* 2. THÔNG TIN SẢN PHẨM (LAYOUT 3 CỘT GỌN GÀNG, KHÔNG BỊ TRỐNG Ở GIỮA - ẢNH 1) */
 .detail-product-layout {
     display: grid;
-    grid-template-columns: 360px 1fr 300px;
-    gap: 32px;
-    margin-bottom: 48px;
+    grid-template-columns: 320px 1fr 280px;
+    gap: 28px;
+    margin-bottom: 32px;
     align-items: start;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 24px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
 }
 
 /* Cột 1: Bìa sách */
@@ -7285,19 +7488,19 @@ button, input {
 }
 
 .detail-cover-card {
-    background: #ffffff;
+    background: #fafafa;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
-    padding: 20px;
+    padding: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .detail-cover-img {
     max-width: 100%;
-    max-height: 420px;
+    max-height: 380px;
     object-fit: contain;
     border-radius: 4px;
 }
@@ -7309,10 +7512,10 @@ button, input {
 }
 
 .product-detail-title {
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 700;
     color: #1e293b;
-    margin: 0 0 10px 0;
+    margin: 0 0 8px 0;
     line-height: 1.35;
     font-family: 'Plus Jakarta Sans', sans-serif;
 }
@@ -7320,26 +7523,28 @@ button, input {
 .product-detail-meta {
     font-size: 13px;
     color: #64748b;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
 
 .product-detail-publisher {
-    font-size: 15px;
+    font-size: 14.5px;
     font-weight: 700;
     color: #0f172a;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
 }
 
 .product-detail-price-box {
     display: flex;
     align-items: baseline;
     gap: 12px;
-    margin-bottom: 24px;
-    padding: 12px 0;
+    margin-bottom: 20px;
+    padding: 10px 0;
+    border-top: 1px dashed #e2e8f0;
+    border-bottom: 1px dashed #e2e8f0;
 }
 
 .detail-price-red {
-    font-size: 28px;
+    font-size: 26px;
     font-weight: 800;
     color: #dc2626;
     letter-spacing: -0.5px;
@@ -7365,7 +7570,7 @@ button, input {
     display: flex;
     align-items: center;
     gap: 16px;
-    margin-bottom: 24px;
+    margin-bottom: 22px;
 }
 
 .quantity-stepper-box {
@@ -7398,7 +7603,7 @@ button, input {
 }
 
 .stepper-input {
-    width: 50px;
+    width: 56px;
     height: 36px;
     border: none;
     border-left: 1px solid #cbd5e1;
@@ -7407,7 +7612,22 @@ button, input {
     font-size: 15px;
     font-weight: 700;
     color: #0f172a;
+    background: #ffffff;
     outline: none;
+    cursor: text;
+    transition: all 0.15s ease;
+}
+
+.stepper-input:focus {
+    background: #fff7ed;
+    color: #ea580c;
+    box-shadow: inset 0 0 0 1.5px #f97316;
+}
+
+.stepper-input::-webkit-outer-spin-button,
+.stepper-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
 }
 
 .stock-status-label {
@@ -7426,18 +7646,19 @@ button, input {
 /* Nút THÊM VÀO GIỎ & MUA NGAY */
 .product-detail-actions {
     display: flex;
-    gap: 16px;
-    max-width: 460px;
+    gap: 12px;
+    max-width: 440px;
+    width: 100%;
 }
 
 .btn-action-add-cart {
     flex: 1;
-    height: 48px;
+    height: 46px;
     background: #f37021;
     color: #ffffff;
     border: none;
     border-radius: 6px;
-    font-size: 14.5px;
+    font-size: 14px;
     font-weight: 800;
     letter-spacing: 0.5px;
     cursor: pointer;
@@ -7456,12 +7677,12 @@ button, input {
 
 .btn-action-buy-now {
     flex: 1;
-    height: 48px;
+    height: 46px;
     background: #343a40;
     color: #ffffff;
     border: none;
     border-radius: 6px;
-    font-size: 14.5px;
+    font-size: 14px;
     font-weight: 800;
     letter-spacing: 0.5px;
     cursor: pointer;
@@ -7481,34 +7702,35 @@ button, input {
 .detail-sidebar-column {
     display: flex;
     flex-direction: column;
+    width: 280px;
 }
 
 .bookora-service-card {
     border: 1px solid #e2e8f0;
-    border-radius: 6px;
+    border-radius: 8px;
     overflow: hidden;
     background: #ffffff;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
 .service-card-header {
-    background: #f5f5f5;
+    background: #f8fafc;
     padding: 12px 16px;
     border-bottom: 1px solid #e2e8f0;
 }
 
 .service-card-header h3 {
     margin: 0;
-    font-size: 14.5px;
+    font-size: 14px;
     font-weight: 700;
-    color: #333333;
+    color: #1e293b;
 }
 
 .service-card-body {
     padding: 16px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
 }
 
 .service-item {
@@ -7518,13 +7740,13 @@ button, input {
 }
 
 .service-icon {
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 15px;
+    font-size: 14px;
     flex-shrink: 0;
 }
 
@@ -7534,29 +7756,30 @@ button, input {
 .icon-green { background: #f0fdf4; color: #16a34a; }
 
 .service-desc {
-    font-size: 13px;
+    font-size: 12.5px;
     color: #475569;
     line-height: 1.45;
 }
 
-/* 2. GIỚI THIỆU SÁCH & BẢNG THÔNG SỐ & SẢN PHẨM NỔI BẬT (ẢNH 2) */
+/* 3. GIỚI THIỆU SÁCH & BẢNG THÔNG SỐ & SẢN PHẨM NỔI BẬT (ẢNH 3) */
 .detail-content-container {
-    width: 96%;
-    max-width: 1920px;
-    margin: 0 auto;
-    padding: 0 20px;
+    margin-bottom: 32px;
 }
 
 .detail-content-layout {
     display: grid;
-    grid-template-columns: 1fr 320px;
-    gap: 40px;
-    margin-bottom: 50px;
+    grid-template-columns: 1fr 280px;
+    gap: 28px;
+    align-items: start;
 }
 
 /* GIỚI THIỆU SÁCH */
 .book-description-section {
     background: #ffffff;
+    border-radius: 12px;
+    padding: 24px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
 }
 
 .section-title-line {
@@ -7585,21 +7808,21 @@ button, input {
 }
 
 .book-description-text {
-    font-size: 14.5px;
+    font-size: 14px;
     line-height: 1.8;
     color: #334155;
-    margin-bottom: 30px;
+    margin-bottom: 24px;
 }
 
 .book-description-text p {
-    margin: 0 0 16px 0;
+    margin: 0 0 14px 0;
 }
 
-/* Bảng thông số chi tiết kỹ thuật sách (Table - Image 2) */
+/* Bảng thông số chi tiết kỹ thuật sách (Table - Image 3) */
 .book-spec-table-wrap {
-    margin-top: 30px;
+    margin-top: 24px;
     border-top: 1px solid #f1f5f9;
-    padding-top: 20px;
+    padding-top: 16px;
 }
 
 .book-spec-table {
@@ -7611,13 +7834,17 @@ button, input {
     border-bottom: 1px solid #f1f5f9;
 }
 
+.book-spec-table tr:last-child {
+    border-bottom: none;
+}
+
 .book-spec-table td {
-    padding: 12px 10px;
-    font-size: 14px;
+    padding: 10px 8px;
+    font-size: 13.5px;
 }
 
 .spec-label {
-    width: 220px;
+    width: 180px;
     color: #64748b;
     font-weight: 600;
 }
@@ -7627,20 +7854,24 @@ button, input {
     font-weight: 500;
 }
 
-/* SẢN PHẨM NỔI BẬT (Cột bên phải - Image 2) */
+/* SẢN PHẨM NỔI BẬT (Cột bên phải) */
 .featured-products-sidebar {
     background: #ffffff;
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
 }
 
 .featured-title-wrap {
     position: relative;
     border-bottom: 1px solid #e2e8f0;
     padding-bottom: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
 }
 
 .featured-title-text {
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 800;
     color: #1e293b;
     margin: 0;
@@ -7652,7 +7883,7 @@ button, input {
     position: absolute;
     bottom: -1px;
     left: 0;
-    width: 80px;
+    width: 70px;
     height: 3px;
     background: #f37021;
 }
@@ -7660,13 +7891,13 @@ button, input {
 .featured-products-list {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
 }
 
 .featured-book-item {
     display: flex;
-    gap: 14px;
-    padding-bottom: 14px;
+    gap: 12px;
+    padding-bottom: 12px;
     border-bottom: 1px dashed #f1f5f9;
     cursor: pointer;
     transition: transform 0.2s ease;
@@ -7677,8 +7908,8 @@ button, input {
 }
 
 .featured-thumb-wrap {
-    width: 65px;
-    height: 85px;
+    width: 60px;
+    height: 80px;
     flex-shrink: 0;
     position: relative;
     border-radius: 4px;
@@ -7720,11 +7951,11 @@ button, input {
 }
 
 .featured-book-title {
-    font-size: 13.5px;
+    font-size: 13px;
     font-weight: 700;
     color: #1e293b;
-    margin: 0 0 6px 0;
-    line-height: 1.4;
+    margin: 0 0 4px 0;
+    line-height: 1.35;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -7738,37 +7969,66 @@ button, input {
 }
 
 .featured-price-red {
-    font-size: 14px;
+    font-size: 13.5px;
     font-weight: 800;
     color: #dc2626;
 }
 
 .featured-price-orig {
-    font-size: 12px;
+    font-size: 11.5px;
     color: #94a3b8;
     text-decoration: line-through;
 }
 
-/* 3. SẢN PHẨM LIÊN QUAN (ẢNH 3) */
+/* 4. ĐÁNH GIÁ SẢN PHẨM (ẢNH 2) */
+.book-reviews-section {
+    margin-bottom: 32px;
+}
+
+.reviews-card-container {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 24px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+}
+
+.review-summary-row {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    background: #f8fafc;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.stars-breakdown {
+    max-width: 440px !important;
+    flex: 1;
+}
+
+/* 5. SẢN PHẨM LIÊN QUAN (ẢNH 2) */
 .detail-related-container {
-    width: 96%;
-    max-width: 1920px;
-    margin: 40px auto 0;
-    padding: 0 20px;
+    margin-bottom: 48px;
 }
 
 .related-products-section {
-    border-top: 1px solid #e2e8f0;
-    padding-top: 36px;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 24px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
 }
 
 .related-header {
     text-align: center;
-    margin-bottom: 28px;
+    margin-bottom: 24px;
 }
 
 .related-heading {
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 800;
     color: #1e293b;
     margin: 0;
@@ -7776,23 +8036,16 @@ button, input {
 }
 
 .related-products-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 24px;
-}
-
-@media (min-width: 1560px) {
-    .related-products-grid {
-        grid-template-columns: repeat(5, 1fr);
-        gap: 24px;
-    }
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 18px !important;
 }
 
 .related-book-card {
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
-    padding: 16px;
+    padding: 14px;
     cursor: pointer;
     transition: all 0.25s ease;
     display: flex;
@@ -7808,8 +8061,8 @@ button, input {
 .related-cover-box {
     position: relative;
     width: 100%;
-    height: 220px;
-    margin-bottom: 14px;
+    height: 200px;
+    margin-bottom: 12px;
     border-radius: 4px;
     overflow: hidden;
     display: flex;
@@ -7844,16 +8097,16 @@ button, input {
 }
 
 .related-book-title {
-    font-size: 14px;
+    font-size: 13.5px;
     font-weight: 700;
     color: #1e293b;
-    margin: 0 0 10px 0;
+    margin: 0 0 8px 0;
     line-height: 1.4;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    height: 40px;
+    height: 38px;
 }
 
 .related-price-box {
@@ -7864,13 +8117,13 @@ button, input {
 }
 
 .related-price-red {
-    font-size: 15px;
+    font-size: 14.5px;
     font-weight: 800;
     color: #dc2626;
 }
 
 .related-price-orig {
-    font-size: 13px;
+    font-size: 12px;
     color: #94a3b8;
     text-decoration: line-through;
 }
@@ -7878,16 +8131,17 @@ button, input {
 /* RESPONSIVE DESIGN FOR BOOK DETAIL */
 @media (max-width: 1024px) {
     .detail-product-layout {
-        grid-template-columns: 300px 1fr;
+        grid-template-columns: 280px 1fr;
     }
     .detail-sidebar-column {
         grid-column: 1 / -1;
+        width: 100%;
     }
     .detail-content-layout {
         grid-template-columns: 1fr;
     }
     .related-products-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, 1fr) !important;
     }
 }
 
@@ -7895,11 +8149,15 @@ button, input {
     .detail-product-layout {
         grid-template-columns: 1fr;
     }
+    .detail-cover-card {
+        max-width: 260px;
+        margin: 0 auto;
+    }
     .product-detail-actions {
         flex-direction: column;
     }
     .related-products-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
     }
 }
 

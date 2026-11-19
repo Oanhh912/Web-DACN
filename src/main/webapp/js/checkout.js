@@ -41,6 +41,21 @@ function loadCartForCheckout() {
         const cartKey = typeof getCartStorageKey === 'function' ? getCartStorageKey() : 'bookstore_cart';
         const raw = localStorage.getItem(cartKey);
         checkoutState.cartItems = raw ? JSON.parse(raw) : [];
+        if (Array.isArray(checkoutState.cartItems)) {
+            let changed = false;
+            checkoutState.cartItems.forEach(item => {
+                if (item.image && (item.image.includes('1532012164546') || item.id == 3)) {
+                    item.image = 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=500';
+                    changed = true;
+                } else if (item.image && (item.image.includes('1507842229450') || item.id == 21)) {
+                    item.image = 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?w=500';
+                    changed = true;
+                }
+            });
+            if (changed) {
+                try { localStorage.setItem(cartKey, JSON.stringify(checkoutState.cartItems)); } catch(e){}
+            }
+        }
     } catch (e) {
         checkoutState.cartItems = [];
     }
@@ -164,9 +179,16 @@ function renderSummaryItems() {
     container.innerHTML = checkoutState.cartItems.map(item => {
         const itemPrice = item.price || 0;
         const itemSubtotal = itemPrice * (item.quantity || 1);
+        let imgSrc = item.image;
+        if (!imgSrc || imgSrc.includes('1532012164546') || item.id == 3) {
+            imgSrc = 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=500';
+        } else if (imgSrc.includes('1507842229450') || item.id == 21) {
+            imgSrc = 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?w=500';
+        }
         return `
             <div class="summary-item-row">
-                <img src="${item.image || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=100'}" class="summary-item-thumb" alt="${escapeHtml(item.title)}">
+                <img src="${escapeHtml(imgSrc)}" class="summary-item-thumb" alt="${escapeHtml(item.title)}"
+                     onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=100';">
                 <div class="summary-item-info">
                     <h5 class="summary-item-title" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</h5>
                     <div class="summary-item-meta">
@@ -478,8 +500,8 @@ function openOnlinePaymentModal(data) {
     document.getElementById('onlineModalAmount').textContent = formatVNCurrency(amount);
     document.getElementById('onlineTransferMemo').textContent = memo;
 
-    // Sinh mã VietQR động
-    const qrUrl = `https://api.vietqr.io/image/970422-0912345678-compact2.png?amount=${Math.round(amount)}&addInfo=${encodeURIComponent(memo)}&accountName=${encodeURIComponent('BOOKORA STORE')}`;
+    // Sinh mã VietQR động theo thông tin MB Bank và số tiền của đơn hàng
+    const qrUrl = `https://img.vietqr.io/image/MB-0355800532-compact2.png?amount=${Math.round(amount)}&addInfo=${encodeURIComponent(memo)}&accountName=${encodeURIComponent('Nguyen Thi Oanh')}`;
     const qrImg = document.getElementById('onlineQrImage');
     if (qrImg) qrImg.src = qrUrl;
 

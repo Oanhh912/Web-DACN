@@ -26,7 +26,7 @@
 
         <div class="navbar-container">
             <!-- Logo -->
-            <a href="home" class="site-logo">
+            <a href="/home" class="site-logo">
                 <div class="logo-icon">
                     <i class="fas fa-book-bookmark"></i>
                 </div>
@@ -78,7 +78,7 @@
                             <span class="cart-popover-total-val" id="cartPopoverTotal">0đ</span>
                         </div>
                         <div class="cart-popover-actions">
-                            <a href="cart" class="btn-popover-view-cart">XEM GIỎ HÀNG</a>
+                            <a href="/cart" class="btn-popover-view-cart">XEM GIỎ HÀNG</a>
                             <button type="button" class="btn-popover-checkout" onclick="proceedToCheckout()">THANH TOÁN</button>
                         </div>
                     </div>
@@ -100,10 +100,10 @@
                             <div style="font-weight: 700; font-size: 13px; color: var(--primary);"><%= currentUser.getFullName() %></div>
                             <div class="dropdown-email"><%= currentUser.getEmail() %></div>
                         </div>
-                        <a href="profile" class="dropdown-item">
+                        <a href="/profile" class="dropdown-item">
                             <i class="fas fa-user-circle"></i> Hồ sơ tài khoản
                         </a>
-                        <a href="cart" class="dropdown-item">
+                        <a href="/cart" class="dropdown-item">
                             <i class="fas fa-bag-shopping"></i> Giỏ hàng của tôi
                         </a>
                         <a href="javascript:void(0)" class="dropdown-item" onclick="openWishlistFromMenu(event)">
@@ -116,11 +116,11 @@
                 </div>
                 <% } else { %>
                 <div class="guest-auth-buttons">
-                    <a href="login" class="btn-guest btn-guest-login">
+                    <a href="/login" class="btn-guest btn-guest-login">
                         <i class="fas fa-arrow-right-to-bracket"></i>
                         <span>Đăng Nhập</span>
                     </a>
-                    <a href="register" class="btn-guest btn-guest-register">
+                    <a href="/register" class="btn-guest btn-guest-register">
                         <i class="fas fa-user-plus"></i>
                         <span>Đăng Ký</span>
                     </a>
@@ -161,7 +161,7 @@
                 <i class="fas fa-bag-shopping"></i>
                 <h3>Giỏ hàng của bạn đang trống</h3>
                 <p>Hiện chưa có cuốn sách nào trong giỏ hàng. Hãy khám phá ngay các tựa sách mới nhất!</p>
-                <a href="home" class="btn-empty-continue"><i class="fas fa-arrow-left"></i> Tiếp tục mua hàng</a>
+                <a href="/home" class="btn-empty-continue"><i class="fas fa-arrow-left"></i> Tiếp tục mua hàng</a>
             </div>
 
             <!-- Bố cục 2 cột bên dưới: Cột trái (Ghi chú), Cột phải (Thông tin đơn hàng) -->
@@ -186,7 +186,7 @@
                         </div>
                         <button type="button" class="btn-cart-page-checkout" onclick="proceedToCheckout()">THANH TOÁN</button>
                         <div>
-                            <a href="home" class="link-continue-shopping">
+                            <a href="/home" class="link-continue-shopping">
                                 <i class="fas fa-reply"></i> Tiếp tục mua hàng
                             </a>
                         </div>
@@ -219,19 +219,19 @@
             <div class="footer-col">
                 <h4>Về Chúng Tôi</h4>
                 <ul>
-                    <li><a href="home">Giới thiệu nhà sách</a></li>
-                    <li><a href="home">Hệ thống cửa hàng</a></li>
-                    <li><a href="home">Tuyển dụng</a></li>
-                    <li><a href="home">Liên hệ hợp tác</a></li>
+                    <li><a href="/home">Giới thiệu nhà sách</a></li>
+                    <li><a href="/home">Hệ thống cửa hàng</a></li>
+                    <li><a href="/home">Tuyển dụng</a></li>
+                    <li><a href="/home">Liên hệ hợp tác</a></li>
                 </ul>
             </div>
             <div class="footer-col">
                 <h4>Hỗ Trợ Khách Hàng</h4>
                 <ul>
-                    <li><a href="home">Chính sách đổi trả</a></li>
-                    <li><a href="home">Phương thức vận chuyển</a></li>
-                    <li><a href="home">Hướng dẫn thanh toán</a></li>
-                    <li><a href="home">Bảo mật thông tin</a></li>
+                    <li><a href="/home">Chính sách đổi trả</a></li>
+                    <li><a href="/home">Phương thức vận chuyển</a></li>
+                    <li><a href="/home">Hướng dẫn thanh toán</a></li>
+                    <li><a href="/home">Bảo mật thông tin</a></li>
                 </ul>
             </div>
             <div class="footer-col">
